@@ -2,28 +2,36 @@
 
 Hideverse.io is a browser-first multiplayer social-stealth game project.
 
-## Phase 1 foundation
+## Live development contract
 
-The current foundation intentionally contains only the runtime base needed before map production:
+The main website is the canonical public development surface. Every verified game, map, asset and feature change is integrated into the repository and deployed from `main`.
+
+- `/` — live Hideverse website and development status
+- `/game/` — current playable browser build
+- live asset counts are generated from `assets/manifest.json`
+
+## Current foundation
 
 - PlayCanvas renderer/runtime
-- TypeScript + Vite build pipeline
-- Rapier 3D physics boot and live rigid-body simulation
-- Yuka AI entity-manager boot
-- responsive desktop/mobile canvas shell
-- production static server suitable for Railway
+- TypeScript + Vite
+- Rapier 3D physics
+- Yuka AI bootstrap
+- verified CC0 asset registry and glTF validation
 - GitHub Actions verification
+- Railway-ready production website
 
-## Local development
+## Development
 
 ```bash
 npm install
 npm run dev:game
+npm run dev:web
 ```
 
 ## Verify
 
 ```bash
+npm run assets:verify
 npm run verify
 npm run format:check
 ```
@@ -31,12 +39,8 @@ npm run format:check
 ## Production
 
 ```bash
-npm run build
-npm run start --workspace @hideverse/game
+npm run build:live
+npm run start --workspace @hideverse/web
 ```
 
-The server reads `PORT` when deployed and defaults to `4173` locally.
-
-## Phase boundary
-
-Map assets, characters, multiplayer gameplay, accounts and mode logic are deliberately not part of Phase 1. They will be layered on only after this foundation is stable.
+The production server reads Railway's `PORT` automatically.
