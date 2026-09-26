@@ -29,33 +29,33 @@ type DressingAsset = {
 const dressingAssets: Record<string, DressingAsset[]> = {
   nexus: [
     { asset: 'ravenwood/exterior/kaykit-city/bench.gltf', scale: 1 },
+    { asset: 'ravenwood/exterior/kaykit-city/streetlight.gltf', scale: 1 },
+    { asset: 'ravenwood/nature/kenney/plant_bush.glb', scale: 1.1 },
     { asset: 'ravenwood/furniture/kaykit/couch.gltf', scale: 0.95 },
-    { asset: 'ravenwood/furniture/kaykit/table_medium_long.gltf', scale: 0.9 },
-    { asset: 'ravenwood/furniture/kaykit/chair_A.gltf', scale: 0.95 },
   ],
   museum: [
     { asset: 'ravenwood/architecture/kaykit-dungeon/wall_arched.gltf.glb', scale: 1 },
     { asset: 'ravenwood/furniture/kaykit/shelf_B_large_decorated.gltf', scale: 0.9 },
-    { asset: 'ravenwood/architecture/kaykit-dungeon/barrel_large.gltf.glb', scale: 0.85 },
+    { asset: 'ravenwood/nature/kenney/plant_bush.glb', scale: 0.95 },
     { asset: 'ravenwood/architecture/kaykit-dungeon/crates_stacked.gltf.glb', scale: 0.9 },
   ],
   hospital: [
     { asset: 'ravenwood/furniture/kaykit/bed_double_A.gltf', scale: 0.82 },
     { asset: 'ravenwood/furniture/kaykit/shelf_B_large_decorated.gltf', scale: 0.82 },
-    { asset: 'ravenwood/furniture/kaykit/table_medium_long.gltf', scale: 0.82 },
+    { asset: 'ravenwood/nature/kenney/plant_bush.glb', scale: 0.9 },
     { asset: 'ravenwood/furniture/kaykit/chair_A.gltf', scale: 0.9 },
   ],
   hotel: [
-    { asset: 'ravenwood/furniture/kaykit/bed_double_A.gltf', scale: 0.9 },
+    { asset: 'ravenwood/exterior/kaykit-city/bench.gltf', scale: 1 },
+    { asset: 'ravenwood/nature/kenney/plant_bush.glb', scale: 1 },
     { asset: 'ravenwood/furniture/kaykit/couch.gltf', scale: 0.95 },
     { asset: 'ravenwood/furniture/kaykit/lamp_standing.gltf', scale: 0.92 },
-    { asset: 'ravenwood/furniture/kaykit/chair_A.gltf', scale: 0.95 },
   ],
   axiom: [
-    { asset: 'ravenwood/furniture/kaykit/shelf_B_large_decorated.gltf', scale: 0.85 },
     { asset: 'ravenwood/architecture/kaykit-dungeon/crates_stacked.gltf.glb', scale: 0.8 },
-    { asset: 'ravenwood/furniture/kaykit/table_medium_long.gltf', scale: 0.85 },
-    { asset: 'ravenwood/architecture/kaykit-dungeon/wall_arched.gltf.glb', scale: 0.95 },
+    { asset: 'ravenwood/exterior/kaykit-city/streetlight.gltf', scale: 1 },
+    { asset: 'ravenwood/nature/kenney/rock_largeA.glb', scale: 0.8 },
+    { asset: 'ravenwood/nature/kenney/plant_bush.glb', scale: 0.9 },
   ],
 };
 
@@ -221,6 +221,51 @@ function createGround(
   createStaticCollider(world, ground);
 }
 
+function createReferenceFloorPattern(
+  app: Application,
+  map: MapDefinition,
+  walkwayMaterial: StandardMaterial,
+  trimMaterial: StandardMaterial,
+  coarse: boolean,
+): number {
+  const [minX, minY, minZ] = map.worldBounds.min;
+  const [maxX, , maxZ] = map.worldBounds.max;
+  const width = maxX - minX;
+  const depth = maxZ - minZ;
+  const centerX = (minX + maxX) / 2;
+  const centerZ = (minZ + maxZ) / 2;
+  const groundY = Math.max(0.02, minY + 4.03);
+  let created = 0;
+
+  const longitudinal: MapBox = {
+    id: `${map.id}-walkway-long`,
+    position: [centerX, groundY, centerZ],
+    size: [Math.min(8, width * 0.16), 0.045, depth * 0.72],
+  };
+  createVisualBox(app, longitudinal, walkwayMaterial);
+  created += 1;
+
+  if (!coarse) {
+    const cross: MapBox = {
+      id: `${map.id}-walkway-cross`,
+      position: [centerX, groundY + 0.004, centerZ],
+      size: [width * 0.58, 0.05, Math.min(7, depth * 0.14)],
+    };
+    createVisualBox(app, cross, walkwayMaterial);
+    created += 1;
+
+    const centerStripe: MapBox = {
+      id: `${map.id}-floor-stripe`,
+      position: [centerX, groundY + 0.012, centerZ],
+      size: [0.18, 0.025, depth * 0.64],
+    };
+    createVisualBox(app, centerStripe, trimMaterial);
+    created += 1;
+  }
+
+  return created;
+}
+
 async function loadProgressiveDressing(app: Application, map: MapDefinition): Promise<void> {
   const specs = dressingAssets[map.id] ?? [];
   if (specs.length === 0 || map.navNodes.length === 0) return;
@@ -283,6 +328,7 @@ async function buildProceduralMap(
   createGround(app, world, map, groundMaterial);
 
   let objectCount = 1;
+  objectCount += createReferenceFloorPattern(app, map, wallAltMaterial, trimMaterial, coarse);
 
   for (const structure of map.structures) {
     createStaticCollider(world, structure);
