@@ -34,7 +34,11 @@
       "localFiles": [
         "assets/runtime/ravenwood/nature/kenney/tree_oak.glb"
       ],
-      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing."
+      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing.",
+      "localModifications": [
+        "Repaired invalid glTF scene root: scene now references root node 0 (tmpParent) instead of child node 1.",
+        "Geometry, materials, transforms and mesh buffers were otherwise preserved."
+      ]
     },
     {
       "id": "kenney-nature-tree-detailed",
@@ -50,7 +54,11 @@
       "localFiles": [
         "assets/runtime/ravenwood/nature/kenney/tree_detailed.glb"
       ],
-      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing."
+      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing.",
+      "localModifications": [
+        "Repaired invalid glTF scene root: scene now references root node 0 (tmpParent) instead of child node 1.",
+        "Geometry, materials, transforms and mesh buffers were otherwise preserved."
+      ]
     },
     {
       "id": "kenney-nature-tree-pine-a",
@@ -66,7 +74,11 @@
       "localFiles": [
         "assets/runtime/ravenwood/nature/kenney/tree_pineDefaultA.glb"
       ],
-      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing."
+      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing.",
+      "localModifications": [
+        "Repaired invalid glTF scene root: scene now references root node 0 (tmpParent) instead of child node 1.",
+        "Geometry, materials, transforms and mesh buffers were otherwise preserved."
+      ]
     },
     {
       "id": "kenney-nature-bush",
@@ -82,7 +94,11 @@
       "localFiles": [
         "assets/runtime/ravenwood/nature/kenney/plant_bush.glb"
       ],
-      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing."
+      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing.",
+      "localModifications": [
+        "Repaired invalid glTF scene root: scene now references root node 0 (tmpParent) instead of child node 1.",
+        "Geometry, materials, transforms and mesh buffers were otherwise preserved."
+      ]
     },
     {
       "id": "kenney-nature-grass",
@@ -98,7 +114,11 @@
       "localFiles": [
         "assets/runtime/ravenwood/nature/kenney/grass.glb"
       ],
-      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing."
+      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing.",
+      "localModifications": [
+        "Repaired invalid glTF scene root: scene now references root node 0 (tmpParent) instead of child node 1.",
+        "Geometry, materials, transforms and mesh buffers were otherwise preserved."
+      ]
     },
     {
       "id": "kenney-nature-rock-large-a",
@@ -114,7 +134,11 @@
       "localFiles": [
         "assets/runtime/ravenwood/nature/kenney/rock_largeA.glb"
       ],
-      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing."
+      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing.",
+      "localModifications": [
+        "Repaired invalid glTF scene root: scene now references root node 0 (tmpParent) instead of child node 1.",
+        "Geometry, materials, transforms and mesh buffers were otherwise preserved."
+      ]
     },
     {
       "id": "kenney-nature-rock-small-a",
@@ -130,7 +154,11 @@
       "localFiles": [
         "assets/runtime/ravenwood/nature/kenney/rock_smallA.glb"
       ],
-      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing."
+      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing.",
+      "localModifications": [
+        "Repaired invalid glTF scene root: scene now references root node 0 (tmpParent) instead of child node 1.",
+        "Geometry, materials, transforms and mesh buffers were otherwise preserved."
+      ]
     },
     {
       "id": "kenney-nature-stump-old",
@@ -146,7 +174,11 @@
       "localFiles": [
         "assets/runtime/ravenwood/nature/kenney/stump_old.glb"
       ],
-      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing."
+      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing.",
+      "localModifications": [
+        "Repaired invalid glTF scene root: scene now references root node 0 (tmpParent) instead of child node 1.",
+        "Geometry, materials, transforms and mesh buffers were otherwise preserved."
+      ]
     },
     {
       "id": "kenney-nature-flower-red-a",
@@ -162,7 +194,11 @@
       "localFiles": [
         "assets/runtime/ravenwood/nature/kenney/flower_redA.glb"
       ],
-      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing."
+      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing.",
+      "localModifications": [
+        "Repaired invalid glTF scene root: scene now references root node 0 (tmpParent) instead of child node 1.",
+        "Geometry, materials, transforms and mesh buffers were otherwise preserved."
+      ]
     },
     {
       "id": "kenney-nature-log",
@@ -178,7 +214,11 @@
       "localFiles": [
         "assets/runtime/ravenwood/nature/kenney/log.glb"
       ],
-      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing."
+      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing.",
+      "localModifications": [
+        "Repaired invalid glTF scene root: scene now references root node 0 (tmpParent) instead of child node 1.",
+        "Geometry, materials, transforms and mesh buffers were otherwise preserved."
+      ]
     },
     {
       "id": "kaykit-furniture-chair-a",
