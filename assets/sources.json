@@ -73,6 +73,18 @@
       ],
       "selectedRepo": "KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0",
       "sourceCommit": "63976910ca04d16f0fc531b9c614244be8128713"
+    },
+    {
+      "id": "gltf-research-scenes-house",
+      "name": "Victorian Style House via glTF Research Scenes",
+      "licensePolicy": "CC0-1.0",
+      "useFor": [
+        "Ravenwood mansion base architecture"
+      ],
+      "selectedRepo": "ErfanMo77/gltf-research-scenes",
+      "sourceCommit": "50cbe72d462cfbbf11244d0df6a5501a74050d34",
+      "sourcePath": "scenes/house/gltf/house_core.gltf",
+      "sourceLicensePath": "scenes/house/source/LICENSE.txt"
     }
   ]
 }

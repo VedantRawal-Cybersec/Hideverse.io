@@ -4,17 +4,46 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#080b10" />
-    <title>Hideverse.io — Foundation</title>
+    <title>Hideverse.io — Ravenwood Mansion</title>
   </head>
   <body>
     <main id="app">
-      <canvas id="game-canvas" aria-label="Hideverse game canvas"></canvas>
-      <section class="foundation-panel" aria-live="polite">
-        <p class="eyebrow">HIDEVERSE.IO</p>
-        <h1>Phase 1 Foundation</h1>
-        <div id="status-list" class="status-list"></div>
-        <p id="boot-message" class="boot-message">Booting engine…</p>
-      </section>
+      <canvas id="game-canvas" aria-label="Hideverse Ravenwood Mansion game canvas"></canvas>
+
+      <header class="map-hud">
+        <div>
+          <p class="eyebrow">HIDEVERSE.IO · MAP 01</p>
+          <h1>RAVENWOOD MANSION</h1>
+          <p class="status-line"><i></i><span id="map-status">Booting Ravenwood…</span></p>
+        </div>
+        <div class="telemetry">
+          <span>FPS <b id="fps-value">—</b></span>
+          <span>BUILD <b>PHASE 03</b></span>
+        </div>
+      </header>
+
+      <div class="crosshair" aria-hidden="true"></div>
+
+      <aside class="desktop-help">
+        <b>CLICK TO CAPTURE MOUSE</b>
+        <span>WASD move · Shift sprint · Space jump · C crouch · R reset · Esc release</span>
+      </aside>
+
+      <div class="mobile-controls" aria-label="Mobile game controls">
+        <div id="move-stick" class="move-stick">
+          <div id="move-stick-knob" class="move-stick-knob"></div>
+        </div>
+        <div class="mobile-buttons">
+          <button id="mobile-sprint" type="button">RUN</button>
+          <button id="mobile-crouch" type="button">CROUCH</button>
+          <button id="mobile-jump" class="primary-touch" type="button">JUMP</button>
+        </div>
+      </div>
+
+      <div id="boot-overlay" class="boot-overlay">
+        <div class="spinner"></div>
+        <span>INITIALIZING RAVENWOOD</span>
+      </div>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>

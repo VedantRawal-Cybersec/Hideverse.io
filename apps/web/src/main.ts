@@ -5,6 +5,15 @@ type AssetSummary = {
   candidateAssets: number;
   runtimeFiles: number;
   sources: Record<string, number>;
+  ravenwood: {
+    status: 'candidate' | 'acquired' | 'rejected';
+    source: string;
+    sourceTriangles: number | null;
+    runtimeTriangles: number | null;
+    runtimeBytes: number | null;
+    targetTriangles: number | null;
+    targetBytes: number | null;
+  } | null;
   generatedAt: string;
 };
 
@@ -69,12 +78,36 @@ app.innerHTML = `
           <p>CC0 source registry, local runtime assets, glTF validation, size budgets and license tracking.</p>
           <b>ACTIVE</b>
         </article>
-        <article class="phase next">
+        <article class="phase active">
           <span>PHASE 03</span>
           <h3>Ravenwood Mansion</h3>
-          <p>Existing mansion base + mixed-source nature, furniture, props, collision, lighting and map QA.</p>
-          <b>NEXT</b>
+          <p>CC0 Victorian mansion base + mixed-source nature, furniture, Rapier movement, collision and map QA.</p>
+          <b id="ravenwood-card-status">IN DEVELOPMENT</b>
         </article>
+      </div>
+    </section>
+
+    <section id="ravenwood" class="section shell">
+      <div class="section-head">
+        <p class="eyebrow">MAP 01 · PHASE 03</p>
+        <h2>Ravenwood Mansion</h2>
+      </div>
+      <div class="map-feature">
+        <div class="map-feature-copy">
+          <span class="map-kicker">CURRENT PLAYABLE MAP</span>
+          <h3>Victorian shell.<br />Hideverse systems.</h3>
+          <p>
+            Ravenwood is being built from a pinned CC0 Victorian house source, then optimized
+            for browser play and combined with our existing Kenney and KayKit environment library.
+          </p>
+          <a class="button primary" href="/game/">Enter Ravenwood Build</a>
+        </div>
+        <div class="map-meta">
+          <div><span>ARCHITECTURE</span><strong>CC0 Victorian House</strong></div>
+          <div><span>ASSET STATE</span><strong id="ravenwood-asset-state">VENDORING</strong></div>
+          <div><span>RUNTIME TRIANGLES</span><strong id="ravenwood-triangles">—</strong></div>
+          <div><span>TARGET</span><strong id="ravenwood-target">≤ 400K</strong></div>
+        </div>
       </div>
     </section>
 
@@ -126,6 +159,27 @@ async function hydrateAssets(): Promise<void> {
         <div><strong>${summary.candidateAssets}</strong><span>Candidate Assets</span></div>
         <div><strong>${summary.runtimeFiles}</strong><span>Runtime Files</span></div>
       `;
+    }
+
+    const ravenwoodState = document.querySelector<HTMLElement>('#ravenwood-asset-state');
+    const ravenwoodTriangles = document.querySelector<HTMLElement>('#ravenwood-triangles');
+    const ravenwoodTarget = document.querySelector<HTMLElement>('#ravenwood-target');
+    const ravenwoodCardStatus = document.querySelector<HTMLElement>('#ravenwood-card-status');
+
+    if (summary.ravenwood) {
+      const ready = summary.ravenwood.status === 'acquired';
+      if (ravenwoodState) ravenwoodState.textContent = ready ? 'ACQUIRED + VALIDATED' : 'VENDORING';
+      if (ravenwoodTriangles) {
+        ravenwoodTriangles.textContent = summary.ravenwood.runtimeTriangles
+          ? summary.ravenwood.runtimeTriangles.toLocaleString()
+          : 'PENDING';
+      }
+      if (ravenwoodTarget && summary.ravenwood.targetTriangles) {
+        ravenwoodTarget.textContent = `≤ ${summary.ravenwood.targetTriangles.toLocaleString()}`;
+      }
+      if (ravenwoodCardStatus) {
+        ravenwoodCardStatus.textContent = ready ? 'PLAYABLE BUILD' : 'IN DEVELOPMENT';
+      }
     }
 
     const sources = document.querySelector<HTMLDivElement>('#source-list');

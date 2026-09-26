@@ -1,0 +1,21 @@
+{
+  "id": "ravenwood-victorian-house-source",
+  "generatedFrom": {
+    "repository": "ErfanMo77/gltf-research-scenes",
+    "commit": "50cbe72d462cfbbf11244d0df6a5501a74050d34",
+    "path": "scenes/house/gltf/house_core.gltf",
+    "license": "CC0-1.0"
+  },
+  "runtimeStats": {
+    "triangles": 290201,
+    "primitives": 272,
+    "meshes": 272,
+    "materials": 3,
+    "nodes": 274,
+    "bytes": 5261868
+  },
+  "targets": {
+    "triangles": 400000,
+    "bytes": 20000000
+  }
+}

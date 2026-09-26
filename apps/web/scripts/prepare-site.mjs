@@ -13,15 +13,28 @@ const sources = acquired.reduce((acc, asset) => {
   return acc;
 }, {});
 
+const ravenwood = manifest.assets.find((asset) => asset.id === 'ravenwood-victorian-house-source');
+
 const output = {
   acquiredAssets: acquired.length,
   candidateAssets: candidates.length,
   runtimeFiles: runtimeFiles.length,
   sources,
+  ravenwood: ravenwood
+    ? {
+        status: ravenwood.status,
+        source: ravenwood.source,
+        sourceTriangles: ravenwood.sourceStats?.triangles ?? null,
+        runtimeTriangles: ravenwood.runtimeStats?.triangles ?? null,
+        runtimeBytes: ravenwood.runtimeStats?.bytes ?? null,
+        targetTriangles: ravenwood.targetTriangleBudget ?? null,
+        targetBytes: ravenwood.targetRuntimeBytes ?? null,
+      }
+    : null,
   generatedAt: new Date().toISOString(),
 };
 
 const directory = path.join(here, 'public/data');
 await mkdir(directory, { recursive: true });
 await writeFile(path.join(directory, 'asset-summary.json'), JSON.stringify(output, null, 2) + '\n');
-console.log('[web:prepare] asset summary generated');
+console.log('[web:prepare] asset + Ravenwood summary generated');

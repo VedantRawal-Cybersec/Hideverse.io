@@ -1,0 +1,22 @@
+Ravenwood architectural source — Victorian Style House
+
+Source repository:
+https://github.com/ErfanMo77/gltf-research-scenes
+
+Pinned source commit:
+50cbe72d462cfbbf11244d0df6a5501a74050d34
+
+Upstream scene:
+scenes/house/gltf/house_core.gltf
+
+Upstream original:
+"Victorian Style House" by MrChimp2313, distributed through Benedikt Bitterli Rendering Resources.
+
+License:
+CC0 1.0 Universal / Public Domain.
+
+Upstream license statement:
+The scene was released under CC0 and may be copied, modified, and used commercially without permission or attribution. Crediting the artist is encouraged.
+
+Hideverse modifications:
+The runtime copy is permitted to be simplified, optimized, split, recolored, relit, and combined with other CC0 assets. The optimized runtime derivative remains tracked to this source record.
