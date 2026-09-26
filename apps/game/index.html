@@ -17,16 +17,22 @@
           <p class="status-line"><i></i><span id="map-status">Booting Ravenwood…</span></p>
         </div>
         <div class="telemetry">
+          <span>AREA <b id="zone-value">RAVENWOOD ESTATE</b></span>
           <span>FPS <b id="fps-value">—</b></span>
-          <span>BUILD <b>PHASE 03</b></span>
+          <span>BUILD <b>PHASE 03B</b></span>
         </div>
       </header>
 
       <div class="crosshair" aria-hidden="true"></div>
 
+      <div id="interaction-prompt" class="interaction-prompt" aria-live="polite"></div>
+      <div id="hidden-state" class="hidden-state" aria-live="polite"></div>
+
       <aside class="desktop-help">
         <b>CLICK TO CAPTURE MOUSE</b>
-        <span>WASD move · Shift sprint · Space jump · C crouch · R reset · Esc release</span>
+        <span>
+          WASD move · Shift sprint · Space jump · C crouch · E interact/hide · R reset · Esc release
+        </span>
       </aside>
 
       <div class="mobile-controls" aria-label="Mobile game controls">
@@ -36,6 +42,7 @@
         <div class="mobile-buttons">
           <button id="mobile-sprint" type="button">RUN</button>
           <button id="mobile-crouch" type="button">CROUCH</button>
+          <button id="mobile-interact" type="button">INTERACT</button>
           <button id="mobile-jump" class="primary-touch" type="button">JUMP</button>
         </div>
       </div>
