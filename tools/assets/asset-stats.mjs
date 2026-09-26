@@ -10,11 +10,21 @@ const files = [...new Set(acquired.flatMap((asset) => asset.localFiles))];
 let bytes = 0;
 const errors = [];
 
+const fileBudgets = new Map();
+for (const asset of acquired) {
+  const budget = asset.maxRuntimeFileBytes ?? manifest.policy.maxRuntimeFileBytes;
+  for (const file of asset.localFiles) {
+    const current = fileBudgets.get(file);
+    fileBudgets.set(file, current === undefined ? budget : Math.max(current, budget));
+  }
+}
+
 for (const relative of files) {
   const info = await stat(path.resolve(process.cwd(), relative));
   bytes += info.size;
-  if (info.size > manifest.policy.maxRuntimeFileBytes) {
-    errors.push(`${relative}: ${info.size} bytes exceeds ${manifest.policy.maxRuntimeFileBytes}`);
+  const budget = fileBudgets.get(relative) ?? manifest.policy.maxRuntimeFileBytes;
+  if (info.size > budget) {
+    errors.push(`${relative}: ${info.size} bytes exceeds ${budget}`);
   }
 }
 
