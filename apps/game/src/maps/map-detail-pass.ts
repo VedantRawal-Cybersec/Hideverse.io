@@ -76,11 +76,7 @@ async function loadPlacedAssets(
       });
       entity.name = `detail-prop-${index}-${placement.asset.split('/').at(-1) ?? 'asset'}`;
       entity.setLocalScale(placement.scale, placement.scale, placement.scale);
-      entity.setPosition(
-        placement.position[0],
-        placement.position[1],
-        placement.position[2],
-      );
+      entity.setPosition(placement.position[0], placement.position[1], placement.position[2]);
       entity.setEulerAngles(0, placement.yaw ?? 0, 0);
       app.root.addChild(entity);
     } catch (error) {
@@ -91,11 +87,7 @@ async function loadPlacedAssets(
   }
 }
 
-function buildNexusDetails(
-  app: Application,
-  materials: DetailMaterials,
-  coarse: boolean,
-): number {
+function buildNexusDetails(app: Application, materials: DetailMaterials, coarse: boolean): number {
   const glass = makeMaterial([0.12, 0.22, 0.28], 0.82, 0.12, 0.025);
   const sign = makeMaterial([0.82, 0.28, 0.16], 0.35, 0.04, 0.08);
   const details: DetailBox[] = [];
@@ -376,11 +368,7 @@ function buildHospitalDetails(
   return details.length + props.length;
 }
 
-function buildMuseumDetails(
-  app: Application,
-  materials: DetailMaterials,
-  coarse: boolean,
-): number {
+function buildMuseumDetails(app: Application, materials: DetailMaterials, coarse: boolean): number {
   const glass = makeMaterial([0.18, 0.27, 0.3], 0.86, 0.08, 0.018);
   const gold = makeMaterial([0.62, 0.44, 0.17], 0.5, 0.34, 0.025);
   const lightPanel = makeMaterial([0.92, 0.88, 0.74], 0.2, 0, 0.12);
@@ -503,11 +491,7 @@ function buildMuseumDetails(
   return details.length + props.length;
 }
 
-function buildHotelDetails(
-  app: Application,
-  materials: DetailMaterials,
-  coarse: boolean,
-): number {
+function buildHotelDetails(app: Application, materials: DetailMaterials, coarse: boolean): number {
   const glass = makeMaterial([0.16, 0.28, 0.31], 0.84, 0.07, 0.018);
   const warmLight = makeMaterial([0.92, 0.68, 0.38], 0.22, 0, 0.1);
   const floorBand = makeMaterial([0.34, 0.25, 0.19], 0.18, 0.01);
@@ -619,11 +603,7 @@ function buildHotelDetails(
   return details.length + props.length;
 }
 
-function buildAxiomDetails(
-  app: Application,
-  materials: DetailMaterials,
-  coarse: boolean,
-): number {
+function buildAxiomDetails(app: Application, materials: DetailMaterials, coarse: boolean): number {
   const glass = makeMaterial([0.12, 0.31, 0.36], 0.88, 0.16, 0.035);
   const hazard = makeMaterial([0.86, 0.58, 0.1], 0.28, 0.02, 0.05);
   const reactorGlow = makeMaterial([0.16, 0.72, 0.76], 0.36, 0.08, 0.18);
