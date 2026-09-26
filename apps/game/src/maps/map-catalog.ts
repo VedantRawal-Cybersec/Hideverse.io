@@ -35,14 +35,7 @@ export type NavNode = {
   position: Triplet;
 };
 
-export type ActorRole =
-  | 'hider'
-  | 'seeker'
-  | 'guard'
-  | 'civilian'
-  | 'mimic'
-  | 'monster'
-  | 'traitor';
+export type ActorRole = 'hider' | 'seeker' | 'guard' | 'civilian' | 'mimic' | 'monster' | 'traitor';
 
 export type ActorSpawn = {
   id: string;

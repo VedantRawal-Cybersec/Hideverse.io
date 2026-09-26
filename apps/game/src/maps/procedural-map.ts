@@ -70,11 +70,7 @@ function material(color: Triplet): StandardMaterial {
   return result;
 }
 
-function createVisualBox(
-  app: Application,
-  item: MapBox,
-  boxMaterial: StandardMaterial,
-): Entity {
+function createVisualBox(app: Application, item: MapBox, boxMaterial: StandardMaterial): Entity {
   const entity = new Entity(item.id);
   entity.addComponent('render', { type: 'box' });
   entity.setLocalScale(item.size[0], item.size[1], item.size[2]);

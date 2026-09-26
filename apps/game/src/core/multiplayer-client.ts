@@ -23,13 +23,17 @@ function safePlayerId(): string {
   const key = 'hideverse-player-id';
   const existing = localStorage.getItem(key);
   if (existing) return existing;
-  const created = crypto.randomUUID?.() ?? `player-${Date.now()}-${Math.floor(Math.random() * 99999)}`;
+  const created =
+    crypto.randomUUID?.() ?? `player-${Date.now()}-${Math.floor(Math.random() * 99999)}`;
   localStorage.setItem(key, created);
   return created;
 }
 
 function sanitizeRoom(value: string | null): string {
-  const normalized = (value ?? 'LOCAL').toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 16);
+  const normalized = (value ?? 'LOCAL')
+    .toUpperCase()
+    .replace(/[^A-Z0-9-]/g, '')
+    .slice(0, 16);
   return normalized || 'LOCAL';
 }
 
@@ -86,11 +90,7 @@ export class MultiplayerClient {
     return this.room;
   }
 
-  update(
-    position: { x: number; y: number; z: number },
-    yaw: number,
-    motion: MotionState,
-  ): void {
+  update(position: { x: number; y: number; z: number }, yaw: number, motion: MotionState): void {
     if (this.disposed) return;
 
     const now = performance.now();

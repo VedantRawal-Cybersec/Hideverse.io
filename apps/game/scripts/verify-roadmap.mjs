@@ -39,11 +39,7 @@ function insideSolid(structure, point) {
   const [x, y, z] = point;
   const [sx, sy, sz] = structure.position;
   const [wx, wy, wz] = structure.size;
-  return (
-    Math.abs(x - sx) < wx / 2 &&
-    Math.abs(y - sy) < wy / 2 &&
-    Math.abs(z - sz) < wz / 2
-  );
+  return Math.abs(x - sx) < wx / 2 && Math.abs(y - sy) < wy / 2 && Math.abs(z - sz) < wz / 2;
 }
 
 function assertUnique(items, label, mapId) {
@@ -96,7 +92,8 @@ for (const map of catalog.maps) {
   for (const actor of map.actorSpawns) {
     if (!insideBounds(map, actor.position)) fail(`${map.id}: actor ${actor.id} is out of bounds`);
     for (const nodeId of actor.patrol) {
-      if (!navIds.has(nodeId)) fail(`${map.id}: actor ${actor.id} references missing nav node ${nodeId}`);
+      if (!navIds.has(nodeId))
+        fail(`${map.id}: actor ${actor.id} references missing nav node ${nodeId}`);
     }
   }
 
@@ -137,7 +134,11 @@ for (const map of catalog.maps) {
 
   for (const channel of ['ambient', 'sun', 'fill', 'clear']) {
     const value = map.lighting[channel];
-    if (!Array.isArray(value) || value.length !== 3 || value.some((entry) => !Number.isFinite(entry))) {
+    if (
+      !Array.isArray(value) ||
+      value.length !== 3 ||
+      value.some((entry) => !Number.isFinite(entry))
+    ) {
       fail(`${map.id}: invalid lighting channel ${channel}`);
     }
   }

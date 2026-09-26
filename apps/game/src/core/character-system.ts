@@ -57,10 +57,7 @@ function distance(a: Triplet, b: Triplet): number {
 export class CharacterSystem {
   private readonly actors: ActorRuntime[] = [];
 
-  constructor(
-    app: Application,
-    map: MapDefinition,
-  ) {
+  constructor(app: Application, map: MapDefinition) {
     const navById = new Map(map.navNodes.map((node) => [node.id, node.position] as const));
 
     for (const spawn of map.actorSpawns) {
