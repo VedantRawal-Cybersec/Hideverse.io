@@ -233,26 +233,31 @@ async function loadProgressiveDressing(app: Application, map: MapDefinition): Pr
     return loading;
   };
 
-  const tasks = Array.from({ length: instanceLimit }, async (_, index) => {
+  for (let index = 0; index < instanceLimit; index += 1) {
     const spec = specs[index % specs.length]!;
     const anchor = map.navNodes[(index * 2 + 1) % map.navNodes.length]!;
-    const asset = await getAsset(spec.asset);
-    const entity = asset.resource.instantiateRenderEntity({
-      castShadows: !coarse,
-      receiveShadows: true,
-    });
-    entity.name = `${map.id}-dressing-${index}`;
-    entity.setLocalScale(spec.scale, spec.scale, spec.scale);
-    entity.setPosition(
-      anchor.position[0] + (index % 2 === 0 ? 1.35 : -1.35),
-      anchor.position[1] - 0.05,
-      anchor.position[2] + ((index % 3) - 1) * 1.1,
-    );
-    entity.setEulerAngles(0, (index * 67) % 360, 0);
-    app.root.addChild(entity);
-  });
 
-  await Promise.allSettled(tasks);
+    try {
+      const asset = await getAsset(spec.asset);
+      const entity = asset.resource.instantiateRenderEntity({
+        castShadows: !coarse,
+        receiveShadows: true,
+      });
+      entity.name = `${map.id}-dressing-${index}`;
+      entity.setLocalScale(spec.scale, spec.scale, spec.scale);
+      entity.setPosition(
+        anchor.position[0] + (index % 2 === 0 ? 1.35 : -1.35),
+        anchor.position[1] - 0.05,
+        anchor.position[2] + ((index % 3) - 1) * 1.1,
+      );
+      entity.setEulerAngles(0, (index * 67) % 360, 0);
+      app.root.addChild(entity);
+    } catch (error) {
+      console.warn('[Hideverse dressing] asset skipped.', error);
+    }
+
+    await new Promise<void>((resolve) => window.setTimeout(resolve, coarse ? 180 : 90));
+  }
 }
 
 async function buildProceduralMap(
@@ -327,7 +332,9 @@ async function buildProceduralMap(
     `${map.name} ready · ${objectCount} visible runtime objects · ${map.navNodes.length} navigation nodes`,
   );
 
-  void loadProgressiveDressing(app, map);
+  window.setTimeout(() => {
+    void loadProgressiveDressing(app, map);
+  }, coarse ? 2600 : 1800);
   return { doors, objectCount };
 }
 
