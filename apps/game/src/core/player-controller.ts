@@ -8,6 +8,7 @@ export class FirstPersonController {
   private readonly character: RAPIER.KinematicCharacterController;
   private verticalVelocity = 0;
   private grounded = false;
+  private movementLocked = false;
 
   constructor(
     private readonly world: RAPIER.World,
@@ -32,6 +33,15 @@ export class FirstPersonController {
     this.syncCamera();
   }
 
+  get position(): { x: number; y: number; z: number } {
+    const position = this.body.translation();
+    return { x: position.x, y: position.y, z: position.z };
+  }
+
+  setMovementLocked(locked: boolean): void {
+    this.movementLocked = locked;
+  }
+
   update(deltaSeconds: number): void {
     const dt = Math.min(deltaSeconds, 1 / 30);
 
@@ -40,18 +50,18 @@ export class FirstPersonController {
       return;
     }
 
-    const axes = this.input.move;
+    const axes = this.movementLocked ? { x: 0, z: 0 } : this.input.move;
     const yaw = (this.input.yaw * Math.PI) / 180;
     const forwardX = Math.sin(yaw);
     const forwardZ = -Math.cos(yaw);
     const rightX = Math.cos(yaw);
     const rightZ = Math.sin(yaw);
 
-    const speed = this.input.crouch ? 2.2 : this.input.sprint ? 6.2 : 3.8;
+    const speed = this.movementLocked ? 0 : this.input.crouch ? 2.2 : this.input.sprint ? 6.2 : 3.8;
     const horizontalX = (rightX * axes.x + forwardX * axes.z) * speed * dt;
     const horizontalZ = (rightZ * axes.x + forwardZ * axes.z) * speed * dt;
 
-    if (this.input.consumeJump() && this.grounded) {
+    if (!this.movementLocked && this.input.consumeJump() && this.grounded) {
       this.verticalVelocity = 6.7;
       this.grounded = false;
     }
