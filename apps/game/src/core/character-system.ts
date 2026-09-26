@@ -42,6 +42,9 @@ type ActorRuntime = {
   chasePath: Triplet[];
   chasePathIndex: number;
   chaseRepathSeconds: number;
+  senseTimer: number;
+  cachedDirectSight: boolean;
+  cachedDetected: boolean;
 };
 
 const roleColors: Record<ActorRole, Triplet> = {
@@ -328,11 +331,16 @@ export class CharacterSystem {
         chasePath: [],
         chasePathIndex: 0,
         chaseRepathSeconds: 0,
+        senseTimer: Math.random() * 0.12,
+        cachedDirectSight: false,
+        cachedDetected: false,
       });
     }
 
     if (!matchMedia('(pointer: coarse)').matches) {
-      void this.loadRiggedActors(app);
+      window.setTimeout(() => {
+        void this.loadRiggedActors(app);
+      }, 2200);
     }
   }
 
@@ -367,8 +375,7 @@ export class CharacterSystem {
       return loading;
     };
 
-    await Promise.all(
-      this.actors.map(async (actor) => {
+    for (const actor of this.actors) {
         const file = roleCharacterAsset[actor.role];
         if (!file || actor.role === 'monster') return;
 
@@ -432,8 +439,12 @@ export class CharacterSystem {
             error,
           );
         }
-      }),
-    );
+      }
+
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, 120);
+      });
+    }
   }
 
   get count(): number {
@@ -462,12 +473,20 @@ export class CharacterSystem {
       const radius = detectionRadius(actor.role);
       const sameFloor = Math.abs(playerPosition.y - actorPosition.y) < 4;
       const visibilityScale = playerHidden ? 0.34 : 1;
-      const directSight = sameFloor && lineClear(this.map, current, player);
-      const detected =
-        radius > 0 &&
-        sameFloor &&
-        directSight &&
-        currentDistance <= Math.max(1.5, radius * visibilityScale);
+
+      actor.senseTimer -= dt;
+      if (actor.senseTimer <= 0) {
+        actor.cachedDirectSight = sameFloor && lineClear(this.map, current, player);
+        actor.cachedDetected =
+          radius > 0 &&
+          sameFloor &&
+          actor.cachedDirectSight &&
+          currentDistance <= Math.max(1.5, radius * visibilityScale);
+        actor.senseTimer = 0.1 + Math.random() * 0.05;
+      }
+
+      const directSight = actor.cachedDirectSight;
+      const detected = actor.cachedDetected;
 
       if (detected && isHostile(actor.role)) {
         actor.alertSeconds = Math.max(actor.alertSeconds, actor.role === 'monster' ? 4.5 : 3);
@@ -548,13 +567,28 @@ export class CharacterSystem {
         actor.limbs.rightLeg.setLocalEulerAngles(swing * 0.75, 0, 0);
       }
 
-      if (actor.rigged?.anim) {
-        const nextState = animationStateForMotion(actor.state);
-        actor.rigged.anim.speed = actor.state === 'sprint' ? 1.25 : 1;
-        const baseLayer = actor.rigged.anim.baseLayer;
-        if (baseLayer && actor.riggedState !== nextState) {
-          baseLayer.transition(nextState, 0.16);
-          actor.riggedState = nextState;
+      if (actor.rigged) {
+        const useRigged = currentDistance <= 26;
+        actor.rigged.enabled = useRigged;
+        if (actor.roleMarker) actor.roleMarker.enabled = useRigged;
+        actor.visual.enabled = !useRigged;
+        actor.head.enabled = !useRigged;
+
+        if (actor.limbs) {
+          actor.limbs.leftArm.enabled = !useRigged;
+          actor.limbs.rightArm.enabled = !useRigged;
+          actor.limbs.leftLeg.enabled = !useRigged;
+          actor.limbs.rightLeg.enabled = !useRigged;
+        }
+
+        if (useRigged && actor.rigged.anim) {
+          const nextState = animationStateForMotion(actor.state);
+          actor.rigged.anim.speed = actor.state === 'sprint' ? 1.2 : 1;
+          const baseLayer = actor.rigged.anim.baseLayer;
+          if (baseLayer && actor.riggedState !== nextState) {
+            baseLayer.transition(nextState, 0.14);
+            actor.riggedState = nextState;
+          }
         }
       }
 
