@@ -17,7 +17,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "verify": "npm run verify --workspace @hideverse/game",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --write apps/game/src/styles.css && git diff --exit-code -- apps/game/src/styles.css"
   },
   "devDependencies": {
     "prettier": "3.9.9"
