@@ -376,6 +376,367 @@ function buildHospitalDetails(
   return details.length + props.length;
 }
 
+function buildMuseumDetails(
+  app: Application,
+  materials: DetailMaterials,
+  coarse: boolean,
+): number {
+  const glass = makeMaterial([0.18, 0.27, 0.3], 0.86, 0.08, 0.018);
+  const gold = makeMaterial([0.62, 0.44, 0.17], 0.5, 0.34, 0.025);
+  const lightPanel = makeMaterial([0.92, 0.88, 0.74], 0.2, 0, 0.12);
+  const details: DetailBox[] = [];
+
+  for (const display of [
+    { id: 'west', x: -14, z: 4, width: 4.8 },
+    { id: 'east', x: 14, z: 4, width: 4.8 },
+    { id: 'north', x: 0, z: -16, width: 5.8 },
+  ]) {
+    details.push(
+      {
+        id: `museum-display-glass-${display.id}`,
+        position: [display.x, 2.1, display.z],
+        size: [display.width, 2.25, 2.5],
+        material: glass,
+      },
+      {
+        id: `museum-display-plinth-${display.id}`,
+        position: [display.x, 0.48, display.z],
+        size: [display.width + 0.4, 0.55, 2.9],
+        material: materials.trim,
+      },
+      {
+        id: `museum-display-cap-${display.id}`,
+        position: [display.x, 3.3, display.z],
+        size: [display.width + 0.25, 0.12, 2.7],
+        material: gold,
+      },
+    );
+  }
+
+  details.push(
+    {
+      id: 'museum-vault-frame-top',
+      position: [0, 4.35, -29.65],
+      size: [7.2, 0.48, 0.7],
+      material: materials.metal,
+    },
+    {
+      id: 'museum-vault-frame-left',
+      position: [-3.35, 2.2, -29.65],
+      size: [0.5, 4.7, 0.7],
+      material: materials.metal,
+    },
+    {
+      id: 'museum-vault-frame-right',
+      position: [3.35, 2.2, -29.65],
+      size: [0.5, 4.7, 0.7],
+      material: materials.metal,
+    },
+    {
+      id: 'museum-entry-canopy',
+      position: [0, 4.8, 49],
+      size: [12, 0.4, 2.4],
+      material: gold,
+    },
+  );
+
+  if (!coarse) {
+    for (const z of [28, 12, -4, -20]) {
+      details.push({
+        id: `museum-ceiling-panel-${z}`,
+        position: [0, 5.8, z],
+        size: [7.2, 0.08, 1.1],
+        material: lightPanel,
+      });
+    }
+  }
+
+  for (const detail of details) addBox(app, detail);
+
+  const props: AssetPlacement[] = coarse
+    ? [
+        {
+          asset: 'ravenwood/architecture/kaykit-dungeon/wall_arched.gltf.glb',
+          position: [-20, 0, 8],
+          scale: 1.1,
+          yaw: 90,
+        },
+        {
+          asset: 'ravenwood/architecture/kaykit-dungeon/crates_stacked.gltf.glb',
+          position: [-12, 0, -34],
+          scale: 0.75,
+        },
+      ]
+    : [
+        {
+          asset: 'ravenwood/architecture/kaykit-dungeon/wall_arched.gltf.glb',
+          position: [-20, 0, 8],
+          scale: 1.1,
+          yaw: 90,
+        },
+        {
+          asset: 'ravenwood/architecture/kaykit-dungeon/wall_arched.gltf.glb',
+          position: [20, 0, 8],
+          scale: 1.1,
+          yaw: -90,
+        },
+        {
+          asset: 'ravenwood/exterior/kaykit-city/bench.gltf',
+          position: [-8, 0, 23],
+          scale: 1,
+          yaw: 90,
+        },
+        {
+          asset: 'ravenwood/exterior/kaykit-city/bench.gltf',
+          position: [8, 0, 23],
+          scale: 1,
+          yaw: -90,
+        },
+        {
+          asset: 'ravenwood/architecture/kaykit-dungeon/crates_stacked.gltf.glb',
+          position: [-12, 0, -34],
+          scale: 0.75,
+        },
+      ];
+
+  window.setTimeout(() => void loadPlacedAssets(app, props, coarse), coarse ? 2600 : 1750);
+  return details.length + props.length;
+}
+
+function buildHotelDetails(
+  app: Application,
+  materials: DetailMaterials,
+  coarse: boolean,
+): number {
+  const glass = makeMaterial([0.16, 0.28, 0.31], 0.84, 0.07, 0.018);
+  const warmLight = makeMaterial([0.92, 0.68, 0.38], 0.22, 0, 0.1);
+  const floorBand = makeMaterial([0.34, 0.25, 0.19], 0.18, 0.01);
+  const details: DetailBox[] = [
+    {
+      id: 'hotel-entry-glass-left',
+      position: [-2.25, 2.25, 39],
+      size: [3.4, 3.65, 0.18],
+      material: glass,
+    },
+    {
+      id: 'hotel-entry-glass-right',
+      position: [2.25, 2.25, 39],
+      size: [3.4, 3.65, 0.18],
+      material: glass,
+    },
+    {
+      id: 'hotel-entry-canopy',
+      position: [0, 4.6, 39],
+      size: [10.5, 0.36, 2.4],
+      material: materials.wood,
+    },
+    {
+      id: 'hotel-lobby-backdrop',
+      position: [0, 2.1, 32.2],
+      size: [13, 4.1, 0.2],
+      material: materials.wood,
+    },
+  ];
+
+  for (const y of [2.2, 5.4, 8.8]) {
+    details.push({
+      id: `hotel-floor-band-${y}`,
+      position: [0, y, -39.35],
+      size: [68, 0.28, 0.18],
+      material: floorBand,
+    });
+  }
+
+  const roomZ = [-22, -10, 2, 14, 26];
+  for (const z of roomZ) {
+    for (const side of [-1, 1] as const) {
+      const x = side * 18.95;
+      details.push({
+        id: `hotel-room-door-frame-${side}-${z}`,
+        position: [x, 1.9, z],
+        size: [0.18, 3.2, 2.15],
+        material: materials.trim,
+      });
+      if (!coarse) {
+        details.push({
+          id: `hotel-room-sconce-${side}-${z}`,
+          position: [x - side * 0.12, 3.15, z + 2.1],
+          size: [0.12, 0.45, 0.45],
+          material: warmLight,
+        });
+      }
+    }
+  }
+
+  for (const detail of details) addBox(app, detail);
+
+  const props: AssetPlacement[] = coarse
+    ? [
+        {
+          asset: 'ravenwood/furniture/kaykit/couch.gltf',
+          position: [-6, 0, 27],
+          scale: 0.95,
+          yaw: 90,
+        },
+        {
+          asset: 'ravenwood/furniture/kaykit/lamp_standing.gltf',
+          position: [7, 0, 27],
+          scale: 0.95,
+        },
+      ]
+    : [
+        {
+          asset: 'ravenwood/furniture/kaykit/couch.gltf',
+          position: [-6, 0, 27],
+          scale: 0.95,
+          yaw: 90,
+        },
+        {
+          asset: 'ravenwood/furniture/kaykit/couch.gltf',
+          position: [6, 0, 27],
+          scale: 0.95,
+          yaw: -90,
+        },
+        {
+          asset: 'ravenwood/furniture/kaykit/lamp_standing.gltf',
+          position: [-8, 0, 27],
+          scale: 0.95,
+        },
+        {
+          asset: 'ravenwood/furniture/kaykit/lamp_standing.gltf',
+          position: [8, 0, 27],
+          scale: 0.95,
+        },
+        {
+          asset: 'ravenwood/exterior/kaykit-city/bench.gltf',
+          position: [0, 0, 34],
+          scale: 1,
+          yaw: 180,
+        },
+      ];
+
+  window.setTimeout(() => void loadPlacedAssets(app, props, coarse), coarse ? 2700 : 1800);
+  return details.length + props.length;
+}
+
+function buildAxiomDetails(
+  app: Application,
+  materials: DetailMaterials,
+  coarse: boolean,
+): number {
+  const glass = makeMaterial([0.12, 0.31, 0.36], 0.88, 0.16, 0.035);
+  const hazard = makeMaterial([0.86, 0.58, 0.1], 0.28, 0.02, 0.05);
+  const reactorGlow = makeMaterial([0.16, 0.72, 0.76], 0.36, 0.08, 0.18);
+  const details: DetailBox[] = [];
+
+  for (const door of [
+    { id: 'entry', x: 0, z: 53, width: 9 },
+    { id: 'reactor', x: 0, z: -27.6, width: 7 },
+    { id: 'cleanroom', x: 0, z: 8.1, width: 6 },
+  ]) {
+    details.push(
+      {
+        id: `axiom-${door.id}-frame-top`,
+        position: [door.x, 4.35, door.z],
+        size: [door.width, 0.42, 0.7],
+        material: hazard,
+      },
+      {
+        id: `axiom-${door.id}-frame-left`,
+        position: [door.x - door.width / 2 + 0.22, 2.2, door.z],
+        size: [0.38, 4.7, 0.7],
+        material: materials.metal,
+      },
+      {
+        id: `axiom-${door.id}-frame-right`,
+        position: [door.x + door.width / 2 - 0.22, 2.2, door.z],
+        size: [0.38, 4.7, 0.7],
+        material: materials.metal,
+      },
+    );
+  }
+
+  for (const x of [-18, 18]) {
+    details.push({
+      id: `axiom-specimen-glass-${x}`,
+      position: [x, 2, -18],
+      size: [3, 4.1, 3],
+      material: glass,
+    });
+  }
+
+  for (const offset of [-3.2, 0, 3.2]) {
+    details.push({
+      id: `axiom-reactor-glow-${offset}`,
+      position: [offset, 2.8, -38],
+      size: [1.1, 5.4, 1.1],
+      material: reactorGlow,
+    });
+  }
+
+  if (!coarse) {
+    for (const z of [25, 10, -6, -22]) {
+      details.push({
+        id: `axiom-ceiling-trunk-${z}`,
+        position: [0, 5.2, z],
+        size: [18, 0.32, 0.42],
+        material: materials.metal,
+      });
+    }
+  }
+
+  for (const detail of details) addBox(app, detail);
+
+  const props: AssetPlacement[] = coarse
+    ? [
+        {
+          asset: 'ravenwood/architecture/kaykit-dungeon/crates_stacked.gltf.glb',
+          position: [-12, 0, 22],
+          scale: 0.7,
+        },
+        {
+          asset: 'ravenwood/architecture/kaykit-dungeon/barrel_large.gltf.glb',
+          position: [13, 0, -8],
+          scale: 0.72,
+        },
+      ]
+    : [
+        {
+          asset: 'ravenwood/architecture/kaykit-dungeon/crates_stacked.gltf.glb',
+          position: [-12, 0, 22],
+          scale: 0.7,
+        },
+        {
+          asset: 'ravenwood/architecture/kaykit-dungeon/crates_stacked.gltf.glb',
+          position: [12, 0, 22],
+          scale: 0.7,
+        },
+        {
+          asset: 'ravenwood/architecture/kaykit-dungeon/barrel_large.gltf.glb',
+          position: [-13, 0, -8],
+          scale: 0.72,
+        },
+        {
+          asset: 'ravenwood/architecture/kaykit-dungeon/barrel_large.gltf.glb',
+          position: [13, 0, -8],
+          scale: 0.72,
+        },
+        {
+          asset: 'ravenwood/exterior/kaykit-city/streetlight.gltf',
+          position: [-8, 0, 45],
+          scale: 1,
+        },
+        {
+          asset: 'ravenwood/exterior/kaykit-city/streetlight.gltf',
+          position: [8, 0, 45],
+          scale: 1,
+        },
+      ];
+
+  window.setTimeout(() => void loadPlacedAssets(app, props, coarse), coarse ? 2700 : 1850);
+  return details.length + props.length;
+}
+
 export function buildMapSpecificDetailPass(
   app: Application,
   map: MapDefinition,
@@ -383,6 +744,9 @@ export function buildMapSpecificDetailPass(
   coarse: boolean,
 ): number {
   if (map.id === 'nexus') return buildNexusDetails(app, materials, coarse);
+  if (map.id === 'museum') return buildMuseumDetails(app, materials, coarse);
   if (map.id === 'hospital') return buildHospitalDetails(app, materials, coarse);
+  if (map.id === 'hotel') return buildHotelDetails(app, materials, coarse);
+  if (map.id === 'axiom') return buildAxiomDetails(app, materials, coarse);
   return 0;
 }
