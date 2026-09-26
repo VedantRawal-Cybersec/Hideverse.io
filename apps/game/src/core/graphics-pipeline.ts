@@ -11,6 +11,8 @@ import type { QualityPreset } from './performance-manager';
 
 export class GraphicsPipeline {
   private readonly frame: CameraFrame;
+  private currentPreset: QualityPreset = 'auto';
+  private runtimeReduced = false;
 
   constructor(
     private readonly app: Application,
@@ -22,51 +24,51 @@ export class GraphicsPipeline {
     this.frame = new CameraFrame(app, camera.camera);
     this.frame.rendering.sceneColorMap = true;
     this.frame.rendering.toneMapping = TONEMAP_ACES;
-    this.frame.grading.enabled = true;
-    this.frame.grading.brightness = 1.02;
-    this.frame.grading.contrast = 1.06;
-    this.frame.grading.saturation = 1.06;
-    this.frame.vignette.inner = 0.66;
-    this.frame.vignette.outer = 1;
-    this.frame.vignette.curvature = 0.65;
-    this.frame.vignette.intensity = 0.12;
-    this.frame.update();
-
-    this.app.scene.fog.type = FOG_EXP;
     this.app.scene.fog.color = new Color(0.055, 0.065, 0.08);
-    this.app.scene.fog.density = coarsePointer ? 0.006 : 0.0042;
+    this.applyQuality('auto');
   }
 
-  applyQuality(preset: QualityPreset): void {
+  applyQuality(preset: QualityPreset, runtimeReduced = this.runtimeReduced): void {
+    this.currentPreset = preset;
+    this.runtimeReduced = runtimeReduced;
+
     const low = preset === 'low';
     const high = preset === 'high';
     const balanced = preset === 'balanced';
-    const autoHigh = preset === 'auto' && !this.coarsePointer;
+    const autoMobile = preset === 'auto' && this.coarsePointer;
+    const lightweight = low || autoMobile || runtimeReduced;
+    const autoHigh = preset === 'auto' && !this.coarsePointer && !runtimeReduced;
 
-    this.frame.enabled = !low;
-    this.frame.bloom.intensity = low ? 0 : high || autoHigh ? 0.025 : balanced ? 0.014 : 0.008;
-    this.frame.bloom.blurLevel = high || autoHigh ? 10 : 6;
+    this.frame.enabled = !lightweight;
 
-    this.frame.grading.enabled = !low;
-    this.frame.grading.brightness = high ? 1.04 : 1.02;
-    this.frame.grading.contrast = high || autoHigh ? 1.08 : 1.04;
-    this.frame.grading.saturation = high || autoHigh ? 1.08 : 1.04;
-
-    this.frame.taa.enabled = high && !this.coarsePointer;
-    this.frame.taa.jitter = 0.8;
-
-    this.frame.vignette.intensity = low ? 0 : high || autoHigh ? 0.14 : 0.09;
+    if (!lightweight) {
+      this.frame.grading.enabled = true;
+      this.frame.grading.brightness = high ? 1.04 : 1.02;
+      this.frame.grading.contrast = high || autoHigh ? 1.07 : 1.035;
+      this.frame.grading.saturation = high || autoHigh ? 1.06 : 1.03;
+      this.frame.bloom.intensity = high || autoHigh ? 0.018 : balanced ? 0.01 : 0.006;
+      this.frame.bloom.blurLevel = high ? 8 : 5;
+      this.frame.vignette.inner = 0.7;
+      this.frame.vignette.outer = 1;
+      this.frame.vignette.curvature = 0.6;
+      this.frame.vignette.intensity = high || autoHigh ? 0.1 : 0.06;
+      this.frame.taa.enabled = high && !this.coarsePointer;
+      this.frame.taa.jitter = 0.7;
+    } else {
+      this.frame.grading.enabled = false;
+      this.frame.bloom.intensity = 0;
+      this.frame.vignette.intensity = 0;
+      this.frame.taa.enabled = false;
+    }
 
     this.app.scene.fog.type = low ? FOG_NONE : FOG_EXP;
-    this.app.scene.fog.density = this.coarsePointer
-      ? high
-        ? 0.005
-        : 0.006
-      : high || autoHigh
-        ? 0.004
-        : 0.0048;
-
+    this.app.scene.fog.density = this.coarsePointer || runtimeReduced ? 0.0035 : high ? 0.0038 : 0.0044;
     this.frame.update();
+  }
+
+  setRuntimeReduction(reduced: boolean): void {
+    if (this.runtimeReduced === reduced) return;
+    this.applyQuality(this.currentPreset, reduced);
   }
 
   destroy(): void {
