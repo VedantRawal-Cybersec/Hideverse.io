@@ -336,3 +336,42 @@ h1 {
     opacity: 0.65;
   }
 }
+
+.debug-panel {
+  position: absolute;
+  z-index: 7;
+  right: max(18px, env(safe-area-inset-right));
+  top: max(78px, calc(env(safe-area-inset-top) + 62px));
+  display: none;
+  min-width: 230px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  background: rgba(8, 11, 16, 0.78);
+  backdrop-filter: blur(10px);
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+}
+
+.debug-panel.is-visible {
+  display: grid;
+  gap: 6px;
+}
+
+.debug-panel b {
+  margin-bottom: 3px;
+  color: #fff;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+
+@media (max-width: 780px) {
+  .debug-panel {
+    right: 12px;
+    top: 116px;
+    min-width: 190px;
+    max-width: calc(100% - 24px);
+  }
+}
