@@ -1,7 +1,18 @@
 import { readFile } from 'node:fs/promises';
 
-const manifest = JSON.parse(await readFile(new URL('../../assets/manifest.json', import.meta.url), 'utf8'));
-const required = ['id', 'name', 'category', 'source', 'sourceUrl', 'license', 'status', 'localFiles'];
+const manifest = JSON.parse(
+  await readFile(new URL('../../assets/manifest.json', import.meta.url), 'utf8'),
+);
+const required = [
+  'id',
+  'name',
+  'category',
+  'source',
+  'sourceUrl',
+  'license',
+  'status',
+  'localFiles',
+];
 const allowedStatus = new Set(['candidate', 'acquired', 'rejected']);
 const allowedLicenses = new Set(manifest.policy.allowedLicenses);
 
@@ -16,9 +27,15 @@ for (const asset of manifest.assets) {
   if (ids.has(asset.id)) errors.push(`${asset.id}: duplicate id`);
   ids.add(asset.id);
 
-  if (!allowedStatus.has(asset.status)) errors.push(`${asset.id}: invalid status ${asset.status}`);
-  if (!allowedLicenses.has(asset.license)) errors.push(`${asset.id}: unapproved license ${asset.license}`);
-  if (!String(asset.sourceUrl).startsWith('https://')) errors.push(`${asset.id}: sourceUrl must use HTTPS`);
+  if (!allowedStatus.has(asset.status)) {
+    errors.push(`${asset.id}: invalid status ${asset.status}`);
+  }
+  if (!allowedLicenses.has(asset.license)) {
+    errors.push(`${asset.id}: unapproved license ${asset.license}`);
+  }
+  if (!String(asset.sourceUrl).startsWith('https://')) {
+    errors.push(`${asset.id}: sourceUrl must use HTTPS`);
+  }
 
   if (asset.sourceRepo && manifest.policy.requirePinnedGitHubCommit) {
     if (!/^[0-9a-f]{40}$/.test(asset.sourceCommit ?? '')) {
@@ -45,4 +62,6 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log(`[assets:manifest] PASS — ${manifest.assets.length} assets, ${ids.size} unique IDs.`);
+console.log(
+  `[assets:manifest] PASS — ${manifest.assets.length} assets, ${ids.size} unique IDs.`,
+);
