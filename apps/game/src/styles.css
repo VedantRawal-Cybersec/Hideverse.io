@@ -428,6 +428,19 @@ h1 {
   background: rgba(8, 28, 17, 0.78);
 }
 
+.mode-panel.is-lost {
+  border-color: rgba(255, 105, 105, 0.52);
+  background: rgba(40, 8, 12, 0.82);
+}
+
+.mode-panel.is-lost #mode-outcome {
+  color: #ff9a9a;
+}
+
+.mode-panel.is-complete #mode-outcome {
+  color: #aef5bf;
+}
+
 .panel-kicker {
   display: block;
   margin-bottom: 5px;

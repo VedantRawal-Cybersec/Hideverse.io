@@ -15,9 +15,11 @@ type PeerState = {
 type RemotePeer = {
   entity: Entity;
   state: PeerState;
+  targetPosition: Triplet;
+  targetYaw: number;
 };
 
-type Transport = 'broadcast' | 'http';
+type Transport = 'broadcast' | 'http-stream';
 
 function safePlayerId(): string {
   const key = 'hideverse-player-id';
@@ -50,6 +52,7 @@ export class MultiplayerClient {
   private room = sanitizeRoom(new URLSearchParams(window.location.search).get('room'));
   private transport: Transport = 'broadcast';
   private channel: BroadcastChannel | null = null;
+  private eventSource: EventSource | null = null;
   private apiBase: string | null = null;
   private statusText = 'LOCAL ROOM';
   private readonly peers = new Map<string, RemotePeer>();
@@ -57,6 +60,7 @@ export class MultiplayerClient {
   private nextPollAt = 0;
   private lastState: PeerState | null = null;
   private disposed = false;
+  private reconnecting = false;
   private readonly material = peerMaterial();
 
   constructor(
@@ -109,12 +113,14 @@ export class MultiplayerClient {
       this.sendState(this.lastState);
     }
 
-    if (this.transport === 'http' && now >= this.nextPollAt) {
-      this.nextPollAt = now + 350;
+    if (this.transport === 'http-stream' && now >= this.nextPollAt) {
+      this.nextPollAt = now + 2000;
       void this.pollPeers();
     }
 
-    const staleBefore = Date.now() - 5000;
+    this.animatePeers();
+
+    const staleBefore = Date.now() - 7000;
     for (const [id, peer] of this.peers) {
       if (peer.state.updatedAt < staleBefore) {
         peer.entity.destroy();
@@ -126,6 +132,21 @@ export class MultiplayerClient {
   dispose(): void {
     this.disposed = true;
     this.channel?.close();
+    this.eventSource?.close();
+
+    if (this.apiBase) {
+      void fetch(`${this.apiBase}/api/multiplayer/leave`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          room: this.room,
+          map: this.mapId,
+          playerId: this.playerId,
+        }),
+        keepalive: true,
+      }).catch(() => undefined);
+    }
+
     for (const peer of this.peers.values()) {
       peer.entity.destroy();
     }
@@ -133,6 +154,8 @@ export class MultiplayerClient {
   }
 
   private async connectHttp(base: string): Promise<void> {
+    if (this.disposed || this.reconnecting) return;
+    this.reconnecting = true;
     this.statusText = 'CONNECTING';
     const normalized = base.replace(/\/$/, '');
 
@@ -151,19 +174,81 @@ export class MultiplayerClient {
       const payload = (await response.json()) as { room?: string };
       if (payload.room) this.room = sanitizeRoom(payload.room);
 
-      this.transport = 'http';
+      this.transport = 'http-stream';
       this.apiBase = normalized;
-      this.statusText = 'ONLINE ROOM';
+      this.statusText = 'ONLINE STREAM';
       localStorage.setItem('hideverse-last-room', this.room);
+      this.startEventStream();
+      await this.pollPeers();
     } catch (error) {
-      console.warn('[Hideverse multiplayer] HTTP room unavailable, using local room.', error);
+      console.warn('[Hideverse multiplayer] online room unavailable, using local room.', error);
       this.startBroadcast();
+    } finally {
+      this.reconnecting = false;
     }
+  }
+
+  private startEventStream(): void {
+    if (!this.apiBase || !('EventSource' in window)) {
+      this.statusText = 'ONLINE POLLING';
+      return;
+    }
+
+    this.eventSource?.close();
+    const query = new URLSearchParams({
+      room: this.room,
+      map: this.mapId,
+      playerId: this.playerId,
+    });
+    const source = new EventSource(`${this.apiBase}/api/multiplayer/events?${query.toString()}`);
+    this.eventSource = source;
+
+    source.addEventListener('open', () => {
+      this.statusText = 'ONLINE STREAM';
+    });
+
+    source.addEventListener('snapshot', (event) => {
+      try {
+        const payload = JSON.parse((event as MessageEvent<string>).data) as {
+          peers?: PeerState[];
+        };
+        for (const peer of payload.peers ?? []) this.applyPeerState(peer);
+      } catch (error) {
+        console.warn('[Hideverse multiplayer] invalid snapshot event.', error);
+      }
+    });
+
+    source.addEventListener('state', (event) => {
+      try {
+        const state = JSON.parse((event as MessageEvent<string>).data) as PeerState;
+        this.applyPeerState(state);
+      } catch (error) {
+        console.warn('[Hideverse multiplayer] invalid state event.', error);
+      }
+    });
+
+    source.addEventListener('leave', (event) => {
+      try {
+        const payload = JSON.parse((event as MessageEvent<string>).data) as { playerId?: string };
+        if (!payload.playerId) return;
+        const peer = this.peers.get(payload.playerId);
+        peer?.entity.destroy();
+        this.peers.delete(payload.playerId);
+      } catch (error) {
+        console.warn('[Hideverse multiplayer] invalid leave event.', error);
+      }
+    });
+
+    source.addEventListener('error', () => {
+      if (!this.disposed) this.statusText = 'RECONNECTING';
+    });
   }
 
   private startBroadcast(): void {
     this.transport = 'broadcast';
     this.apiBase = null;
+    this.eventSource?.close();
+    this.eventSource = null;
     this.statusText = 'LOCAL ROOM';
 
     if (!('BroadcastChannel' in window)) {
@@ -192,9 +277,19 @@ export class MultiplayerClient {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(state),
       keepalive: true,
-    }).catch(() => {
-      this.statusText = 'RECONNECTING';
-    });
+    })
+      .then((response) => {
+        if (response.status === 403 && this.apiBase) {
+          this.statusText = 'RECONNECTING';
+          void this.connectHttp(this.apiBase);
+          return;
+        }
+        if (!response.ok) throw new Error(`state HTTP ${response.status}`);
+      })
+      .catch((error) => {
+        console.warn('[Hideverse multiplayer] state update failed.', error);
+        this.statusText = 'RECONNECTING';
+      });
   }
 
   private async pollPeers(): Promise<void> {
@@ -212,13 +307,31 @@ export class MultiplayerClient {
       if (!response.ok) throw new Error(`room HTTP ${response.status}`);
 
       const payload = (await response.json()) as { peers?: PeerState[] };
-      for (const peer of payload.peers ?? []) {
-        this.applyPeerState(peer);
+      for (const peer of payload.peers ?? []) this.applyPeerState(peer);
+      if (this.eventSource?.readyState === EventSource.OPEN) {
+        this.statusText = 'ONLINE STREAM';
+      } else {
+        this.statusText = 'ONLINE POLLING';
       }
-      this.statusText = 'ONLINE ROOM';
     } catch (error) {
-      console.warn('[Hideverse multiplayer] room poll failed.', error);
+      console.warn('[Hideverse multiplayer] room sync failed.', error);
       this.statusText = 'RECONNECTING';
+    }
+  }
+
+  private animatePeers(): void {
+    for (const peer of this.peers.values()) {
+      const current = peer.entity.getPosition();
+      const smoothing = 0.32;
+      peer.entity.setPosition(
+        current.x + (peer.targetPosition[0] - current.x) * smoothing,
+        current.y + (peer.targetPosition[1] - current.y) * smoothing,
+        current.z + (peer.targetPosition[2] - current.z) * smoothing,
+      );
+      const currentYaw = peer.entity.getEulerAngles().y;
+      let deltaYaw = ((peer.targetYaw - currentYaw + 540) % 360) - 180;
+      if (!Number.isFinite(deltaYaw)) deltaYaw = 0;
+      peer.entity.setEulerAngles(0, currentYaw + deltaYaw * smoothing, 0);
     }
   }
 
@@ -230,14 +343,20 @@ export class MultiplayerClient {
       const entity = new Entity(`remote-${state.playerId}`);
       entity.addComponent('render', { type: 'capsule' });
       entity.setLocalScale(0.72, 1, 0.72);
+      entity.setPosition(state.position[0], state.position[1], state.position[2]);
       if (entity.render) entity.render.material = this.material;
       this.app.root.addChild(entity);
-      peer = { entity, state };
+      peer = {
+        entity,
+        state,
+        targetPosition: [...state.position],
+        targetYaw: state.yaw,
+      };
       this.peers.set(state.playerId, peer);
     }
 
     peer.state = state;
-    peer.entity.setPosition(state.position[0], state.position[1], state.position[2]);
-    peer.entity.setEulerAngles(0, state.yaw, 0);
+    peer.targetPosition = [...state.position];
+    peer.targetYaw = state.yaw;
   }
 }

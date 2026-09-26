@@ -7,6 +7,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.join(here, 'dist');
 const port = Number.parseInt(process.env.PORT ?? '4173', 10);
 const rooms = new Map();
+const streams = new Map();
 
 const mime = new Map([
   ['.html', 'text/html; charset=utf-8'],
@@ -81,11 +82,46 @@ function getRoom(map, room) {
   return current;
 }
 
+function streamSet(map, room) {
+  const key = roomKey(map, room);
+  let current = streams.get(key);
+  if (!current) {
+    current = new Set();
+    streams.set(key, current);
+  }
+  return current;
+}
+
+function streamClientCount() {
+  let count = 0;
+  for (const clients of streams.values()) count += clients.size;
+  return count;
+}
+
+function writeEvent(res, event, payload) {
+  res.write(`event: ${event}\n`);
+  res.write(`data: ${JSON.stringify(payload)}\n\n`);
+}
+
+function broadcastRoom(map, room, event, payload) {
+  const clients = streams.get(roomKey(map, room));
+  if (!clients) return;
+  for (const client of clients) {
+    writeEvent(client.res, event, payload);
+  }
+}
+
 function pruneRoom(room) {
   const staleBefore = Date.now() - 30_000;
+  let changed = false;
   for (const [playerId, state] of room.players) {
-    if (state.serverUpdatedAt < staleBefore) room.players.delete(playerId);
+    if (state.serverUpdatedAt < staleBefore) {
+      room.players.delete(playerId);
+      changed = true;
+      broadcastRoom(room.map, room.room, 'leave', { playerId });
+    }
   }
+  return changed;
 }
 
 function resolveMatchRoom(map) {
@@ -114,6 +150,11 @@ function stateDistance(a, b) {
   );
 }
 
+function publicPlayerState(state) {
+  const { serverUpdatedAt, initialized, ...publicState } = state;
+  return { ...publicState, updatedAt: serverUpdatedAt };
+}
+
 async function handleMultiplayer(req, res, url) {
   if (req.method === 'OPTIONS') {
     res.writeHead(204, apiHeaders());
@@ -122,7 +163,13 @@ async function handleMultiplayer(req, res, url) {
   }
 
   if (req.method === 'GET' && url.pathname === '/api/multiplayer/health') {
-    sendJson(res, 200, { ok: true, rooms: rooms.size, maxRoomSize: 8 });
+    sendJson(res, 200, {
+      ok: true,
+      rooms: rooms.size,
+      streamClients: streamClientCount(),
+      maxRoomSize: 8,
+      transport: 'http+sse',
+    });
     return true;
   }
 
@@ -154,6 +201,12 @@ async function handleMultiplayer(req, res, url) {
       motion: 'idle',
       serverUpdatedAt: now,
       updatedAt: now,
+      initialized: false,
+    });
+
+    broadcastRoom(map, roomCode, 'presence', {
+      room: roomCode,
+      playerCount: room.players.size,
     });
 
     sendJson(res, 200, {
@@ -162,6 +215,7 @@ async function handleMultiplayer(req, res, url) {
       playerId,
       peers: room.players.size - 1,
       maxPlayers: 8,
+      transport: 'http+sse',
     });
     return true;
   }
@@ -197,16 +251,77 @@ async function handleMultiplayer(req, res, url) {
         : 'idle',
       serverUpdatedAt: now,
       updatedAt: now,
+      initialized: true,
     };
 
     const maxTravel = 4 + elapsed * 12;
-    if (stateDistance(previous, requested) > maxTravel) {
+    if (previous.initialized && stateDistance(previous, requested) > maxTravel) {
       sendJson(res, 422, { error: 'movement rejected', reason: 'speed envelope exceeded' });
       return true;
     }
 
     room.players.set(playerId, requested);
+    broadcastRoom(map, roomCode, 'state', publicPlayerState(requested));
     sendJson(res, 200, { ok: true, serverUpdatedAt: now });
+    return true;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/multiplayer/leave') {
+    const body = await readJson(req);
+    const map = sanitizeToken(body.map, 'RAVENWOOD').toLowerCase();
+    const roomCode = sanitizeToken(body.room, 'LOCAL');
+    const playerId = String(body.playerId ?? '').slice(0, 80);
+    const room = getRoom(map, roomCode);
+    const removed = playerId ? room.players.delete(playerId) : false;
+    if (removed) {
+      broadcastRoom(map, roomCode, 'leave', { playerId });
+      broadcastRoom(map, roomCode, 'presence', {
+        room: roomCode,
+        playerCount: room.players.size,
+      });
+    }
+    sendJson(res, 200, { ok: true, removed });
+    return true;
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/multiplayer/events') {
+    const map = sanitizeToken(url.searchParams.get('map'), 'RAVENWOOD').toLowerCase();
+    const roomCode = sanitizeToken(url.searchParams.get('room'), 'LOCAL');
+    const playerId = String(url.searchParams.get('playerId') ?? '').slice(0, 80);
+    const room = getRoom(map, roomCode);
+    pruneRoom(room);
+
+    res.writeHead(200, {
+      'content-type': 'text/event-stream; charset=utf-8',
+      'cache-control': 'no-cache, no-transform',
+      connection: 'keep-alive',
+      'x-accel-buffering': 'no',
+      'access-control-allow-origin': '*',
+    });
+    res.write(': connected\n\n');
+
+    const clients = streamSet(map, roomCode);
+    const client = { playerId, res };
+    clients.add(client);
+
+    writeEvent(res, 'snapshot', {
+      room: roomCode,
+      map,
+      peers: [...room.players.values()]
+        .filter((state) => state.playerId !== playerId)
+        .map(publicPlayerState),
+      playerCount: room.players.size,
+    });
+
+    const heartbeat = setInterval(() => {
+      res.write(': heartbeat\n\n');
+    }, 15_000);
+
+    req.on('close', () => {
+      clearInterval(heartbeat);
+      clients.delete(client);
+      if (clients.size === 0) streams.delete(roomKey(map, roomCode));
+    });
     return true;
   }
 
@@ -219,10 +334,7 @@ async function handleMultiplayer(req, res, url) {
 
     const peers = [...room.players.values()]
       .filter((state) => state.playerId !== playerId)
-      .map(({ serverUpdatedAt, ...state }) => ({
-        ...state,
-        updatedAt: serverUpdatedAt,
-      }));
+      .map(publicPlayerState);
 
     sendJson(res, 200, {
       room: roomCode,
