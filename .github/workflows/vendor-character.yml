@@ -1,0 +1,46 @@
+name: Temporary Vendor Rigged Character
+
+on:
+  push:
+    branches:
+      - release/rigged-character-polish
+
+permissions:
+  contents: write
+
+jobs:
+  vendor:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: release/rigged-character-polish
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.23.2
+
+      - run: npm install --no-audit --no-fund
+
+      - name: Download CC0 character
+        run: |
+          mkdir -p assets/runtime/characters/kaykit
+          curl -L --fail --retry 3             https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/main/addons/kaykit_character_pack_adventures/Characters/gltf/Rogue_Hooded.glb             -o assets/runtime/characters/kaykit/Rogue_Hooded.glb
+          curl -L --fail --retry 3             https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/main/addons/kaykit_character_pack_adventures/LICENSE.txt             -o assets/runtime/characters/kaykit/LICENSE.txt
+
+      - name: Inspect character
+        run: |
+          npx gltf-transform inspect assets/runtime/characters/kaykit/Rogue_Hooded.glb || true
+          ls -lh assets/runtime/characters/kaykit/
+
+      - name: Commit vendored asset
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/runtime/characters/kaykit/
+          if ! git diff --cached --quiet; then
+            git commit -m "Vendor CC0 KayKit rigged character"
+            git push
+          fi
