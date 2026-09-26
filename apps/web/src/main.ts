@@ -18,7 +18,7 @@ type AssetSummary = {
 };
 
 const siteBase = import.meta.env.BASE_URL;
-const gameHref = `${siteBase}game/`;
+const gameHref = `${siteBase}game/index.html`;
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Hideverse website root is missing.');
@@ -57,7 +57,7 @@ app.innerHTML = `
           <div><span>ENGINE</span><strong>PlayCanvas</strong></div>
           <div><span>PHYSICS</span><strong>Rapier 3D</strong></div>
           <div><span>AI BASE</span><strong>Yuka</strong></div>
-          <div><span>DEPLOY</span><strong>GitHub Pages</strong></div>
+          <div><span>DEPLOY</span><strong>Static CDN</strong></div>
         </div>
         <p>Every verified change merged to <code>main</code> is intended to become visible here.</p>
       </div>
