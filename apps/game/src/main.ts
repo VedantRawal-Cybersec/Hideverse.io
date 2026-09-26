@@ -61,7 +61,12 @@ const query = new URLSearchParams(window.location.search);
 const debugEnabled = query.get('debug') === '1';
 
 function normalizeRoomCode(value: string): string {
-  return value.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 16) || 'LOCAL';
+  return (
+    value
+      .toUpperCase()
+      .replace(/[^A-Z0-9-]/g, '')
+      .slice(0, 16) || 'LOCAL'
+  );
 }
 
 function goToRoom(roomCode: string): void {
@@ -92,10 +97,7 @@ roomCodeInput.addEventListener('keydown', (event) => {
 copyInviteButton.addEventListener('click', async () => {
   const invite = new URL(window.location.href);
   invite.searchParams.set('map', map.id);
-  invite.searchParams.set(
-    'room',
-    normalizeRoomCode(roomValue.textContent ?? roomCodeInput.value),
-  );
+  invite.searchParams.set('room', normalizeRoomCode(roomValue.textContent ?? roomCodeInput.value));
   try {
     await navigator.clipboard.writeText(invite.toString());
     copyInviteButton.textContent = 'COPIED';
@@ -104,9 +106,7 @@ copyInviteButton.addEventListener('click', async () => {
     }, 1400);
   } catch (error) {
     console.warn('[Hideverse] invite copy unavailable', error);
-    roomCodeInput.value = normalizeRoomCode(
-      roomValue.textContent ?? roomCodeInput.value,
-    );
+    roomCodeInput.value = normalizeRoomCode(roomValue.textContent ?? roomCodeInput.value);
     roomCodeInput.select();
   }
 });
