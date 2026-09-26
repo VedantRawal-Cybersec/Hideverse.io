@@ -1,9 +1,14 @@
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Application, Color, Entity, FILLMODE_FILL_WINDOW, RESOLUTION_AUTO } from 'playcanvas';
+import { AudioFeedback } from './core/audio-feedback';
 import { CharacterSystem } from './core/character-system';
 import { InputController } from './core/input-controller';
 import { ModeEngine } from './core/mode-engine';
 import { MultiplayerClient } from './core/multiplayer-client';
+import {
+  PerformanceManager,
+  type QualityPreset,
+} from './core/performance-manager';
 import { FirstPersonController } from './core/player-controller';
 import {
   hideverseMaps,
@@ -58,6 +63,13 @@ const roomCodeInput = must<HTMLInputElement>('#room-code-input');
 const joinRoomButton = must<HTMLButtonElement>('#join-room');
 const quickMatchButton = must<HTMLButtonElement>('#quick-match');
 const copyInviteButton = must<HTMLButtonElement>('#copy-invite');
+const qualitySelect = must<HTMLSelectElement>('#quality-select');
+const sensitivitySlider = must<HTMLInputElement>('#sensitivity-slider');
+const roundResult = must<HTMLElement>('#round-result');
+const roundResultKicker = must<HTMLElement>('#round-result-kicker');
+const roundResultTitle = must<HTMLElement>('#round-result-title');
+const roundResultCopy = must<HTMLParagraphElement>('#round-result-copy');
+const restartRoundButton = must<HTMLButtonElement>('#restart-round');
 
 const map = selectedMapFromLocation();
 const query = new URLSearchParams(window.location.search);
@@ -76,6 +88,17 @@ function goToRoom(roomCode: string): void {
   const next = new URL(window.location.href);
   next.searchParams.set('room', normalizeRoomCode(roomCode));
   window.location.assign(next.toString());
+}
+
+function setRoundResult(outcome: 'playing' | 'won' | 'lost', message: string): void {
+  const visible = outcome !== 'playing';
+  roundResult.classList.toggle('is-visible', visible);
+  roundResult.classList.toggle('is-lost', outcome === 'lost');
+
+  if (!visible) return;
+  roundResultKicker.textContent = outcome === 'won' ? 'ROUND COMPLETE' : 'ROUND FAILED';
+  roundResultTitle.textContent = outcome === 'won' ? 'MISSION COMPLETE' : 'MISSION FAILED';
+  roundResultCopy.textContent = message;
 }
 
 roomCodeInput.value = normalizeRoomCode(
@@ -154,11 +177,17 @@ async function boot(): Promise<void> {
   app.setCanvasResolution(RESOLUTION_AUTO);
   app.scene.ambientLight = color(map.lighting.ambient);
 
+  const performanceManager = new PerformanceManager(app, coarse);
+  qualitySelect.value = performanceManager.preset;
+  qualitySelect.addEventListener('change', () => {
+    performanceManager.setPreset(qualitySelect.value as QualityPreset);
+  });
+
   const camera = new Entity('Player Camera');
   camera.addComponent('camera', {
     clearColor: color(map.lighting.clear),
     nearClip: 0.08,
-    farClip: 260,
+    farClip: coarse ? 190 : 260,
     fov: coarse ? 76 : 72,
   });
   app.root.addChild(camera);
@@ -168,9 +197,9 @@ async function boot(): Promise<void> {
     type: 'directional',
     color: color(map.lighting.sun),
     intensity: map.lighting.sunIntensity,
-    castShadows: !coarse,
-    shadowResolution: coarse ? 1024 : 2048,
-    shadowDistance: map.lod.shadowDistance,
+    castShadows: performanceManager.shadowsEnabled,
+    shadowResolution: performanceManager.shadowResolution,
+    shadowDistance: coarse ? Math.min(55, map.lod.shadowDistance) : map.lod.shadowDistance,
   });
   sun.setEulerAngles(
     map.lighting.sunAngles[0],
@@ -196,6 +225,11 @@ async function boot(): Promise<void> {
   await RAPIER.init();
   const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
   const input = new InputController(canvas);
+  sensitivitySlider.value = input.sensitivity.toFixed(2);
+  sensitivitySlider.addEventListener('input', () => {
+    input.setLookSensitivity(Number.parseFloat(sensitivitySlider.value));
+  });
+
   const player = new FirstPersonController(world, camera, input, {
     x: map.spawn[0],
     y: map.spawn[1],
@@ -208,17 +242,36 @@ async function boot(): Promise<void> {
   const mode = new ModeEngine(map);
   const characters = new CharacterSystem(app, map);
   const multiplayer = new MultiplayerClient(app, map.id);
+  const audio = new AudioFeedback();
 
-  let fpsAccumulator = 0;
-  let fpsFrames = 0;
+  restartRoundButton.addEventListener('click', () => {
+    multiplayer.resetRound();
+    window.setTimeout(() => window.location.reload(), 120);
+  });
 
   const resize = (): void => {
     app.resizeCanvas();
   };
   window.addEventListener('resize', resize, { passive: true });
-  window.addEventListener('beforeunload', () => multiplayer.dispose(), { once: true });
+  window.addEventListener(
+    'beforeunload',
+    () => {
+      multiplayer.dispose();
+      input.dispose();
+    },
+    { once: true },
+  );
 
   app.on('update', (deltaSeconds: number) => {
+    if (multiplayer.consumeRoundReset()) {
+      mode.reset();
+      interactions.reset();
+      player.reset();
+      setRoundResult('playing', '');
+    }
+
+    mode.completeObjectives(multiplayer.consumeRemoteObjectives());
+
     player.update(deltaSeconds);
 
     const position = player.position;
@@ -229,21 +282,37 @@ async function boot(): Promise<void> {
 
     const interactPressed = input.consumeInteract();
     const interaction = interactions.update(position, interactPressed);
-    player.setMovementLocked(interaction.hidden);
+    if (interaction.handled && interactPressed) audio.cue('interact');
 
     const threat = characters.update(deltaSeconds, position, interaction.hidden);
     const modeState = mode.update(position, interactPressed && !interaction.handled, {
       deltaSeconds,
       hidden: interaction.hidden,
       threat,
+      roundElapsedSeconds: multiplayer.roundElapsedSeconds,
     });
+
+    if (modeState.completedObjectiveId) {
+      multiplayer.submitObjective(modeState.completedObjectiveId);
+    }
+
+    if (modeState.event === 'objective') audio.cue('objective');
+    if (modeState.event === 'won') audio.cue('win');
+    if (modeState.event === 'lost') audio.cue('lose');
+    if (threat.detected && threat.danger > 0.5) audio.cue('danger');
+
+    player.setMovementLocked(interaction.hidden || modeState.outcome !== 'playing');
+    setRoundResult(modeState.outcome, modeState.objective);
 
     const area = nearestAreaLabel(map, position);
     zoneValue.textContent = area.toUpperCase();
 
     const prompt = interaction.prompt ?? modeState.prompt;
     interactionPrompt.textContent = prompt ?? '';
-    interactionPrompt.classList.toggle('is-visible', Boolean(prompt));
+    interactionPrompt.classList.toggle(
+      'is-visible',
+      Boolean(prompt) && modeState.outcome === 'playing',
+    );
 
     hiddenState.textContent = interaction.hidden
       ? `HIDDEN · ${interaction.hiddenLabel?.toUpperCase() ?? 'COVER'}`
@@ -267,19 +336,14 @@ async function boot(): Promise<void> {
     roomCodeInput.value = multiplayer.roomCode;
     peersValue.textContent = multiplayer.peerCount.toString();
 
+    const performance = performanceManager.update(deltaSeconds);
+    fpsValue.textContent = performance.fps.toString();
+
     if (debugEnabled) {
       debugPosition.textContent = `POSITION ${position.x.toFixed(2)} · ${position.y.toFixed(2)} · ${position.z.toFixed(2)}`;
       debugZone.textContent = `AREA ${area.toUpperCase()}`;
       debugRole.textContent = `THREAT ${threat.role.toUpperCase()} · ${threat.distance.toFixed(1)}M`;
-      debugMeta.textContent = `MAP QA ${map.structures.length} ARCH · ${map.doors.length} DOORS · ${map.objectives.length} OBJECTIVES · ${map.navNodes.length} NAV · ${runtime.objectCount} RUNTIME`;
-    }
-
-    fpsAccumulator += deltaSeconds;
-    fpsFrames += 1;
-    if (fpsAccumulator >= 0.5) {
-      fpsValue.textContent = Math.round(fpsFrames / fpsAccumulator).toString();
-      fpsAccumulator = 0;
-      fpsFrames = 0;
+      debugMeta.textContent = `QA ${map.structures.length} ARCH · ${map.objectives.length} OBJ · ${map.navNodes.length} NAV · ${runtime.objectCount} RUNTIME · ${performance.quality.toUpperCase()} @ ${performance.pixelRatio.toFixed(2)}X`;
     }
   });
 
@@ -293,6 +357,7 @@ async function boot(): Promise<void> {
       danger: 0,
       label: 'CLEAR',
     },
+    roundElapsedSeconds: multiplayer.roundElapsedSeconds,
   });
   modeProgress.textContent = initialMode.progress;
   modeObjective.textContent = initialMode.objective;
@@ -300,7 +365,7 @@ async function boot(): Promise<void> {
   modeDanger.textContent = '0%';
   modeOutcome.textContent = 'CLEAR';
   setMapStatus(
-    `${map.name} ready · ${map.mode.name} · ${characters.count} active role actors · ${map.navNodes.length} nav nodes`,
+    `${map.name} ready · ${map.mode.name} · ${characters.count} active role actors · adaptive ${coarse ? 'mobile' : 'desktop'} profile`,
   );
   bootOverlay.classList.add('is-hidden');
 }
