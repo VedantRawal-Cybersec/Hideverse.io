@@ -13,6 +13,8 @@ const [
   playerAvatar,
   graphicsPipeline,
   surfaceTextures,
+  mapDetailPass,
+  ravenwoodRuntime,
   manifestText,
 ] = await Promise.all([
   readFile(path.join(root, 'src/maps/map-data.json'), 'utf8'),
@@ -25,6 +27,8 @@ const [
   readFile(path.join(root, 'src/core/player-avatar.ts'), 'utf8'),
   readFile(path.join(root, 'src/core/graphics-pipeline.ts'), 'utf8'),
   readFile(path.join(root, 'src/core/surface-textures.ts'), 'utf8'),
+  readFile(path.join(root, 'src/maps/map-detail-pass.ts'), 'utf8'),
+  readFile(path.join(root, 'src/maps/ravenwood/ravenwood.ts'), 'utf8'),
   readFile(path.resolve(root, '../../assets/manifest.json'), 'utf8'),
 ]);
 
@@ -150,6 +154,28 @@ for (const marker of [
   if (!surfaceTextures.includes(marker)) fail(`real surface runtime missing ${marker}`);
 }
 
+for (const marker of [
+  'nexus-store-glass',
+  'nexus-cinema-front',
+  'nexus-entry-header',
+  'hospital-entry-frame-top',
+  'hospital-ward-window',
+  'hospital-ceiling-light',
+  'loadPlacedAssets',
+]) {
+  if (!mapDetailPass.includes(marker)) fail(`top-map realism detail missing ${marker}`);
+}
+
+for (const marker of [
+  'ravenwood-porch-column',
+  'ravenwood-front-window',
+  'ravenwood-front-step',
+  'ravenwood-front-door-frame',
+  'ravenwood-porch-rail',
+]) {
+  if (!ravenwoodRuntime.includes(marker)) fail(`Ravenwood realism detail missing ${marker}`);
+}
+
 console.log(
-  `[release-qa] PASS — ${catalog.maps.length} maps, mobile budgets, adaptive rendering, touch controls, FPS/TPS physics, shared objectives, realtime room sync, multi-character rigged locomotion, HDR graphics and real CC0 tiled surfaces verified.`,
+  `[release-qa] PASS — ${catalog.maps.length} maps, mobile budgets, adaptive rendering, touch controls, FPS/TPS physics, shared objectives, realtime room sync, multi-character rigged locomotion, HDR graphics, real CC0 tiled surfaces and top-map architectural realism verified.`,
 );
