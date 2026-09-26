@@ -1,0 +1,57 @@
+name: Temporary Vendor Production Assets
+
+on:
+  push:
+    branches:
+      - integration/full-avatar-graphics-controller-pass
+
+permissions:
+  contents: write
+
+jobs:
+  vendor:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: integration/full-avatar-graphics-controller-pass
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download character, PBR and environment assets
+        run: |
+          set -euxo pipefail
+          mkdir -p assets/runtime/characters/kaykit
+          mkdir -p assets/runtime/characters/vrm
+          mkdir -p assets/runtime/materials/cc0
+          mkdir -p assets/runtime/environment/khronos
+
+          BASE=https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/main/addons/kaykit_character_pack_adventures/Characters/gltf
+          for MODEL in Barbarian Knight Mage Rogue; do
+            curl -L --fail --retry 3 "$BASE/$MODEL.glb" -o "assets/runtime/characters/kaykit/$MODEL.glb"
+          done
+
+          VRM_BASE=https://raw.githubusercontent.com/vrm-c/vrm-specification/821c11b250d8c70d5804ee13431e42bee56ea9c0/samples/Seed-san
+          curl -L --fail --retry 3 "$VRM_BASE/vrm/Seed-san.vrm" -o assets/runtime/characters/vrm/Seed-san.vrm
+          curl -L --fail --retry 3 "$VRM_BASE/README.md" -o assets/runtime/characters/vrm/Seed-san-LICENSE-README.md
+
+          TEX=https://raw.githubusercontent.com/Papyszoo/CC0-Public-Domain-Textures/main/packs/polyhaven-textures/textures
+          curl -L --fail --retry 3 "$TEX/anti_slip_concrete/anti_slip_concrete_albedo_preview.png" -o assets/runtime/materials/cc0/concrete.png
+          curl -L --fail --retry 3 "$TEX/american_walnut_veneer/american_walnut_veneer_albedo_preview.png" -o assets/runtime/materials/cc0/walnut.png
+          curl -L --fail --retry 3 "$TEX/anti_skid_tiles/anti_skid_tiles_albedo_preview.png" -o assets/runtime/materials/cc0/tiles.png
+          curl -L --fail --retry 3 https://raw.githubusercontent.com/Papyszoo/CC0-Public-Domain-Textures/main/LICENSE -o assets/runtime/materials/cc0/LICENSE.txt
+
+          curl -L --fail --retry 3 https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Environments/main/neutral.jpg -o assets/runtime/environment/khronos/neutral.jpg
+          curl -L --fail --retry 3 https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Environments/main/README.md -o assets/runtime/environment/khronos/README.md
+
+          ls -lh assets/runtime/characters/kaykit assets/runtime/characters/vrm assets/runtime/materials/cc0 assets/runtime/environment/khronos
+
+      - name: Commit vendored production assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/runtime/characters assets/runtime/materials/cc0 assets/runtime/environment/khronos
+          if ! git diff --cached --quiet; then
+            git commit -m "Vendor character PBR and environment assets"
+            git push
+          fi
