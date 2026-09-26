@@ -317,6 +317,11 @@ h1 {
     color: #bdf6ca;
   }
 
+  #mobile-pov {
+    border-color: rgba(116, 188, 255, 0.42);
+    color: #b9ddff;
+  }
+
   .interaction-prompt {
     top: auto;
     bottom: max(178px, calc(env(safe-area-inset-bottom) + 178px));
