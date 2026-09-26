@@ -99,6 +99,7 @@ export class MultiplayerClient {
   private readonly pendingObjectives = new Set<string>();
   private nextSendAt = 0;
   private nextPollAt = 0;
+  private readonly sendIntervalMs = matchMedia('(pointer: coarse)').matches ? 125 : 80;
   private lastState: PeerState | null = null;
   private disposed = false;
   private reconnecting = false;
@@ -141,7 +142,12 @@ export class MultiplayerClient {
     return Math.max(0, (Date.now() - this.roundStartedAtValue) / 1000);
   }
 
-  update(position: { x: number; y: number; z: number }, yaw: number, motion: MotionState): void {
+  update(
+    position: { x: number; y: number; z: number },
+    yaw: number,
+    motion: MotionState,
+    deltaSeconds: number,
+  ): void {
     if (this.disposed) return;
 
     const now = performance.now();
@@ -156,7 +162,7 @@ export class MultiplayerClient {
     };
 
     if (now >= this.nextSendAt) {
-      this.nextSendAt = now + 100;
+      this.nextSendAt = now + this.sendIntervalMs;
       this.sendState(this.lastState);
     }
 
@@ -165,7 +171,7 @@ export class MultiplayerClient {
       void this.pollPeers();
     }
 
-    this.animatePeers();
+    this.animatePeers(deltaSeconds);
 
     const staleBefore = Date.now() - 7000;
     for (const [id, peer] of this.peers) {
@@ -523,10 +529,10 @@ export class MultiplayerClient {
     this.pendingObjectives.add(objectiveId);
   }
 
-  private animatePeers(): void {
+  private animatePeers(deltaSeconds: number): void {
+    const smoothing = 1 - Math.exp(-12 * Math.min(Math.max(deltaSeconds, 0), 0.1));
     for (const peer of this.peers.values()) {
       const current = peer.entity.getPosition();
-      const smoothing = 0.32;
       peer.entity.setPosition(
         current.x + (peer.targetPosition[0] - current.x) * smoothing,
         current.y + (peer.targetPosition[1] - current.y) * smoothing,
