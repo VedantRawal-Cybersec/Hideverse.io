@@ -190,8 +190,8 @@ async function boot(): Promise<void> {
   camera.addComponent('camera', {
     clearColor: color(referenceScene.sky),
     nearClip: 0.08,
-    farClip: coarse ? 190 : 260,
-    fov: coarse ? 76 : 72,
+    farClip: coarse ? 175 : 230,
+    fov: coarse ? 78 : 82,
   });
   app.root.addChild(camera);
 
@@ -205,7 +205,9 @@ async function boot(): Promise<void> {
     intensity: referenceScene.sunIntensity,
     castShadows: performanceManager.shadowsEnabled,
     shadowResolution: performanceManager.shadowResolution,
-    shadowDistance: coarse ? Math.min(55, map.lod.shadowDistance) : map.lod.shadowDistance,
+    shadowDistance: coarse
+      ? Math.min(34, map.lod.shadowDistance)
+      : Math.min(62, map.lod.shadowDistance),
   });
   sun.setEulerAngles(
     referenceScene.sunAngles[0],
