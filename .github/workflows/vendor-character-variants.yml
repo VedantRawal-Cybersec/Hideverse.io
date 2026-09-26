@@ -1,0 +1,37 @@
+name: Temporary Vendor Character Variants
+
+on:
+  push:
+    branches:
+      - feature/full-character-graphics-controller-upgrade
+
+permissions:
+  contents: write
+
+jobs:
+  vendor:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: feature/full-character-graphics-controller-upgrade
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download pinned CC0 KayKit characters
+        run: |
+          mkdir -p assets/runtime/characters/kaykit
+          BASE="https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Characters/gltf"
+          for file in Barbarian.glb Knight.glb Mage.glb Rogue.glb; do
+            curl -L --fail --retry 3 "$BASE/$file" -o "assets/runtime/characters/kaykit/$file"
+          done
+
+      - name: Commit character variants
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/runtime/characters/kaykit/
+          if ! git diff --cached --quiet; then
+            git commit -m "Vendor CC0 rigged human character variants"
+            git push
+          fi
