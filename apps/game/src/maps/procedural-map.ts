@@ -1,5 +1,6 @@
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Application, Color, Entity, StandardMaterial } from 'playcanvas';
+import { loadContainer } from '../core/load-container';
 import type { DoorDefinition, MapBox, MapDefinition, Triplet } from './map-catalog';
 import { buildRavenwood } from './ravenwood/ravenwood';
 
@@ -20,6 +21,44 @@ type Palette = {
   prop: Triplet;
   accent: Triplet;
   ground: Triplet;
+};
+
+type DressingAsset = {
+  asset: string;
+  scale: number;
+};
+
+const dressingAssets: Record<string, DressingAsset[]> = {
+  nexus: [
+    { asset: 'ravenwood/exterior/kaykit-city/bench.gltf', scale: 1 },
+    { asset: 'ravenwood/furniture/kaykit/couch.gltf', scale: 0.95 },
+    { asset: 'ravenwood/furniture/kaykit/table_medium_long.gltf', scale: 0.9 },
+    { asset: 'ravenwood/furniture/kaykit/chair_A.gltf', scale: 0.95 },
+  ],
+  museum: [
+    { asset: 'ravenwood/architecture/kaykit-dungeon/wall_arched.gltf.glb', scale: 1 },
+    { asset: 'ravenwood/furniture/kaykit/shelf_B_large_decorated.gltf', scale: 0.9 },
+    { asset: 'ravenwood/architecture/kaykit-dungeon/barrel_large.gltf.glb', scale: 0.85 },
+    { asset: 'ravenwood/architecture/kaykit-dungeon/crates_stacked.gltf.glb', scale: 0.9 },
+  ],
+  hospital: [
+    { asset: 'ravenwood/furniture/kaykit/bed_double_A.gltf', scale: 0.82 },
+    { asset: 'ravenwood/furniture/kaykit/shelf_B_large_decorated.gltf', scale: 0.82 },
+    { asset: 'ravenwood/furniture/kaykit/table_medium_long.gltf', scale: 0.82 },
+    { asset: 'ravenwood/furniture/kaykit/chair_A.gltf', scale: 0.9 },
+  ],
+  hotel: [
+    { asset: 'ravenwood/furniture/kaykit/bed_double_A.gltf', scale: 0.9 },
+    { asset: 'ravenwood/furniture/kaykit/couch.gltf', scale: 0.95 },
+    { asset: 'ravenwood/furniture/kaykit/lamp_standing.gltf', scale: 0.92 },
+    { asset: 'ravenwood/furniture/kaykit/chair_A.gltf', scale: 0.95 },
+  ],
+  axiom: [
+    { asset: 'ravenwood/furniture/kaykit/shelf_B_large_decorated.gltf', scale: 0.85 },
+    { asset: 'ravenwood/architecture/kaykit-dungeon/crates_stacked.gltf.glb', scale: 0.8 },
+    { asset: 'ravenwood/furniture/kaykit/table_medium_long.gltf', scale: 0.85 },
+    { asset: 'ravenwood/architecture/kaykit-dungeon/wall_arched.gltf.glb', scale: 0.95 },
+  ],
 };
 
 const palettes: Palette[] = [
@@ -171,6 +210,47 @@ function createGround(
   createStaticCollider(world, ground);
 }
 
+async function loadProgressiveDressing(
+  app: Application,
+  map: MapDefinition,
+): Promise<void> {
+  const specs = dressingAssets[map.id] ?? [];
+  if (specs.length === 0 || map.navNodes.length === 0) return;
+
+  const coarse = matchMedia('(pointer: coarse)').matches;
+  const instanceLimit = coarse ? Math.min(3, specs.length) : Math.min(8, specs.length * 2);
+  const assets = new Map<string, ReturnType<typeof loadContainer>>();
+
+  const getAsset = (asset: string): ReturnType<typeof loadContainer> => {
+    const existing = assets.get(asset);
+    if (existing) return existing;
+    const loading = loadContainer(app, `${import.meta.env.BASE_URL}${asset}`);
+    assets.set(asset, loading);
+    return loading;
+  };
+
+  const tasks = Array.from({ length: instanceLimit }, async (_, index) => {
+    const spec = specs[index % specs.length]!;
+    const anchor = map.navNodes[(index * 2 + 1) % map.navNodes.length]!;
+    const asset = await getAsset(spec.asset);
+    const entity = asset.resource.instantiateRenderEntity({
+      castShadows: !coarse,
+      receiveShadows: true,
+    });
+    entity.name = `${map.id}-dressing-${index}`;
+    entity.setLocalScale(spec.scale, spec.scale, spec.scale);
+    entity.setPosition(
+      anchor.position[0] + (index % 2 === 0 ? 1.35 : -1.35),
+      anchor.position[1] - 0.05,
+      anchor.position[2] + ((index % 3) - 1) * 1.1,
+    );
+    entity.setEulerAngles(0, (index * 67) % 360, 0);
+    app.root.addChild(entity);
+  });
+
+  await Promise.allSettled(tasks);
+}
+
 async function buildProceduralMap(
   app: Application,
   world: RAPIER.World,
@@ -229,6 +309,7 @@ async function buildProceduralMap(
     `${map.name} ready · ${objectCount} visible runtime objects · ${map.navNodes.length} navigation nodes`,
   );
 
+  void loadProgressiveDressing(app, map);
   return { doors, objectCount };
 }
 
