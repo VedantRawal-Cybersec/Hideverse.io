@@ -1,5 +1,6 @@
 import { Application, Color, Entity, StandardMaterial } from 'playcanvas';
 import type { AnimTrack } from 'playcanvas';
+import { AStar, Graph, NavEdge, NavNode, Vector3 as YukaVector3 } from 'yuka';
 import type { ActorRole, MapDefinition, Triplet } from '../maps/map-catalog';
 import { loadContainer } from './load-container';
 
@@ -13,9 +14,10 @@ export type ThreatSnapshot = {
   label: string;
 };
 
-type GraphEdge = {
-  id: string;
-  cost: number;
+type NavigationRuntime = {
+  graph: Graph;
+  indexById: Map<string, number>;
+  idByIndex: Map<number, string>;
 };
 
 type ActorRuntime = {
@@ -52,6 +54,16 @@ const roleColors: Record<ActorRole, Triplet> = {
   mimic: [0.64, 0.35, 0.88],
   monster: [0.32, 0.92, 0.48],
   traitor: [0.95, 0.42, 0.68],
+};
+
+const roleModels: Record<ActorRole, string> = {
+  hider: 'Rogue.glb',
+  seeker: 'Rogue_Hooded.glb',
+  guard: 'Knight.glb',
+  civilian: 'Mage.glb',
+  mimic: 'Rogue.glb',
+  monster: 'Barbarian.glb',
+  traitor: 'Rogue_Hooded.glb',
 };
 
 function makeMaterial(color: Triplet): StandardMaterial {
@@ -129,9 +141,22 @@ function lineClear(map: MapDefinition, a: Triplet, b: Triplet): boolean {
   return true;
 }
 
-function buildNavigationGraph(map: MapDefinition): Map<string, GraphEdge[]> {
-  const graph = new Map<string, GraphEdge[]>();
-  for (const node of map.navNodes) graph.set(node.id, []);
+function buildNavigationGraph(map: MapDefinition): NavigationRuntime {
+  const graph = new Graph();
+  const indexById = new Map<string, number>();
+  const idByIndex = new Map<number, string>();
+
+  for (const [index, node] of map.navNodes.entries()) {
+    indexById.set(node.id, index);
+    idByIndex.set(index, node.id);
+    graph.addNode(
+      new NavNode(
+        index,
+        new YukaVector3(node.position[0], node.position[1], node.position[2]),
+        { id: node.id },
+      ),
+    );
+  }
 
   for (let aIndex = 0; aIndex < map.navNodes.length; aIndex += 1) {
     const a = map.navNodes[aIndex]!;
@@ -140,12 +165,11 @@ function buildNavigationGraph(map: MapDefinition): Map<string, GraphEdge[]> {
       const cost = distance(a.position, b.position);
       if (cost > 38 || Math.abs(a.position[1] - b.position[1]) > 4.2) continue;
       if (!lineClear(map, a.position, b.position)) continue;
-      graph.get(a.id)!.push({ id: b.id, cost });
-      graph.get(b.id)!.push({ id: a.id, cost });
+      graph.addEdge(new NavEdge(aIndex, bIndex, cost));
     }
   }
 
-  return graph;
+  return { graph, indexById, idByIndex };
 }
 
 function nearestNodeId(map: MapDefinition, point: Triplet): string | null {
@@ -163,54 +187,20 @@ function nearestNodeId(map: MapDefinition, point: Triplet): string | null {
   return bestId;
 }
 
-function shortestPath(graph: Map<string, GraphEdge[]>, start: string, goal: string): string[] {
-  if (start === goal) return [start];
+function shortestPath(
+  navigation: NavigationRuntime,
+  start: string,
+  goal: string,
+): string[] {
+  const source = navigation.indexById.get(start);
+  const target = navigation.indexById.get(goal);
+  if (source === undefined || target === undefined) return [];
+  if (source === target) return [start];
 
-  const distanceById = new Map<string, number>();
-  const previous = new Map<string, string>();
-  const unvisited = new Set(graph.keys());
-
-  for (const id of unvisited) distanceById.set(id, Number.POSITIVE_INFINITY);
-  distanceById.set(start, 0);
-
-  while (unvisited.size > 0) {
-    let current: string | null = null;
-    let currentDistance = Number.POSITIVE_INFINITY;
-
-    for (const id of unvisited) {
-      const candidate = distanceById.get(id) ?? Number.POSITIVE_INFINITY;
-      if (candidate < currentDistance) {
-        currentDistance = candidate;
-        current = id;
-      }
-    }
-
-    if (!current || currentDistance === Number.POSITIVE_INFINITY) break;
-    if (current === goal) break;
-    unvisited.delete(current);
-
-    for (const edge of graph.get(current) ?? []) {
-      if (!unvisited.has(edge.id)) continue;
-      const nextDistance = currentDistance + edge.cost;
-      if (nextDistance < (distanceById.get(edge.id) ?? Number.POSITIVE_INFINITY)) {
-        distanceById.set(edge.id, nextDistance);
-        previous.set(edge.id, current);
-      }
-    }
-  }
-
-  if (!previous.has(goal)) return [];
-
-  const result = [goal];
-  let cursor = goal;
-  while (cursor !== start) {
-    const previousId = previous.get(cursor);
-    if (!previousId) return [];
-    result.push(previousId);
-    cursor = previousId;
-  }
-  result.reverse();
-  return result;
+  const path = new AStar(navigation.graph, source, target).search().getPath();
+  return path
+    .map((index) => navigation.idByIndex.get(index))
+    .filter((id): id is string => Boolean(id));
 }
 
 function moveActor(
@@ -240,7 +230,7 @@ function moveActor(
 
 export class CharacterSystem {
   private readonly actors: ActorRuntime[] = [];
-  private readonly graph: Map<string, GraphEdge[]>;
+  private readonly graph: NavigationRuntime;
   private readonly navById: Map<string, Triplet>;
 
   constructor(
@@ -329,39 +319,45 @@ export class CharacterSystem {
 
   private async loadRiggedActors(app: Application): Promise<void> {
     try {
-      const asset = await loadContainer(
-        app,
-        `${import.meta.env.BASE_URL}characters/kaykit/Rogue_Hooded.glb`,
-      );
-      const resource = asset.resource as typeof asset.resource & {
-        animations: Array<{ resource: AnimTrack }>;
-      };
-      const tracks = new Map<string, AnimTrack>();
-      for (const animation of resource.animations) {
-        const track = animation.resource;
-        tracks.set(track.name, track);
-      }
+      const requiredModels = [...new Set(this.actors.map((actor) => roleModels[actor.role]))];
+      const assets = new Map<string, Awaited<ReturnType<typeof loadContainer>>>();
 
-      const idle = tracks.get('Idle');
-      const walking = tracks.get('Walking_A');
-      const running = tracks.get('Running_A');
-      if (!idle || !walking || !running) {
-        console.warn(
-          '[Hideverse characters] Rigged character is missing required locomotion clips.',
-        );
-        return;
-      }
+      await Promise.all(
+        requiredModels.map(async (filename) => {
+          const asset = await loadContainer(
+            app,
+            `${import.meta.env.BASE_URL}characters/kaykit/${filename}`,
+          );
+          assets.set(filename, asset);
+        }),
+      );
 
       for (const actor of this.actors) {
-        if (actor.role === 'monster') continue;
+        const filename = roleModels[actor.role];
+        const asset = assets.get(filename);
+        if (!asset) continue;
+
+        const resource = asset.resource as typeof asset.resource & {
+          animations: Array<{ resource: AnimTrack }>;
+        };
+        const tracks = new Map<string, AnimTrack>();
+        for (const animation of resource.animations) {
+          tracks.set(animation.resource.name, animation.resource);
+        }
+
+        const idle = tracks.get(actor.role === 'guard' ? 'Unarmed_Idle' : 'Idle') ?? tracks.get('Idle');
+        const walking = tracks.get('Walking_A');
+        const running = tracks.get('Running_A');
+        if (!idle || !walking || !running) continue;
 
         const rigged = asset.resource.instantiateRenderEntity({
           castShadows: true,
           receiveShadows: true,
         });
-        rigged.name = `rigged-${actor.id}`;
-        rigged.setLocalPosition(0, -1.2, 0);
-        rigged.setLocalScale(0.88, 0.88, 0.88);
+        rigged.name = `rigged-${actor.id}-${filename.replace('.glb', '')}`;
+        rigged.setLocalPosition(0, actor.role === 'monster' ? -1.36 : -1.2, 0);
+        const scale = actor.role === 'monster' ? 1.08 : 0.88;
+        rigged.setLocalScale(scale, scale, scale);
         rigged.setLocalEulerAngles(0, 180, 0);
         rigged.addComponent('anim', { activate: true, speed: 1 });
         if (!rigged.anim) continue;
@@ -370,6 +366,11 @@ export class CharacterSystem {
         rigged.anim.assignAnimation('idle', idle);
         rigged.anim.assignAnimation('walk', walking);
         rigged.anim.assignAnimation('run', running);
+        const interact = tracks.get('Interact');
+        const cheer = tracks.get('Cheer');
+        if (interact) rigged.anim.assignAnimation('interact', interact);
+        if (cheer) rigged.anim.assignAnimation('cheer', cheer);
+
         const baseLayer = rigged.anim.baseLayer;
         if (!baseLayer) {
           rigged.destroy();
@@ -379,8 +380,8 @@ export class CharacterSystem {
 
         const marker = new Entity(`role-marker-${actor.id}`);
         marker.addComponent('render', { type: 'cylinder' });
-        marker.setLocalScale(0.7, 0.035, 0.7);
-        marker.setLocalPosition(0, -1.17, 0);
+        marker.setLocalScale(actor.role === 'monster' ? 0.92 : 0.7, 0.035, actor.role === 'monster' ? 0.92 : 0.7);
+        marker.setLocalPosition(0, actor.role === 'monster' ? -1.34 : -1.17, 0);
         if (marker.render) marker.render.material = makeMaterial(roleColors[actor.role]);
 
         actor.root.addChild(rigged);
@@ -399,7 +400,7 @@ export class CharacterSystem {
       }
     } catch (error) {
       console.warn(
-        '[Hideverse characters] Rigged desktop character unavailable; using fallback.',
+        '[Hideverse characters] Rigged role variety unavailable; using procedural fallback.',
         error,
       );
     }

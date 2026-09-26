@@ -1,5 +1,6 @@
 import RAPIER from '@dimforge/rapier3d-compat';
-import { Application, Color, Entity, StandardMaterial } from 'playcanvas';
+import { ADDRESS_REPEAT, Application, Color, Entity, StandardMaterial } from 'playcanvas';
+import type { Texture } from 'playcanvas';
 import { loadContainer } from '../core/load-container';
 import type { DoorDefinition, MapBox, MapDefinition, Triplet } from './map-catalog';
 import { buildRavenwood } from './ravenwood/ravenwood';
@@ -100,13 +101,71 @@ const palettes: Palette[] = [
   },
 ];
 
-function material(color: Triplet): StandardMaterial {
+function material(color: Triplet, gloss = 0.35, metalness = 0.05): StandardMaterial {
   const result = new StandardMaterial();
   result.diffuse = new Color(color[0], color[1], color[2]);
-  result.metalness = 0.05;
-  result.gloss = 0.35;
+  result.useMetalness = true;
+  result.metalness = metalness;
+  result.gloss = gloss;
   result.update();
   return result;
+}
+
+function loadTexture(app: Application, path: string): Promise<Texture> {
+  return new Promise((resolve, reject) => {
+    app.assets.loadFromUrl(`${import.meta.env.BASE_URL}${path}`, 'texture', (error, asset) => {
+      if (error || !asset?.resource) {
+        reject(new Error(typeof error === 'string' ? error : `Unable to load ${path}`));
+        return;
+      }
+      resolve(asset.resource as Texture);
+    });
+  });
+}
+
+function applyTexture(
+  target: StandardMaterial,
+  texture: Texture,
+  tiling: number,
+  gloss: number,
+  metalness = 0.02,
+): void {
+  texture.addressU = ADDRESS_REPEAT;
+  texture.addressV = ADDRESS_REPEAT;
+  target.diffuseMap = texture;
+  target.diffuseMapTiling.set(tiling, tiling);
+  target.gloss = gloss;
+  target.metalness = metalness;
+  target.update();
+}
+
+async function applySurfaceTextures(
+  app: Application,
+  map: MapDefinition,
+  architecture: StandardMaterial,
+  prop: StandardMaterial,
+  ground: StandardMaterial,
+): Promise<void> {
+  try {
+    const [concrete, walnut, tiles] = await Promise.all([
+      loadTexture(app, 'materials/cc0/concrete.png'),
+      loadTexture(app, 'materials/cc0/walnut.png'),
+      loadTexture(app, 'materials/cc0/tiles.png'),
+    ]);
+
+    const architectureTexture =
+      map.id === 'nexus' || map.id === 'hospital' ? tiles : concrete;
+    const propTexture =
+      map.id === 'hotel' || map.id === 'museum' ? walnut : map.id === 'hospital' ? tiles : concrete;
+    const groundTexture =
+      map.id === 'hotel' ? walnut : map.id === 'nexus' || map.id === 'hospital' ? tiles : concrete;
+
+    applyTexture(architecture, architectureTexture, 3.5, map.id === 'hospital' ? 0.28 : 0.38);
+    applyTexture(prop, propTexture, 2.5, map.id === 'hotel' ? 0.48 : 0.34);
+    applyTexture(ground, groundTexture, 8, map.id === 'nexus' ? 0.52 : 0.3);
+  } catch (error) {
+    console.warn('[Hideverse materials] CC0 surface textures unavailable; retaining PBR colors.', error);
+  }
 }
 
 function createVisualBox(app: Application, item: MapBox, boxMaterial: StandardMaterial): Entity {
@@ -256,10 +315,10 @@ async function buildProceduralMap(
 ): Promise<MapRuntime> {
   const coarse = matchMedia('(pointer: coarse)').matches;
   const palette = palettes[Math.max(0, Math.min(palettes.length - 1, map.index - 1))]!;
-  const architectureMaterial = material(palette.architecture);
-  const propMaterial = material(palette.prop);
-  const accentMaterial = material(palette.accent);
-  const groundMaterial = material(palette.ground);
+  const architectureMaterial = material(palette.architecture, 0.36, 0.03);
+  const propMaterial = material(palette.prop, 0.42, 0.04);
+  const accentMaterial = material(palette.accent, 0.68, 0.18);
+  const groundMaterial = material(palette.ground, 0.3, 0.01);
   const budget = coarse ? map.lod.mobileObjectBudget : map.lod.desktopObjectBudget;
 
   onStatus(`Building ${map.name} architecture…`);
@@ -302,6 +361,7 @@ async function buildProceduralMap(
     `${map.name} ready · ${objectCount} visible runtime objects · ${map.navNodes.length} navigation nodes`,
   );
 
+  void applySurfaceTextures(app, map, architectureMaterial, propMaterial, groundMaterial);
   void loadProgressiveDressing(app, map);
   return { doors, objectCount };
 }
@@ -316,8 +376,13 @@ export async function buildSelectedMap(
 
   if (map.id === 'ravenwood') {
     await buildRavenwood(app, world, onStatus);
-    const doorMaterial = material(palette.accent);
+    const doorMaterial = material(palette.accent, 0.5, 0.08);
     const doors = map.doors.map((door) => createDoor(app, world, door, doorMaterial));
+    void loadTexture(app, 'materials/cc0/walnut.png')
+      .then((texture) => applyTexture(doorMaterial, texture, 2.2, 0.5))
+      .catch((error) => {
+        console.warn('[Hideverse materials] Ravenwood door texture unavailable.', error);
+      });
     return {
       doors,
       objectCount: map.structures.length + map.props.length + doors.length,

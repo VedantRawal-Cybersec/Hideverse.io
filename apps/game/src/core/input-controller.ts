@@ -16,6 +16,7 @@ export class InputController {
   private joystickZ = 0;
   private jumpQueued = false;
   private interactQueued = false;
+  private perspectiveQueued = false;
   private sprintTouch = false;
   private crouchTouch = false;
   private yawValue = 0;
@@ -44,6 +45,9 @@ export class InputController {
     });
     this.bindButton('mobile-interact', () => {
       this.interactQueued = true;
+    });
+    this.bindButton('mobile-pov', () => {
+      this.perspectiveQueued = true;
     });
     this.bindHoldButton('mobile-sprint', (active) => {
       this.sprintTouch = active;
@@ -77,10 +81,10 @@ export class InputController {
     let x = this.joystickX;
     let z = this.joystickZ;
 
-    if (this.keys.has('KeyA')) x -= 1;
-    if (this.keys.has('KeyD')) x += 1;
-    if (this.keys.has('KeyW')) z += 1;
-    if (this.keys.has('KeyS')) z -= 1;
+    if (this.keys.has('KeyA') || this.keys.has('ArrowLeft')) x -= 1;
+    if (this.keys.has('KeyD') || this.keys.has('ArrowRight')) x += 1;
+    if (this.keys.has('KeyW') || this.keys.has('ArrowUp')) z += 1;
+    if (this.keys.has('KeyS') || this.keys.has('ArrowDown')) z -= 1;
 
     const length = Math.hypot(x, z);
     if (length > 1) {
@@ -108,6 +112,12 @@ export class InputController {
     return queued;
   }
 
+  consumePerspectiveToggle(): boolean {
+    const queued = this.perspectiveQueued;
+    this.perspectiveQueued = false;
+    return queued;
+  }
+
   consumeReset(): boolean {
     if (!this.keys.has('KeyR')) return false;
     this.keys.delete('KeyR');
@@ -131,6 +141,9 @@ export class InputController {
     }
     if (event.code === 'KeyE' && !event.repeat) {
       this.interactQueued = true;
+    }
+    if (event.code === 'KeyV' && !event.repeat) {
+      this.perspectiveQueued = true;
     }
   };
 
