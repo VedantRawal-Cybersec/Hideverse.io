@@ -2,11 +2,7 @@ import { access, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const root = path.resolve(import.meta.dirname, '..');
-const required = [
-  'dist/index.html',
-  'dist/game/index.html',
-  'dist/data/asset-summary.json',
-];
+const required = ['dist/index.html', 'dist/game/index.html', 'dist/data/asset-summary.json'];
 
 for (const relative of required) {
   await access(path.join(root, relative));
