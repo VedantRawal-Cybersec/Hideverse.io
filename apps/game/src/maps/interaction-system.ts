@@ -29,6 +29,13 @@ export class MapInteractionSystem {
     private readonly doors: DoorRuntime[],
   ) {}
 
+  reset(): void {
+    this.hiddenSpotId = null;
+    for (const door of this.doors) {
+      if (door.open) door.toggle();
+    }
+  }
+
   update(position: WorldPoint, interactPressed: boolean): MapInteractionState {
     if (this.hiddenSpotId) {
       const hiddenSpot = this.map.hidingSpots.find((spot) => spot.id === this.hiddenSpotId) ?? null;
