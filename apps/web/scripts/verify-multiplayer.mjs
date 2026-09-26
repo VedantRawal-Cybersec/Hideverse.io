@@ -43,7 +43,11 @@ async function json(pathname, init) {
 
 try {
   const health = await waitForHealth();
-  if (health.transport !== 'http+sse' || health.maxRoomSize !== 8) {
+  if (
+    health.transport !== 'http+sse' ||
+    health.maxRoomSize !== 8 ||
+    health.sharedObjectives !== true
+  ) {
     throw new Error(`unexpected health payload: ${JSON.stringify(health)}`);
   }
 
@@ -54,6 +58,7 @@ try {
     body: JSON.stringify({ map: 'ravenwood', room: 'QA-ROOM', playerId: 'qa-player-1' }),
   });
   if (first.room !== 'QA-ROOM') throw new Error('room code was not preserved');
+  if (!Number.isFinite(first.roundStartedAt)) throw new Error('round start time was not supplied');
 
   await json('/api/multiplayer/join', {
     method: 'POST',
@@ -74,12 +79,28 @@ try {
     }),
   });
 
-  const room = await json('/api/multiplayer/room?map=ravenwood&room=QA-ROOM&playerId=qa-player-2');
+  let room = await json('/api/multiplayer/room?map=ravenwood&room=QA-ROOM&playerId=qa-player-2');
   if (room.playerCount !== 2 || room.peers?.length !== 1) {
     throw new Error(`unexpected room state: ${JSON.stringify(room)}`);
   }
   if (room.peers[0]?.position?.[2] !== 38) {
     throw new Error('authoritative first player state was not accepted');
+  }
+
+  await json('/api/multiplayer/objective', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      map: 'ravenwood',
+      room: 'QA-ROOM',
+      playerId: 'qa-player-1',
+      objectiveId: 'library-box',
+    }),
+  });
+
+  room = await json('/api/multiplayer/room?map=ravenwood&room=QA-ROOM&playerId=qa-player-2');
+  if (!room.objectives?.includes('library-box')) {
+    throw new Error(`shared objective missing: ${JSON.stringify(room)}`);
   }
 
   const streamController = new AbortController();
@@ -98,6 +119,22 @@ try {
     throw new Error(`SSE stream missing initial event: ${text}`);
   }
 
+  const previousRoundStartedAt = room.roundStartedAt;
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  const reset = await json('/api/multiplayer/reset', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ map: 'ravenwood', room: 'QA-ROOM', playerId: 'qa-player-2' }),
+  });
+  if (!Number.isFinite(reset.roundStartedAt) || reset.roundStartedAt < previousRoundStartedAt) {
+    throw new Error('round reset did not advance the server clock');
+  }
+
+  room = await json('/api/multiplayer/room?map=ravenwood&room=QA-ROOM&playerId=qa-player-2');
+  if (room.objectives?.length !== 0) {
+    throw new Error(`round reset did not clear objectives: ${JSON.stringify(room)}`);
+  }
+
   await json('/api/multiplayer/leave', {
     method: 'POST',
     headers,
@@ -105,7 +142,7 @@ try {
   });
 
   console.log(
-    '[multiplayer-qa] PASS — health, join, first state, room sync, SSE, and leave verified.',
+    '[multiplayer-qa] PASS — health, join, authoritative state, shared objectives, SSE, reset, and leave verified.',
   );
 } finally {
   server.kill('SIGTERM');
