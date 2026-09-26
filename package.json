@@ -17,7 +17,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "verify": "npm run verify --workspace @hideverse/game && npm run verify --workspace @hideverse/web",
     "format": "prettier --write .",
-    "format:check": "prettier --write . && git diff --exit-code",
+    "format:check": "prettier --check .",
     "assets:validate-manifest": "node tools/assets/validate-manifest.mjs",
     "assets:validate-gltf": "node tools/assets/validate-gltf.mjs",
     "assets:stats": "node tools/assets/asset-stats.mjs",
