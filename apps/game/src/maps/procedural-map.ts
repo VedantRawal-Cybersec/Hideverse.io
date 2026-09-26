@@ -6,7 +6,7 @@ import {
   createReferenceMaterial,
   mapWallTone,
 } from '../core/reference-art-direction';
-import type { DoorDefinition, MapBox, MapDefinition, Triplet } from './map-catalog';
+import type { DoorDefinition, MapBox, MapDefinition } from './map-catalog';
 import { buildRavenwood } from './ravenwood/ravenwood';
 
 export type DoorRuntime = {
