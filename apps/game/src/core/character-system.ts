@@ -1,5 +1,7 @@
 import { Application, Color, Entity, StandardMaterial } from 'playcanvas';
+import type { AnimTrack } from 'playcanvas';
 import type { ActorRole, MapDefinition, Triplet } from '../maps/map-catalog';
+import { loadContainer } from './load-container';
 
 export type MotionState = 'idle' | 'walk' | 'run' | 'sprint' | 'jump';
 
@@ -34,6 +36,9 @@ type ActorRuntime = {
     leftLeg: Entity;
     rightLeg: Entity;
   } | null;
+  rigged: Entity | null;
+  riggedState: 'idle' | 'walk' | 'run' | null;
+  roleMarker: Entity | null;
   chasePath: Triplet[];
   chasePathIndex: number;
   chaseRepathSeconds: number;
@@ -71,6 +76,12 @@ function stateForRole(role: ActorRole): MotionState {
   if (role === 'monster' || role === 'seeker') return 'run';
   if (role === 'hider') return 'sprint';
   return 'walk';
+}
+
+function animationStateForMotion(state: MotionState): 'idle' | 'walk' | 'run' {
+  if (state === 'idle') return 'idle';
+  if (state === 'walk') return 'walk';
+  return 'run';
 }
 
 function detectionRadius(role: ActorRole): number {
@@ -302,10 +313,95 @@ export class CharacterSystem {
         animationPhase: Math.random() * Math.PI * 2,
         alertSeconds: 0,
         limbs,
+        rigged: null,
+        riggedState: null,
+        roleMarker: null,
         chasePath: [],
         chasePathIndex: 0,
         chaseRepathSeconds: 0,
       });
+    }
+
+    if (!matchMedia('(pointer: coarse)').matches) {
+      void this.loadRiggedActors(app);
+    }
+  }
+
+  private async loadRiggedActors(app: Application): Promise<void> {
+    try {
+      const asset = await loadContainer(
+        app,
+        `${import.meta.env.BASE_URL}characters/kaykit/Rogue_Hooded.glb`,
+      );
+      const resource = asset.resource as typeof asset.resource & {
+        animations: Array<{ resource: AnimTrack }>;
+      };
+      const tracks = new Map<string, AnimTrack>();
+      for (const animation of resource.animations) {
+        const track = animation.resource;
+        tracks.set(track.name, track);
+      }
+
+      const idle = tracks.get('Idle');
+      const walking = tracks.get('Walking_A');
+      const running = tracks.get('Running_A');
+      if (!idle || !walking || !running) {
+        console.warn(
+          '[Hideverse characters] Rigged character is missing required locomotion clips.',
+        );
+        return;
+      }
+
+      for (const actor of this.actors) {
+        if (actor.role === 'monster') continue;
+
+        const rigged = asset.resource.instantiateRenderEntity({
+          castShadows: true,
+          receiveShadows: true,
+        });
+        rigged.name = `rigged-${actor.id}`;
+        rigged.setLocalPosition(0, -1.2, 0);
+        rigged.setLocalScale(0.88, 0.88, 0.88);
+        rigged.setLocalEulerAngles(0, 180, 0);
+        rigged.addComponent('anim', { activate: true, speed: 1 });
+        if (!rigged.anim) continue;
+
+        rigged.anim.rootBone = rigged;
+        rigged.anim.assignAnimation('idle', idle);
+        rigged.anim.assignAnimation('walk', walking);
+        rigged.anim.assignAnimation('run', running);
+        const baseLayer = rigged.anim.baseLayer;
+        if (!baseLayer) {
+          rigged.destroy();
+          continue;
+        }
+        baseLayer.transition('idle', 0);
+
+        const marker = new Entity(`role-marker-${actor.id}`);
+        marker.addComponent('render', { type: 'cylinder' });
+        marker.setLocalScale(0.7, 0.035, 0.7);
+        marker.setLocalPosition(0, -1.17, 0);
+        if (marker.render) marker.render.material = makeMaterial(roleColors[actor.role]);
+
+        actor.root.addChild(rigged);
+        actor.root.addChild(marker);
+        actor.rigged = rigged;
+        actor.riggedState = 'idle';
+        actor.roleMarker = marker;
+        actor.visual.enabled = false;
+        actor.head.enabled = false;
+        if (actor.limbs) {
+          actor.limbs.leftArm.enabled = false;
+          actor.limbs.rightArm.enabled = false;
+          actor.limbs.leftLeg.enabled = false;
+          actor.limbs.rightLeg.enabled = false;
+        }
+      }
+    } catch (error) {
+      console.warn(
+        '[Hideverse characters] Rigged desktop character unavailable; using fallback.',
+        error,
+      );
     }
   }
 
@@ -419,6 +515,16 @@ export class CharacterSystem {
         actor.limbs.rightArm.setLocalEulerAngles(-swing, 0, 0);
         actor.limbs.leftLeg.setLocalEulerAngles(-swing * 0.75, 0, 0);
         actor.limbs.rightLeg.setLocalEulerAngles(swing * 0.75, 0, 0);
+      }
+
+      if (actor.rigged?.anim) {
+        const nextState = animationStateForMotion(actor.state);
+        actor.rigged.anim.speed = actor.state === 'sprint' ? 1.25 : 1;
+        const baseLayer = actor.rigged.anim.baseLayer;
+        if (baseLayer && actor.riggedState !== nextState) {
+          baseLayer.transition(nextState, 0.16);
+          actor.riggedState = nextState;
+        }
       }
 
       if (radius > 0) {

@@ -468,6 +468,24 @@
         "assets/runtime/ravenwood/exterior/kaykit-city/citybits_texture.png"
       ],
       "notes": "Exterior lamp model; actual light component will be authored in Hideverse."
+    },
+    {
+      "id": "kaykit-character-rogue-hooded",
+      "name": "Rogue Hooded — shared rigged role character",
+      "category": "character",
+      "source": "KayKit Character Pack: Adventurers 1.0",
+      "sourceRepo": "KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0",
+      "sourceCommit": "672074b73ba276876a19e8816ecdc5241817ab47",
+      "sourcePath": "addons/kaykit_character_pack_adventures/Characters/gltf/Rogue_Hooded.glb",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/blob/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Characters/gltf/Rogue_Hooded.glb",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/characters/kaykit/Rogue_Hooded.glb",
+        "assets/runtime/characters/kaykit/LICENSE.txt"
+      ],
+      "notes": "CC0 low-poly rigged character with 76 embedded animation clips. Loaded lazily on non-coarse-pointer devices; mobile keeps the lightweight procedural role avatar.",
+      "maxRuntimeFileBytes": 4000000
     }
   ]
 }
