@@ -1,5 +1,12 @@
 import RAPIER from '@dimforge/rapier3d-compat';
-import { Application, Color, Entity, FILLMODE_FILL_WINDOW, RESOLUTION_AUTO } from 'playcanvas';
+import {
+  Application,
+  basisInitialize,
+  Color,
+  Entity,
+  FILLMODE_FILL_WINDOW,
+  RESOLUTION_AUTO,
+} from 'playcanvas';
 import { AudioFeedback } from './core/audio-feedback';
 import { CharacterSystem } from './core/character-system';
 import { GraphicsPipeline } from './core/graphics-pipeline';
@@ -177,6 +184,11 @@ function formatTimer(seconds: number): string {
 }
 
 async function boot(): Promise<void> {
+  basisInitialize({
+    glueUrl: `${import.meta.env.BASE_URL}wasm/basis/basis.wasm.js`,
+    wasmUrl: `${import.meta.env.BASE_URL}wasm/basis/basis.wasm.wasm`,
+    fallbackUrl: `${import.meta.env.BASE_URL}wasm/basis/basis.js`,
+  });
   const coarse = matchMedia('(pointer: coarse)').matches;
   const app = new Application(canvas);
   app.setCanvasFillMode(FILLMODE_FILL_WINDOW);
