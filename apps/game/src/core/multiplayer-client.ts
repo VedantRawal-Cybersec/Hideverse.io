@@ -21,6 +21,45 @@ type RemotePeer = {
 
 type Transport = 'broadcast' | 'http-stream';
 
+type BroadcastMessage =
+  | { type: 'state'; state: PeerState }
+  | {
+      type: 'objective';
+      map: string;
+      room: string;
+      playerId: string;
+      objectiveId: string;
+    }
+  | {
+      type: 'round-reset';
+      map: string;
+      room: string;
+      playerId: string;
+      roundStartedAt: number;
+    }
+  | {
+      type: 'sync-request';
+      map: string;
+      room: string;
+      playerId: string;
+    }
+  | {
+      type: 'sync-snapshot';
+      map: string;
+      room: string;
+      playerId: string;
+      to: string;
+      objectives: string[];
+      roundStartedAt: number;
+    };
+
+type RoomPayload = {
+  room?: string;
+  peers?: PeerState[];
+  objectives?: string[];
+  roundStartedAt?: number;
+};
+
 function safePlayerId(): string {
   const key = 'hideverse-player-id';
   const existing = localStorage.getItem(key);
@@ -56,11 +95,15 @@ export class MultiplayerClient {
   private apiBase: string | null = null;
   private statusText = 'LOCAL ROOM';
   private readonly peers = new Map<string, RemotePeer>();
+  private readonly sharedObjectives = new Set<string>();
+  private readonly pendingObjectives = new Set<string>();
   private nextSendAt = 0;
   private nextPollAt = 0;
   private lastState: PeerState | null = null;
   private disposed = false;
   private reconnecting = false;
+  private resetQueued = false;
+  private roundStartedAtValue = Date.now();
   private readonly material = peerMaterial();
 
   constructor(
@@ -92,6 +135,10 @@ export class MultiplayerClient {
 
   get roomCode(): string {
     return this.room;
+  }
+
+  get roundElapsedSeconds(): number {
+    return Math.max(0, (Date.now() - this.roundStartedAtValue) / 1000);
   }
 
   update(position: { x: number; y: number; z: number }, yaw: number, motion: MotionState): void {
@@ -129,6 +176,80 @@ export class MultiplayerClient {
     }
   }
 
+  consumeRemoteObjectives(): string[] {
+    const result = [...this.pendingObjectives];
+    this.pendingObjectives.clear();
+    return result;
+  }
+
+  consumeRoundReset(): boolean {
+    const queued = this.resetQueued;
+    this.resetQueued = false;
+    return queued;
+  }
+
+  submitObjective(objectiveId: string): void {
+    if (!objectiveId || this.sharedObjectives.has(objectiveId)) return;
+    this.sharedObjectives.add(objectiveId);
+
+    if (this.transport === 'broadcast') {
+      this.channel?.postMessage({
+        type: 'objective',
+        map: this.mapId,
+        room: this.room,
+        playerId: this.playerId,
+        objectiveId,
+      } satisfies BroadcastMessage);
+      return;
+    }
+
+    if (!this.apiBase) return;
+    void fetch(`${this.apiBase}/api/multiplayer/objective`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        map: this.mapId,
+        room: this.room,
+        playerId: this.playerId,
+        objectiveId,
+      }),
+      keepalive: true,
+    }).catch((error) => {
+      console.warn('[Hideverse multiplayer] objective sync failed.', error);
+    });
+  }
+
+  resetRound(): void {
+    this.sharedObjectives.clear();
+    this.pendingObjectives.clear();
+    this.roundStartedAtValue = Date.now();
+
+    if (this.transport === 'broadcast') {
+      this.channel?.postMessage({
+        type: 'round-reset',
+        map: this.mapId,
+        room: this.room,
+        playerId: this.playerId,
+        roundStartedAt: this.roundStartedAtValue,
+      } satisfies BroadcastMessage);
+      return;
+    }
+
+    if (!this.apiBase) return;
+    void fetch(`${this.apiBase}/api/multiplayer/reset`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        map: this.mapId,
+        room: this.room,
+        playerId: this.playerId,
+      }),
+      keepalive: true,
+    }).catch((error) => {
+      console.warn('[Hideverse multiplayer] round reset failed.', error);
+    });
+  }
+
   dispose(): void {
     this.disposed = true;
     this.channel?.close();
@@ -147,9 +268,7 @@ export class MultiplayerClient {
       }).catch(() => undefined);
     }
 
-    for (const peer of this.peers.values()) {
-      peer.entity.destroy();
-    }
+    for (const peer of this.peers.values()) peer.entity.destroy();
     this.peers.clear();
   }
 
@@ -171,8 +290,9 @@ export class MultiplayerClient {
       });
 
       if (!response.ok) throw new Error(`join HTTP ${response.status}`);
-      const payload = (await response.json()) as { room?: string };
+      const payload = (await response.json()) as RoomPayload;
       if (payload.room) this.room = sanitizeRoom(payload.room);
+      this.applyRoomMetadata(payload);
 
       this.transport = 'http-stream';
       this.apiBase = normalized;
@@ -209,10 +329,9 @@ export class MultiplayerClient {
 
     source.addEventListener('snapshot', (event) => {
       try {
-        const payload = JSON.parse((event as MessageEvent<string>).data) as {
-          peers?: PeerState[];
-        };
+        const payload = JSON.parse((event as MessageEvent<string>).data) as RoomPayload;
         for (const peer of payload.peers ?? []) this.applyPeerState(peer);
+        this.applyRoomMetadata(payload);
       } catch (error) {
         console.warn('[Hideverse multiplayer] invalid snapshot event.', error);
       }
@@ -224,6 +343,31 @@ export class MultiplayerClient {
         this.applyPeerState(state);
       } catch (error) {
         console.warn('[Hideverse multiplayer] invalid state event.', error);
+      }
+    });
+
+    source.addEventListener('objective', (event) => {
+      try {
+        const payload = JSON.parse((event as MessageEvent<string>).data) as {
+          objectiveId?: string;
+        };
+        if (payload.objectiveId) this.applyRemoteObjective(payload.objectiveId);
+      } catch (error) {
+        console.warn('[Hideverse multiplayer] invalid objective event.', error);
+      }
+    });
+
+    source.addEventListener('round-reset', (event) => {
+      try {
+        const payload = JSON.parse((event as MessageEvent<string>).data) as {
+          roundStartedAt?: number;
+        };
+        this.sharedObjectives.clear();
+        this.pendingObjectives.clear();
+        this.roundStartedAtValue = payload.roundStartedAt ?? Date.now();
+        this.resetQueued = true;
+      } catch (error) {
+        console.warn('[Hideverse multiplayer] invalid round reset event.', error);
       }
     });
 
@@ -258,16 +402,61 @@ export class MultiplayerClient {
 
     this.channel?.close();
     this.channel = new BroadcastChannel(`hideverse-${this.mapId}-${this.room}`);
-    this.channel.addEventListener('message', (event: MessageEvent<PeerState>) => {
-      const state = event.data;
-      if (!state || state.playerId === this.playerId || state.map !== this.mapId) return;
-      this.applyPeerState(state);
+    this.channel.addEventListener('message', (event: MessageEvent<BroadcastMessage>) => {
+      const message = event.data;
+      if (!message || message.map !== this.mapId || message.room !== this.room) return;
+
+      if (message.type === 'state') {
+        if (message.state.playerId !== this.playerId) this.applyPeerState(message.state);
+        return;
+      }
+
+      if (message.type === 'objective') {
+        if (message.playerId !== this.playerId) this.applyRemoteObjective(message.objectiveId);
+        return;
+      }
+
+      if (message.type === 'round-reset') {
+        if (message.playerId !== this.playerId) {
+          this.sharedObjectives.clear();
+          this.pendingObjectives.clear();
+          this.roundStartedAtValue = message.roundStartedAt;
+          this.resetQueued = true;
+        }
+        return;
+      }
+
+      if (message.type === 'sync-request') {
+        if (message.playerId === this.playerId) return;
+        this.channel?.postMessage({
+          type: 'sync-snapshot',
+          map: this.mapId,
+          room: this.room,
+          playerId: this.playerId,
+          to: message.playerId,
+          objectives: [...this.sharedObjectives],
+          roundStartedAt: this.roundStartedAtValue,
+        } satisfies BroadcastMessage);
+        return;
+      }
+
+      if (message.type === 'sync-snapshot' && message.to === this.playerId) {
+        for (const objectiveId of message.objectives) this.applyRemoteObjective(objectiveId);
+        this.roundStartedAtValue = Math.min(this.roundStartedAtValue, message.roundStartedAt);
+      }
     });
+
+    this.channel.postMessage({
+      type: 'sync-request',
+      map: this.mapId,
+      room: this.room,
+      playerId: this.playerId,
+    } satisfies BroadcastMessage);
   }
 
   private sendState(state: PeerState): void {
     if (this.transport === 'broadcast') {
-      this.channel?.postMessage(state);
+      this.channel?.postMessage({ type: 'state', state } satisfies BroadcastMessage);
       return;
     }
 
@@ -306,8 +495,10 @@ export class MultiplayerClient {
       });
       if (!response.ok) throw new Error(`room HTTP ${response.status}`);
 
-      const payload = (await response.json()) as { peers?: PeerState[] };
+      const payload = (await response.json()) as RoomPayload;
       for (const peer of payload.peers ?? []) this.applyPeerState(peer);
+      this.applyRoomMetadata(payload);
+
       if (this.eventSource?.readyState === EventSource.OPEN) {
         this.statusText = 'ONLINE STREAM';
       } else {
@@ -317,6 +508,19 @@ export class MultiplayerClient {
       console.warn('[Hideverse multiplayer] room sync failed.', error);
       this.statusText = 'RECONNECTING';
     }
+  }
+
+  private applyRoomMetadata(payload: RoomPayload): void {
+    if (payload.roundStartedAt && Number.isFinite(payload.roundStartedAt)) {
+      this.roundStartedAtValue = payload.roundStartedAt;
+    }
+    for (const objectiveId of payload.objectives ?? []) this.applyRemoteObjective(objectiveId);
+  }
+
+  private applyRemoteObjective(objectiveId: string): void {
+    if (!objectiveId || this.sharedObjectives.has(objectiveId)) return;
+    this.sharedObjectives.add(objectiveId);
+    this.pendingObjectives.add(objectiveId);
   }
 
   private animatePeers(): void {
