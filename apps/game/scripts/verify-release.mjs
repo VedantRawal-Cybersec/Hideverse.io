@@ -138,11 +138,12 @@ for (const id of [
 }
 
 for (const marker of [
-  'materials/reference/concrete.png',
-  'materials/reference/brick.png',
-  'materials/reference/asphalt.png',
-  'materials/reference/metal.png',
-  'materials/reference/wood.png',
+  'materials/reference/',
+  "'concrete'",
+  "'brick'",
+  "'asphalt'",
+  "'metal'",
+  "'wood'",
   'ADDRESS_REPEAT',
   'diffuseMapTiling',
 ]) {
