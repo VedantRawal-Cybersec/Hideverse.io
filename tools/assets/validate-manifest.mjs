@@ -62,6 +62,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log(
-  `[assets:manifest] PASS — ${manifest.assets.length} assets, ${ids.size} unique IDs.`,
-);
+console.log(`[assets:manifest] PASS — ${manifest.assets.length} assets, ${ids.size} unique IDs.`);
