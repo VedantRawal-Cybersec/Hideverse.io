@@ -1,6 +1,7 @@
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Application, Entity, StandardMaterial } from 'playcanvas';
 import { loadContainer } from '../core/load-container';
+import { applyRealSurfaceTextures } from '../core/surface-textures';
 import {
   colorFromTriplet,
   createReferenceMaterial,
@@ -58,6 +59,31 @@ const dressingAssets: Record<string, DressingAsset[]> = {
     { asset: 'ravenwood/nature/kenney/plant_bush.glb', scale: 0.9 },
   ],
 };
+
+function materialForProp(
+  id: string,
+  metal: StandardMaterial,
+  wood: StandardMaterial,
+  wallAlt: StandardMaterial,
+): StandardMaterial {
+  const name = id.toLowerCase();
+  if (/bench|desk|table|shelf|crate|cabinet|counter|box/.test(name)) return wood;
+  if (/barrier|column|sign|locker|pipe|rail|machine|vent/.test(name)) return metal;
+  return wallAlt;
+}
+
+function materialForStructure(
+  mapIndex: number,
+  id: string,
+  wall: StandardMaterial,
+  wallAlt: StandardMaterial,
+): StandardMaterial {
+  const name = id.toLowerCase();
+  if (mapIndex === 2 && /shop|store|facade|wing|wall/.test(name)) return wallAlt;
+  if (mapIndex === 3 && /gallery|vault|hall/.test(name)) return wallAlt;
+  if (mapIndex === 5 && /room|suite|lobby/.test(name)) return wallAlt;
+  return wall;
+}
 
 function createVisualBox(app: Application, item: MapBox, boxMaterial: StandardMaterial): Entity {
   const entity = new Entity(item.id);
@@ -320,6 +346,7 @@ async function buildProceduralMap(
   const wallAltMaterial = createReferenceMaterial('wall-alt');
   const trimMaterial = createReferenceMaterial('trim');
   const propMaterial = createReferenceMaterial('metal');
+  const woodMaterial = createReferenceMaterial('wood');
   const accentMaterial = createReferenceMaterial('accent');
   const groundMaterial = createReferenceMaterial('floor');
   const budget = coarse ? map.lod.mobileObjectBudget : map.lod.desktopObjectBudget;
@@ -333,7 +360,11 @@ async function buildProceduralMap(
   for (const structure of map.structures) {
     createStaticCollider(world, structure);
     if (objectCount < budget) {
-      createVisualBox(app, structure, architectureMaterial);
+      createVisualBox(
+        app,
+        structure,
+        materialForStructure(map.index, structure.id, architectureMaterial, wallAltMaterial),
+      );
       objectCount += 1;
       if (objectCount < budget) {
         objectCount += createReferenceStructureDetails(
@@ -350,7 +381,11 @@ async function buildProceduralMap(
   for (const prop of map.props) {
     if (!prop.decorative) createStaticCollider(world, prop);
     if (objectCount >= budget || (coarse && prop.decorative)) continue;
-    createVisualBox(app, prop, propMaterial);
+    createVisualBox(
+      app,
+      prop,
+      materialForProp(prop.id, propMaterial, woodMaterial, wallAltMaterial),
+    );
     objectCount += 1;
   }
 
@@ -386,6 +421,27 @@ async function buildProceduralMap(
 
   onStatus(
     `${map.name} ready · ${objectCount} visible runtime objects · ${map.navNodes.length} navigation nodes`,
+  );
+
+  window.setTimeout(
+    () => {
+      void applyRealSurfaceTextures(
+        app,
+        {
+          wall: architectureMaterial,
+          wallAlt: wallAltMaterial,
+          floor: groundMaterial,
+          trim: trimMaterial,
+          metal: propMaterial,
+          wood: woodMaterial,
+        },
+        map.index,
+        coarse,
+      ).catch((error) => {
+        console.warn('[Hideverse surfaces] Real surface textures unavailable; using fallback.', error);
+      });
+    },
+    coarse ? 900 : 450,
   );
 
   window.setTimeout(
