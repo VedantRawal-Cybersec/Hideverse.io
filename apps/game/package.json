@@ -1,0 +1,24 @@
+{
+  "name": "@hideverse/game",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "start": "node server.mjs",
+    "typecheck": "tsc --noEmit",
+    "smoke": "node scripts/verify-build.mjs",
+    "verify": "npm run typecheck && npm run build && npm run smoke"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "0.20.0",
+    "playcanvas": "2.22.4",
+    "yuka": "0.7.8"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "vite": "8.3.1"
+  }
+}
