@@ -1,7 +1,14 @@
-*.glb filter=lfs diff=lfs merge=lfs -text
-*.gltf filter=lfs diff=lfs merge=lfs -text
-*.fbx filter=lfs diff=lfs merge=lfs -text
+# Keep heavyweight editable/source assets in Git LFS.
+assets/raw/** filter=lfs diff=lfs merge=lfs -text
 *.blend filter=lfs diff=lfs merge=lfs -text
-*.ktx2 filter=lfs diff=lfs merge=lfs -text
+*.fbx filter=lfs diff=lfs merge=lfs -text
 *.wav filter=lfs diff=lfs merge=lfs -text
-*.ogg filter=lfs diff=lfs merge=lfs -text
+
+# Web-ready runtime assets are intentionally normal Git objects when they stay
+# under the Phase 2 size budget, so deployments do not require Git LFS smudging.
+assets/runtime/**/*.glb -filter -diff -merge
+assets/runtime/**/*.gltf -filter -diff -merge
+assets/runtime/**/*.bin -filter -diff -merge
+assets/runtime/**/*.png -filter -diff -merge
+assets/runtime/**/*.webp -filter -diff -merge
+assets/runtime/**/*.ktx2 -filter -diff -merge
