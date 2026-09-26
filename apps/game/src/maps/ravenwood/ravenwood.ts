@@ -382,14 +382,34 @@ function buildPlayableMansionShell(
   createPart('ravenwood-front-step-1', [8.8, 0.22, 1.2], [0, 0.11, 17.2], floorMaterial);
   createPart('ravenwood-front-step-2', [7.4, 0.2, 1], [0, 0.28, 16.45], trimMaterial);
   createPart('ravenwood-front-door-frame-top', [3, 0.28, 0.34], [0, 3.35, 12.62], woodMaterial);
-  createPart('ravenwood-front-door-frame-left', [0.25, 3.6, 0.34], [-1.35, 1.75, 12.62], woodMaterial);
-  createPart('ravenwood-front-door-frame-right', [0.25, 3.6, 0.34], [1.35, 1.75, 12.62], woodMaterial);
+  createPart(
+    'ravenwood-front-door-frame-left',
+    [0.25, 3.6, 0.34],
+    [-1.35, 1.75, 12.62],
+    woodMaterial,
+  );
+  createPart(
+    'ravenwood-front-door-frame-right',
+    [0.25, 3.6, 0.34],
+    [1.35, 1.75, 12.62],
+    woodMaterial,
+  );
 
   const frontWindows = [-8.5, -4.8, 4.8, 8.5];
   for (const x of frontWindows) {
     createPart(`ravenwood-front-window-${x}`, [2.2, 1.8, 0.16], [x, 3.5, 12.61], glassMaterial);
-    createPart(`ravenwood-front-window-top-${x}`, [2.65, 0.18, 0.24], [x, 4.48, 12.58], trimMaterial);
-    createPart(`ravenwood-front-window-bottom-${x}`, [2.65, 0.18, 0.24], [x, 2.52, 12.58], trimMaterial);
+    createPart(
+      `ravenwood-front-window-top-${x}`,
+      [2.65, 0.18, 0.24],
+      [x, 4.48, 12.58],
+      trimMaterial,
+    );
+    createPart(
+      `ravenwood-front-window-bottom-${x}`,
+      [2.65, 0.18, 0.24],
+      [x, 2.52, 12.58],
+      trimMaterial,
+    );
   }
 
   for (const z of [-4.5, 1.5, 7.5]) {

@@ -76,11 +76,7 @@ async function loadPlacedAssets(
       });
       entity.name = `detail-prop-${index}-${placement.asset.split('/').at(-1) ?? 'asset'}`;
       entity.setLocalScale(placement.scale, placement.scale, placement.scale);
-      entity.setPosition(
-        placement.position[0],
-        placement.position[1],
-        placement.position[2],
-      );
+      entity.setPosition(placement.position[0], placement.position[1], placement.position[2]);
       entity.setEulerAngles(0, placement.yaw ?? 0, 0);
       app.root.addChild(entity);
     } catch (error) {
@@ -91,11 +87,7 @@ async function loadPlacedAssets(
   }
 }
 
-function buildNexusDetails(
-  app: Application,
-  materials: DetailMaterials,
-  coarse: boolean,
-): number {
+function buildNexusDetails(app: Application, materials: DetailMaterials, coarse: boolean): number {
   const glass = makeMaterial([0.12, 0.22, 0.28], 0.82, 0.12, 0.025);
   const sign = makeMaterial([0.82, 0.28, 0.16], 0.35, 0.04, 0.08);
   const details: DetailBox[] = [];
