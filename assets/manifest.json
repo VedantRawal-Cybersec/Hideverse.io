@@ -287,6 +287,106 @@
         "assets/runtime/ravenwood/furniture/kaykit/furniturebits_texture.png"
       ],
       "notes": "CC0 furniture source asset. Phase 3 may convert to optimized GLB after visual/scale QA."
+    },
+    {
+      "id": "kaykit-dungeon-doorway",
+      "name": "Dungeon Doorway",
+      "category": "architecture",
+      "source": "KayKit Dungeon Remastered 1.0",
+      "sourceRepo": "KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0",
+      "sourceCommit": "b0ca9bd96a8072ab36a3a5464f00ed1e06a16d07",
+      "sourcePath": "addons/kaykit_dungeon_remastered/Assets/gltf/wall_doorway.glb",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0/blob/b0ca9bd96a8072ab36a3a5464f00ed1e06a16d07/addons/kaykit_dungeon_remastered/Assets/gltf/wall_doorway.glb",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/ravenwood/architecture/kaykit-dungeon/wall_doorway.glb"
+      ],
+      "notes": "Low-poly CC0 architecture/prop seed for Ravenwood."
+    },
+    {
+      "id": "kaykit-dungeon-arch",
+      "name": "Arched Wall",
+      "category": "architecture",
+      "source": "KayKit Dungeon Remastered 1.0",
+      "sourceRepo": "KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0",
+      "sourceCommit": "b0ca9bd96a8072ab36a3a5464f00ed1e06a16d07",
+      "sourcePath": "addons/kaykit_dungeon_remastered/Assets/gltf/wall_arched.gltf.glb",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0/blob/b0ca9bd96a8072ab36a3a5464f00ed1e06a16d07/addons/kaykit_dungeon_remastered/Assets/gltf/wall_arched.gltf.glb",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/ravenwood/architecture/kaykit-dungeon/wall_arched.gltf.glb"
+      ],
+      "notes": "Low-poly CC0 architecture/prop seed for Ravenwood."
+    },
+    {
+      "id": "kaykit-dungeon-barrel",
+      "name": "Large Barrel",
+      "category": "basement-prop",
+      "source": "KayKit Dungeon Remastered 1.0",
+      "sourceRepo": "KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0",
+      "sourceCommit": "b0ca9bd96a8072ab36a3a5464f00ed1e06a16d07",
+      "sourcePath": "addons/kaykit_dungeon_remastered/Assets/gltf/barrel_large.gltf.glb",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0/blob/b0ca9bd96a8072ab36a3a5464f00ed1e06a16d07/addons/kaykit_dungeon_remastered/Assets/gltf/barrel_large.gltf.glb",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/ravenwood/architecture/kaykit-dungeon/barrel_large.gltf.glb"
+      ],
+      "notes": "Low-poly CC0 architecture/prop seed for Ravenwood."
+    },
+    {
+      "id": "kaykit-dungeon-crates",
+      "name": "Stacked Crates",
+      "category": "basement-prop",
+      "source": "KayKit Dungeon Remastered 1.0",
+      "sourceRepo": "KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0",
+      "sourceCommit": "b0ca9bd96a8072ab36a3a5464f00ed1e06a16d07",
+      "sourcePath": "addons/kaykit_dungeon_remastered/Assets/gltf/crates_stacked.gltf.glb",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0/blob/b0ca9bd96a8072ab36a3a5464f00ed1e06a16d07/addons/kaykit_dungeon_remastered/Assets/gltf/crates_stacked.gltf.glb",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/ravenwood/architecture/kaykit-dungeon/crates_stacked.gltf.glb"
+      ],
+      "notes": "Low-poly CC0 architecture/prop seed for Ravenwood."
+    },
+    {
+      "id": "kaykit-city-bench",
+      "name": "Exterior Bench",
+      "category": "exterior-prop",
+      "source": "KayKit City Builder Bits 1.0",
+      "sourceRepo": "KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0",
+      "sourceCommit": "63976910ca04d16f0fc531b9c614244be8128713",
+      "sourcePath": "addons/kaykit_city_builder_bits/Assets/gltf/bench.gltf",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/63976910ca04d16f0fc531b9c614244be8128713/addons/kaykit_city_builder_bits/Assets/gltf/bench.gltf",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/ravenwood/exterior/kaykit-city/bench.gltf",
+        "assets/runtime/ravenwood/exterior/kaykit-city/bench.bin",
+        "assets/runtime/ravenwood/exterior/kaykit-city/citybits_texture.png"
+      ],
+      "notes": "Exterior seating for courtyard/garden."
+    },
+    {
+      "id": "kaykit-city-streetlight",
+      "name": "Exterior Streetlight",
+      "category": "exterior-prop",
+      "source": "KayKit City Builder Bits 1.0",
+      "sourceRepo": "KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0",
+      "sourceCommit": "63976910ca04d16f0fc531b9c614244be8128713",
+      "sourcePath": "addons/kaykit_city_builder_bits/Assets/gltf/streetlight.gltf",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0/blob/63976910ca04d16f0fc531b9c614244be8128713/addons/kaykit_city_builder_bits/Assets/gltf/streetlight.gltf",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/ravenwood/exterior/kaykit-city/streetlight.gltf",
+        "assets/runtime/ravenwood/exterior/kaykit-city/streetlight.bin",
+        "assets/runtime/ravenwood/exterior/kaykit-city/citybits_texture.png"
+      ],
+      "notes": "Exterior lamp model; actual light component will be authored in Hideverse."
     }
   ]
 }
