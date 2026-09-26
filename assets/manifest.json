@@ -1,0 +1,292 @@
+{
+  "version": 1,
+  "policy": {
+    "allowedLicenses": [
+      "CC0-1.0"
+    ],
+    "maxRuntimeFileBytes": 2000000,
+    "requirePinnedGitHubCommit": true,
+    "runtimeRoot": "assets/runtime"
+  },
+  "assets": [
+    {
+      "id": "ravenwood-base-mansion-candidate",
+      "name": "3D Tileset - Mansion",
+      "category": "architecture",
+      "source": "OpenGameArt / Teh_Bucket",
+      "sourceUrl": "https://opengameart.org/content/3d-tileset-mansion",
+      "license": "CC0-1.0",
+      "status": "candidate",
+      "localFiles": [],
+      "notes": "Premade mansion map candidate. Do not integrate until archive contents, scale, topology and browser performance are inspected."
+    },
+    {
+      "id": "kenney-nature-tree-oak",
+      "name": "Tree Oak",
+      "category": "vegetation",
+      "source": "Kenney Nature Kit",
+      "sourceRepo": "shorepine/kenney",
+      "sourceCommit": "3694c6879e487c108f55677be7dd2ca75b07cc3b",
+      "sourcePath": "3d/nature/tree_oak.glb",
+      "sourceUrl": "https://github.com/shorepine/kenney/blob/3694c6879e487c108f55677be7dd2ca75b07cc3b/3d/nature/tree_oak.glb",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/ravenwood/nature/kenney/tree_oak.glb"
+      ],
+      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing."
+    },
+    {
+      "id": "kenney-nature-tree-detailed",
+      "name": "Tree Detailed",
+      "category": "vegetation",
+      "source": "Kenney Nature Kit",
+      "sourceRepo": "shorepine/kenney",
+      "sourceCommit": "3694c6879e487c108f55677be7dd2ca75b07cc3b",
+      "sourcePath": "3d/nature/tree_detailed.glb",
+      "sourceUrl": "https://github.com/shorepine/kenney/blob/3694c6879e487c108f55677be7dd2ca75b07cc3b/3d/nature/tree_detailed.glb",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/ravenwood/nature/kenney/tree_detailed.glb"
+      ],
+      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing."
+    },
+    {
+      "id": "kenney-nature-tree-pine-a",
+      "name": "Pine Tree A",
+      "category": "vegetation",
+      "source": "Kenney Nature Kit",
+      "sourceRepo": "shorepine/kenney",
+      "sourceCommit": "3694c6879e487c108f55677be7dd2ca75b07cc3b",
+      "sourcePath": "3d/nature/tree_pineDefaultA.glb",
+      "sourceUrl": "https://github.com/shorepine/kenney/blob/3694c6879e487c108f55677be7dd2ca75b07cc3b/3d/nature/tree_pineDefaultA.glb",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/ravenwood/nature/kenney/tree_pineDefaultA.glb"
+      ],
+      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing."
+    },
+    {
+      "id": "kenney-nature-bush",
+      "name": "Bush",
+      "category": "vegetation",
+      "source": "Kenney Nature Kit",
+      "sourceRepo": "shorepine/kenney",
+      "sourceCommit": "3694c6879e487c108f55677be7dd2ca75b07cc3b",
+      "sourcePath": "3d/nature/plant_bush.glb",
+      "sourceUrl": "https://github.com/shorepine/kenney/blob/3694c6879e487c108f55677be7dd2ca75b07cc3b/3d/nature/plant_bush.glb",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/ravenwood/nature/kenney/plant_bush.glb"
+      ],
+      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing."
+    },
+    {
+      "id": "kenney-nature-grass",
+      "name": "Grass Clump",
+      "category": "vegetation",
+      "source": "Kenney Nature Kit",
+      "sourceRepo": "shorepine/kenney",
+      "sourceCommit": "3694c6879e487c108f55677be7dd2ca75b07cc3b",
+      "sourcePath": "3d/nature/grass.glb",
+      "sourceUrl": "https://github.com/shorepine/kenney/blob/3694c6879e487c108f55677be7dd2ca75b07cc3b/3d/nature/grass.glb",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/ravenwood/nature/kenney/grass.glb"
+      ],
+      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing."
+    },
+    {
+      "id": "kenney-nature-rock-large-a",
+      "name": "Large Rock A",
+      "category": "nature-prop",
+      "source": "Kenney Nature Kit",
+      "sourceRepo": "shorepine/kenney",
+      "sourceCommit": "3694c6879e487c108f55677be7dd2ca75b07cc3b",
+      "sourcePath": "3d/nature/rock_largeA.glb",
+      "sourceUrl": "https://github.com/shorepine/kenney/blob/3694c6879e487c108f55677be7dd2ca75b07cc3b/3d/nature/rock_largeA.glb",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/ravenwood/nature/kenney/rock_largeA.glb"
+      ],
+      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing."
+    },
+    {
+      "id": "kenney-nature-rock-small-a",
+      "name": "Small Rock A",
+      "category": "nature-prop",
+      "source": "Kenney Nature Kit",
+      "sourceRepo": "shorepine/kenney",
+      "sourceCommit": "3694c6879e487c108f55677be7dd2ca75b07cc3b",
+      "sourcePath": "3d/nature/rock_smallA.glb",
+      "sourceUrl": "https://github.com/shorepine/kenney/blob/3694c6879e487c108f55677be7dd2ca75b07cc3b/3d/nature/rock_smallA.glb",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/ravenwood/nature/kenney/rock_smallA.glb"
+      ],
+      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing."
+    },
+    {
+      "id": "kenney-nature-stump-old",
+      "name": "Old Stump",
+      "category": "nature-prop",
+      "source": "Kenney Nature Kit",
+      "sourceRepo": "shorepine/kenney",
+      "sourceCommit": "3694c6879e487c108f55677be7dd2ca75b07cc3b",
+      "sourcePath": "3d/nature/stump_old.glb",
+      "sourceUrl": "https://github.com/shorepine/kenney/blob/3694c6879e487c108f55677be7dd2ca75b07cc3b/3d/nature/stump_old.glb",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/ravenwood/nature/kenney/stump_old.glb"
+      ],
+      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing."
+    },
+    {
+      "id": "kenney-nature-flower-red-a",
+      "name": "Red Flower A",
+      "category": "vegetation",
+      "source": "Kenney Nature Kit",
+      "sourceRepo": "shorepine/kenney",
+      "sourceCommit": "3694c6879e487c108f55677be7dd2ca75b07cc3b",
+      "sourcePath": "3d/nature/flower_redA.glb",
+      "sourceUrl": "https://github.com/shorepine/kenney/blob/3694c6879e487c108f55677be7dd2ca75b07cc3b/3d/nature/flower_redA.glb",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/ravenwood/nature/kenney/flower_redA.glb"
+      ],
+      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing."
+    },
+    {
+      "id": "kenney-nature-log",
+      "name": "Log",
+      "category": "nature-prop",
+      "source": "Kenney Nature Kit",
+      "sourceRepo": "shorepine/kenney",
+      "sourceCommit": "3694c6879e487c108f55677be7dd2ca75b07cc3b",
+      "sourcePath": "3d/nature/log.glb",
+      "sourceUrl": "https://github.com/shorepine/kenney/blob/3694c6879e487c108f55677be7dd2ca75b07cc3b/3d/nature/log.glb",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/ravenwood/nature/kenney/log.glb"
+      ],
+      "notes": "Static low-poly environment model; intended for Ravenwood exterior dressing."
+    },
+    {
+      "id": "kaykit-furniture-chair-a",
+      "name": "Chair A",
+      "category": "furniture",
+      "source": "KayKit Furniture Bits 1.0",
+      "sourceRepo": "KayKit-Game-Assets/KayKit-Furniture-Bits-1.0",
+      "sourceCommit": "96d5930a8dbdb363409bbc2d3341718b00e17c9c",
+      "sourcePath": "addons/kaykit_furniture_bits/Assets/gltf/chair_A.gltf",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Furniture-Bits-1.0/blob/96d5930a8dbdb363409bbc2d3341718b00e17c9c/addons/kaykit_furniture_bits/Assets/gltf/chair_A.gltf",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/ravenwood/furniture/kaykit/chair_A.gltf",
+        "assets/runtime/ravenwood/furniture/kaykit/chair_A.bin",
+        "assets/runtime/ravenwood/furniture/kaykit/furniturebits_texture.png"
+      ],
+      "notes": "CC0 furniture source asset. Phase 3 may convert to optimized GLB after visual/scale QA."
+    },
+    {
+      "id": "kaykit-furniture-couch",
+      "name": "Couch",
+      "category": "furniture",
+      "source": "KayKit Furniture Bits 1.0",
+      "sourceRepo": "KayKit-Game-Assets/KayKit-Furniture-Bits-1.0",
+      "sourceCommit": "96d5930a8dbdb363409bbc2d3341718b00e17c9c",
+      "sourcePath": "addons/kaykit_furniture_bits/Assets/gltf/couch.gltf",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Furniture-Bits-1.0/blob/96d5930a8dbdb363409bbc2d3341718b00e17c9c/addons/kaykit_furniture_bits/Assets/gltf/couch.gltf",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/ravenwood/furniture/kaykit/couch.gltf",
+        "assets/runtime/ravenwood/furniture/kaykit/couch.bin",
+        "assets/runtime/ravenwood/furniture/kaykit/furniturebits_texture.png"
+      ],
+      "notes": "CC0 furniture source asset. Phase 3 may convert to optimized GLB after visual/scale QA."
+    },
+    {
+      "id": "kaykit-furniture-bed-double-a",
+      "name": "Double Bed A",
+      "category": "furniture",
+      "source": "KayKit Furniture Bits 1.0",
+      "sourceRepo": "KayKit-Game-Assets/KayKit-Furniture-Bits-1.0",
+      "sourceCommit": "96d5930a8dbdb363409bbc2d3341718b00e17c9c",
+      "sourcePath": "addons/kaykit_furniture_bits/Assets/gltf/bed_double_A.gltf",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Furniture-Bits-1.0/blob/96d5930a8dbdb363409bbc2d3341718b00e17c9c/addons/kaykit_furniture_bits/Assets/gltf/bed_double_A.gltf",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/ravenwood/furniture/kaykit/bed_double_A.gltf",
+        "assets/runtime/ravenwood/furniture/kaykit/bed_double_A.bin",
+        "assets/runtime/ravenwood/furniture/kaykit/furniturebits_texture.png"
+      ],
+      "notes": "CC0 furniture source asset. Phase 3 may convert to optimized GLB after visual/scale QA."
+    },
+    {
+      "id": "kaykit-furniture-dining-table-long",
+      "name": "Long Dining Table",
+      "category": "furniture",
+      "source": "KayKit Furniture Bits 1.0",
+      "sourceRepo": "KayKit-Game-Assets/KayKit-Furniture-Bits-1.0",
+      "sourceCommit": "96d5930a8dbdb363409bbc2d3341718b00e17c9c",
+      "sourcePath": "addons/kaykit_furniture_bits/Assets/gltf/table_medium_long.gltf",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Furniture-Bits-1.0/blob/96d5930a8dbdb363409bbc2d3341718b00e17c9c/addons/kaykit_furniture_bits/Assets/gltf/table_medium_long.gltf",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/ravenwood/furniture/kaykit/table_medium_long.gltf",
+        "assets/runtime/ravenwood/furniture/kaykit/table_medium_long.bin",
+        "assets/runtime/ravenwood/furniture/kaykit/furniturebits_texture.png"
+      ],
+      "notes": "CC0 furniture source asset. Phase 3 may convert to optimized GLB after visual/scale QA."
+    },
+    {
+      "id": "kaykit-furniture-decorated-shelf",
+      "name": "Decorated Shelf",
+      "category": "furniture",
+      "source": "KayKit Furniture Bits 1.0",
+      "sourceRepo": "KayKit-Game-Assets/KayKit-Furniture-Bits-1.0",
+      "sourceCommit": "96d5930a8dbdb363409bbc2d3341718b00e17c9c",
+      "sourcePath": "addons/kaykit_furniture_bits/Assets/gltf/shelf_B_large_decorated.gltf",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Furniture-Bits-1.0/blob/96d5930a8dbdb363409bbc2d3341718b00e17c9c/addons/kaykit_furniture_bits/Assets/gltf/shelf_B_large_decorated.gltf",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/ravenwood/furniture/kaykit/shelf_B_large_decorated.gltf",
+        "assets/runtime/ravenwood/furniture/kaykit/shelf_B_large_decorated.bin",
+        "assets/runtime/ravenwood/furniture/kaykit/furniturebits_texture.png"
+      ],
+      "notes": "CC0 furniture source asset. Phase 3 may convert to optimized GLB after visual/scale QA."
+    },
+    {
+      "id": "kaykit-furniture-standing-lamp",
+      "name": "Standing Lamp",
+      "category": "furniture",
+      "source": "KayKit Furniture Bits 1.0",
+      "sourceRepo": "KayKit-Game-Assets/KayKit-Furniture-Bits-1.0",
+      "sourceCommit": "96d5930a8dbdb363409bbc2d3341718b00e17c9c",
+      "sourcePath": "addons/kaykit_furniture_bits/Assets/gltf/lamp_standing.gltf",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Furniture-Bits-1.0/blob/96d5930a8dbdb363409bbc2d3341718b00e17c9c/addons/kaykit_furniture_bits/Assets/gltf/lamp_standing.gltf",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/ravenwood/furniture/kaykit/lamp_standing.gltf",
+        "assets/runtime/ravenwood/furniture/kaykit/lamp_standing.bin",
+        "assets/runtime/ravenwood/furniture/kaykit/furniturebits_texture.png"
+      ],
+      "notes": "CC0 furniture source asset. Phase 3 may convert to optimized GLB after visual/scale QA."
+    }
+  ]
+}
