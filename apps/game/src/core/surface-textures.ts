@@ -108,7 +108,6 @@ function applyPbrMaps(
 
 function wallTextureForMap(mapIndex: number): SurfaceTextureName {
   if (mapIndex === 1 || mapIndex === 5) return 'wood';
-  if (mapIndex === 2 || mapIndex === 3) return 'brick';
   return 'concrete';
 }
 
@@ -187,15 +186,13 @@ export async function applyRealSurfaceTextures(
   );
 
   const quality = localStorage.getItem('hideverse-quality') ?? 'auto';
+  const fullPbr = !coarsePointer && quality !== 'low';
 
-  // Mobile / Low remains texture-real but intentionally skips extra PBR maps.
-  // This is the main smoothness guardrail.
-  if (coarsePointer || quality === 'low') return;
+  await delay(coarsePointer ? 700 : 420);
 
-  await delay(450);
-
-  // Pass 2: stream compressed KTX2 PBR maps sequentially. Shared materials mean each
-  // upload upgrades many walls/props at once while avoiding a one-frame upload spike.
+  // Pass 2: all devices receive the higher-detail GPU-compressed KTX2 color surface.
+  // Only capable desktop profiles add normal + roughness maps. This keeps Low/mobile
+  // visually textured without increasing their fragment-shader cost.
   for (const binding of bindings) {
     try {
       const color = await loadTexture(
@@ -203,6 +200,12 @@ export async function applyRealSurfaceTextures(
         pbrTextureUrl(binding.surface, 'color'),
         anisotropy,
       );
+
+      if (!fullPbr) {
+        applyPbrMaps(binding.material, color, null, null, binding);
+        await delay(coarsePointer ? 90 : 55);
+        continue;
+      }
 
       await delay(45);
 
