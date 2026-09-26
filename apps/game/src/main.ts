@@ -1,109 +1,89 @@
-import { Application, Color, Entity, FILLMODE_FILL_WINDOW, RESOLUTION_AUTO } from 'playcanvas';
+import {
+  Application,
+  Color,
+  Entity,
+  FILLMODE_FILL_WINDOW,
+  RESOLUTION_AUTO,
+} from 'playcanvas';
 import RAPIER from '@dimforge/rapier3d-compat';
-import { EntityManager, GameEntity } from 'yuka';
+import { EntityManager } from 'yuka';
+import { InputController } from './core/input-controller';
+import { FirstPersonController } from './core/player-controller';
+import { buildRavenwood } from './maps/ravenwood/ravenwood';
 import './styles.css';
 
-type StatusState = 'ok' | 'error';
+const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas');
+const mapStatus = document.querySelector<HTMLSpanElement>('#map-status');
+const fpsValue = document.querySelector<HTMLSpanElement>('#fps-value');
+const bootOverlay = document.querySelector<HTMLDivElement>('#boot-overlay');
 
-const statusListQuery = document.querySelector<HTMLDivElement>('#status-list');
-const bootMessageQuery = document.querySelector<HTMLParagraphElement>('#boot-message');
-const canvasQuery = document.querySelector<HTMLCanvasElement>('#game-canvas');
-
-if (!statusListQuery || !bootMessageQuery || !canvasQuery) {
-  throw new Error('Hideverse foundation DOM is incomplete.');
+if (!canvas || !mapStatus || !fpsValue || !bootOverlay) {
+  throw new Error('Hideverse Ravenwood DOM is incomplete.');
 }
 
-const statusList = statusListQuery;
-const bootMessage = bootMessageQuery;
-const canvas = canvasQuery;
-
-function setStatus(label: string, value: string, state: StatusState = 'ok'): void {
-  const row = document.createElement('div');
-  row.className = 'status-row';
-
-  const key = document.createElement('span');
-  key.textContent = label;
-
-  const result = document.createElement('span');
-  result.className = `status-value ${state}`;
-  result.textContent = value;
-
-  row.append(key, result);
-  statusList.append(row);
+function setMapStatus(message: string): void {
+  mapStatus.textContent = message;
 }
 
 async function boot(): Promise<void> {
   const app = new Application(canvas);
   app.setCanvasFillMode(FILLMODE_FILL_WINDOW);
   app.setCanvasResolution(RESOLUTION_AUTO);
-  app.scene.ambientLight = new Color(0.16, 0.18, 0.22);
+  app.scene.ambientLight = new Color(0.22, 0.24, 0.29);
 
-  const camera = new Entity('Foundation Camera');
+  const camera = new Entity('Player Camera');
   camera.addComponent('camera', {
-    clearColor: new Color(0.025, 0.035, 0.055),
-    farClip: 100,
-    nearClip: 0.1,
+    clearColor: new Color(0.035, 0.045, 0.065),
+    nearClip: 0.08,
+    farClip: 240,
+    fov: 72,
   });
-  camera.setPosition(0, 2.7, 8);
-  camera.lookAt(0, 1.25, 0);
   app.root.addChild(camera);
 
-  const light = new Entity('Foundation Sun');
-  light.addComponent('light', {
+  const sun = new Entity('Ravenwood Moonlight');
+  sun.addComponent('light', {
     type: 'directional',
-    color: new Color(1, 0.92, 0.8),
+    color: new Color(0.82, 0.88, 1),
     intensity: 1.35,
     castShadows: true,
-    shadowResolution: 1024,
+    shadowResolution: 2048,
+    shadowDistance: 90,
   });
-  light.setEulerAngles(45, 35, 0);
-  app.root.addChild(light);
+  sun.setEulerAngles(48, 32, 0);
+  app.root.addChild(sun);
 
-  const ground = new Entity('Foundation Ground');
-  ground.addComponent('render', { type: 'box' });
-  ground.setLocalScale(16, 0.4, 16);
-  ground.setPosition(0, -0.2, 0);
-  app.root.addChild(ground);
-
-  const physicsCube = new Entity('Rapier Physics Cube');
-  physicsCube.addComponent('render', { type: 'box' });
-  app.root.addChild(physicsCube);
-
-  setStatus('PlayCanvas', 'READY');
+  const fill = new Entity('Ravenwood Warm Fill');
+  fill.addComponent('light', {
+    type: 'directional',
+    color: new Color(1, 0.74, 0.52),
+    intensity: 0.28,
+    castShadows: false,
+  });
+  fill.setEulerAngles(22, -120, 0);
+  app.root.addChild(fill);
 
   await RAPIER.init();
-  const physicsWorld = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
-  const groundBody = physicsWorld.createRigidBody(
-    RAPIER.RigidBodyDesc.fixed().setTranslation(0, -0.2, 0),
-  );
-  physicsWorld.createCollider(RAPIER.ColliderDesc.cuboid(8, 0.2, 8), groundBody);
-
-  const cubeBody = physicsWorld.createRigidBody(
-    RAPIER.RigidBodyDesc.dynamic().setTranslation(0, 4, 0),
-  );
-  physicsWorld.createCollider(
-    RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5).setRestitution(0.35),
-    cubeBody,
-  );
-  setStatus('Rapier 3D', 'READY');
-
+  const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
+  const input = new InputController(canvas);
+  const player = new FirstPersonController(world, camera, input);
   const aiManager = new EntityManager();
-  const aiProbe = new GameEntity();
-  aiProbe.name = 'Foundation AI Probe';
-  aiProbe.position.set(0, 0, 0);
-  aiManager.add(aiProbe);
-  setStatus('Yuka AI', 'READY');
+
+  const mapPromise = buildRavenwood(app, world, setMapStatus);
+
+  let fpsAccumulator = 0;
+  let fpsFrames = 0;
 
   app.on('update', (deltaSeconds: number) => {
-    physicsWorld.timestep = Math.min(deltaSeconds, 1 / 30);
-    physicsWorld.step();
-
-    const position = cubeBody.translation();
-    const rotation = cubeBody.rotation();
-    physicsCube.setPosition(position.x, position.y, position.z);
-    physicsCube.setRotation(rotation.x, rotation.y, rotation.z, rotation.w);
-
+    player.update(deltaSeconds);
     aiManager.update(deltaSeconds);
+
+    fpsAccumulator += deltaSeconds;
+    fpsFrames += 1;
+    if (fpsAccumulator >= 0.5) {
+      fpsValue.textContent = Math.round(fpsFrames / fpsAccumulator).toString();
+      fpsAccumulator = 0;
+      fpsFrames = 0;
+    }
   });
 
   const resize = (): void => {
@@ -112,14 +92,15 @@ async function boot(): Promise<void> {
   window.addEventListener('resize', resize, { passive: true });
 
   app.start();
-  setStatus('TypeScript/Vite', 'READY');
-  bootMessage.textContent =
-    'Foundation booted: renderer, physics and AI are running together. Map and character systems can now be built on this base.';
+  bootOverlay.classList.add('is-hidden');
+
+  await mapPromise;
 }
 
 boot().catch((error: unknown) => {
+  console.error('[Hideverse] Ravenwood boot failed:', error);
   const message = error instanceof Error ? error.message : String(error);
-  console.error('[Hideverse] Foundation boot failed:', error);
-  setStatus('Foundation', 'FAILED', 'error');
-  bootMessage.textContent = `Boot failed: ${message}`;
+  setMapStatus(`Boot failed · ${message}`);
+  bootOverlay.classList.remove('is-hidden');
+  bootOverlay.textContent = `Ravenwood failed to start: ${message}`;
 });
