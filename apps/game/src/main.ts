@@ -13,6 +13,9 @@ const fpsValueQuery = document.querySelector<HTMLSpanElement>('#fps-value');
 const zoneValueQuery = document.querySelector<HTMLSpanElement>('#zone-value');
 const interactionPromptQuery = document.querySelector<HTMLDivElement>('#interaction-prompt');
 const hiddenStateQuery = document.querySelector<HTMLDivElement>('#hidden-state');
+const debugPanelQuery = document.querySelector<HTMLElement>('#debug-panel');
+const debugPositionQuery = document.querySelector<HTMLSpanElement>('#debug-position');
+const debugZoneQuery = document.querySelector<HTMLSpanElement>('#debug-zone');
 const bootOverlayQuery = document.querySelector<HTMLDivElement>('#boot-overlay');
 
 if (
@@ -22,6 +25,9 @@ if (
   !zoneValueQuery ||
   !interactionPromptQuery ||
   !hiddenStateQuery ||
+  !debugPanelQuery ||
+  !debugPositionQuery ||
+  !debugZoneQuery ||
   !bootOverlayQuery
 ) {
   throw new Error('Hideverse Ravenwood DOM is incomplete.');
@@ -33,7 +39,12 @@ const fpsValue = fpsValueQuery;
 const zoneValue = zoneValueQuery;
 const interactionPrompt = interactionPromptQuery;
 const hiddenState = hiddenStateQuery;
+const debugPanel = debugPanelQuery;
+const debugPosition = debugPositionQuery;
+const debugZone = debugZoneQuery;
 const bootOverlay = bootOverlayQuery;
+const debugEnabled = new URLSearchParams(window.location.search).get('debug') === '1';
+debugPanel.classList.toggle('is-visible', debugEnabled);
 
 function setMapStatus(message: string): void {
   mapStatus.textContent = message;
@@ -91,7 +102,12 @@ async function boot(): Promise<void> {
   app.on('update', (deltaSeconds: number) => {
     player.update(deltaSeconds);
 
-    const interaction = interactions.update(player.position, input.consumeInteract());
+    const position = player.position;
+    if (position.y < -5 || Math.abs(position.x) > 64 || Math.abs(position.z) > 64) {
+      player.reset();
+    }
+
+    const interaction = interactions.update(position, input.consumeInteract());
     player.setMovementLocked(interaction.hidden);
     zoneValue.textContent = interaction.zoneLabel.toUpperCase();
     interactionPrompt.textContent = interaction.prompt ?? '';
@@ -100,6 +116,11 @@ async function boot(): Promise<void> {
       ? `HIDDEN · ${interaction.hiddenLabel?.toUpperCase() ?? 'COVER'}`
       : '';
     hiddenState.classList.toggle('is-visible', interaction.hidden);
+
+    if (debugEnabled) {
+      debugPosition.textContent = `POSITION ${position.x.toFixed(2)} · ${position.y.toFixed(2)} · ${position.z.toFixed(2)}`;
+      debugZone.textContent = `ZONE ${interaction.zoneLabel.toUpperCase()}`;
+    }
 
     aiManager.update(deltaSeconds);
 
