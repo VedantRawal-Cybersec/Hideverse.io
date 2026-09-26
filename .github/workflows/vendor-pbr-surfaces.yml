@@ -63,11 +63,29 @@ jobs:
 
           ls -lh "$DEST"
 
+          BASIS_COMMIT="81ca99b7c2398800b1c5a3bc68b40a08aad21a51"
+          BASIS_BASE="https://raw.githubusercontent.com/playcanvas/engine/$BASIS_COMMIT/examples/assets/wasm/basis"
+          BASIS_DEST="assets/runtime/wasm/basis"
+          mkdir -p "$BASIS_DEST"
+          curl -L --fail --retry 3 "$BASIS_BASE/basis.wasm.js" -o "$BASIS_DEST/basis.wasm.js"
+          curl -L --fail --retry 3 "$BASIS_BASE/basis.wasm.wasm" -o "$BASIS_DEST/basis.wasm.wasm"
+          curl -L --fail --retry 3 "$BASIS_BASE/basis.js" -o "$BASIS_DEST/basis.js"
+          curl -L --fail --retry 3 "https://raw.githubusercontent.com/playcanvas/engine/$BASIS_COMMIT/LICENSE" -o "$BASIS_DEST/LICENSE"
+          cat > "$BASIS_DEST/SOURCE.md" <<EOF
+          # Basis transcoder provenance
+
+          Upstream: https://github.com/playcanvas/engine
+          Pinned commit: $BASIS_COMMIT
+          License: MIT
+          Purpose: Official PlayCanvas Basis/KTX2 transcoder files used by basisInitialize().
+          EOF
+          ls -lh "$BASIS_DEST"
+
       - name: Commit PBR assets
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/runtime/materials/pbr/
+          git add assets/runtime/materials/pbr/ assets/runtime/wasm/basis/
           if ! git diff --cached --quiet; then
             git commit -m "Vendor compressed CC0 PBR surface maps"
             git push
