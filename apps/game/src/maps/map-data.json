@@ -896,7 +896,7 @@
           "position": [
             8,
             1.2,
-            34
+            28
           ],
           "radius": 2.1
         }
@@ -1450,9 +1450,9 @@
           "id": "archive-stacks",
           "label": "Archive stacks",
           "position": [
-            -15,
+            -10,
             1.2,
-            -26
+            -24
           ],
           "radius": 2.3
         },
@@ -1460,9 +1460,9 @@
           "id": "security-blindspot",
           "label": "Security blind spot",
           "position": [
-            15,
+            10,
             1.2,
-            -26
+            -24
           ],
           "radius": 2.2
         }
@@ -1497,7 +1497,7 @@
           "position": [
             0,
             1.2,
-            -40
+            -27
           ],
           "radius": 2.3
         },
@@ -1529,7 +1529,7 @@
           "position": [
             0,
             1.2,
-            14
+            22
           ]
         },
         {
@@ -1583,7 +1583,7 @@
           "position": [
             0,
             1.2,
-            -42
+            -27
           ]
         },
         {
@@ -2041,9 +2041,9 @@
           "id": "morgue-lockers",
           "label": "Morgue lockers",
           "position": [
-            -23,
+            -14,
             1.1,
-            -38
+            -42
           ],
           "radius": 2.2
         }
@@ -2078,7 +2078,7 @@
           "position": [
             0,
             1.2,
-            -43
+            -29
           ],
           "radius": 2.6
         },
@@ -2164,14 +2164,14 @@
           "position": [
             0,
             1.2,
-            -40
+            -29
           ]
         },
         {
           "id": "morgue",
           "label": "Morgue",
           "position": [
-            -23,
+            -14,
             1.2,
             -42
           ]
@@ -3258,9 +3258,9 @@
           "id": "command-rack",
           "label": "Command rack",
           "position": [
-            -8,
+            -14,
             1.2,
-            34
+            26
           ],
           "radius": 2
         },
@@ -3298,7 +3298,7 @@
           "id": "reactor-maintenance",
           "label": "Reactor maintenance",
           "position": [
-            7,
+            14,
             1.2,
             -38
           ],
@@ -3335,7 +3335,7 @@
           "position": [
             0,
             1.2,
-            -34
+            -25
           ],
           "radius": 2.5
         },
@@ -3346,7 +3346,7 @@
           "position": [
             0,
             1.2,
-            30
+            25
           ],
           "radius": 2.5
         }
@@ -3367,7 +3367,7 @@
           "position": [
             0,
             1.2,
-            28
+            25
           ]
         },
         {
@@ -3403,7 +3403,7 @@
           "position": [
             0,
             1.2,
-            0
+            10
           ]
         },
         {
@@ -3430,7 +3430,7 @@
           "position": [
             0,
             1.2,
-            -38
+            -25
           ]
         },
         {
