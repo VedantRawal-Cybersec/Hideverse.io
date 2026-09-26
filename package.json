@@ -17,9 +17,15 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "verify": "npm run verify --workspace @hideverse/game",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "assets:validate-manifest": "node tools/assets/validate-manifest.mjs",
+    "assets:validate-gltf": "node tools/assets/validate-gltf.mjs",
+    "assets:stats": "node tools/assets/asset-stats.mjs",
+    "assets:verify": "npm run assets:validate-manifest && npm run assets:validate-gltf && npm run assets:stats"
   },
   "devDependencies": {
-    "prettier": "3.9.9"
+    "prettier": "3.9.9",
+    "@gltf-transform/cli": "4.5.0",
+    "gltf-validator": "2.0.0-dev.3.10"
   }
 }
