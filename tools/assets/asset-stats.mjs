@@ -14,9 +14,7 @@ for (const relative of files) {
   const info = await stat(path.resolve(process.cwd(), relative));
   bytes += info.size;
   if (info.size > manifest.policy.maxRuntimeFileBytes) {
-    errors.push(
-      `${relative}: ${info.size} bytes exceeds ${manifest.policy.maxRuntimeFileBytes}`,
-    );
+    errors.push(`${relative}: ${info.size} bytes exceeds ${manifest.policy.maxRuntimeFileBytes}`);
   }
 }
 
