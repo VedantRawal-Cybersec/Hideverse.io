@@ -152,6 +152,8 @@ export class FirstPersonController {
     this.verticalVelocity = 0;
     this.jumpMotionTimer = 0;
     this.motion = 'idle';
+    this.stamina = 100;
+    this.movementLocked = false;
     this.body.setTranslation(this.spawn, true);
     this.body.setNextKinematicTranslation(this.spawn);
     this.syncCamera(1 / 60);

@@ -11,6 +11,11 @@ export type ThreatSnapshot = {
   label: string;
 };
 
+type GraphEdge = {
+  id: string;
+  cost: number;
+};
+
 type ActorRuntime = {
   id: string;
   root: Entity;
@@ -23,6 +28,15 @@ type ActorRuntime = {
   state: MotionState;
   animationPhase: number;
   alertSeconds: number;
+  limbs: {
+    leftArm: Entity;
+    rightArm: Entity;
+    leftLeg: Entity;
+    rightLeg: Entity;
+  } | null;
+  chasePath: Triplet[];
+  chasePathIndex: number;
+  chaseRepathSeconds: number;
 };
 
 const roleColors: Record<ActorRole, Triplet> = {
@@ -76,6 +90,118 @@ function distance(a: Triplet, b: Triplet): number {
   return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 }
 
+function pointInsideStructure(map: MapDefinition, point: Triplet, margin = 0.65): boolean {
+  return map.structures.some((structure) => {
+    if (structure.size[1] < 1) return false;
+    const [x, y, z] = point;
+    const [sx, sy, sz] = structure.position;
+    const [wx, wy, wz] = structure.size;
+    const insideHeight = Math.abs(y - sy) < wy / 2 + 1.1;
+    return insideHeight && Math.abs(x - sx) < wx / 2 + margin && Math.abs(z - sz) < wz / 2 + margin;
+  });
+}
+
+function lineClear(map: MapDefinition, a: Triplet, b: Triplet): boolean {
+  if (Math.abs(a[1] - b[1]) > 4.2) return false;
+  const length = distance(a, b);
+  const samples = Math.max(3, Math.min(26, Math.ceil(length / 1.7)));
+
+  for (let index = 1; index < samples; index += 1) {
+    const t = index / samples;
+    const point: Triplet = [
+      a[0] + (b[0] - a[0]) * t,
+      a[1] + (b[1] - a[1]) * t,
+      a[2] + (b[2] - a[2]) * t,
+    ];
+    if (pointInsideStructure(map, point)) return false;
+  }
+  return true;
+}
+
+function buildNavigationGraph(map: MapDefinition): Map<string, GraphEdge[]> {
+  const graph = new Map<string, GraphEdge[]>();
+  for (const node of map.navNodes) graph.set(node.id, []);
+
+  for (let aIndex = 0; aIndex < map.navNodes.length; aIndex += 1) {
+    const a = map.navNodes[aIndex]!;
+    for (let bIndex = aIndex + 1; bIndex < map.navNodes.length; bIndex += 1) {
+      const b = map.navNodes[bIndex]!;
+      const cost = distance(a.position, b.position);
+      if (cost > 38 || Math.abs(a.position[1] - b.position[1]) > 4.2) continue;
+      if (!lineClear(map, a.position, b.position)) continue;
+      graph.get(a.id)!.push({ id: b.id, cost });
+      graph.get(b.id)!.push({ id: a.id, cost });
+    }
+  }
+
+  return graph;
+}
+
+function nearestNodeId(map: MapDefinition, point: Triplet): string | null {
+  let bestId: string | null = null;
+  let bestScore = Number.POSITIVE_INFINITY;
+  for (const node of map.navNodes) {
+    const horizontal = Math.hypot(point[0] - node.position[0], point[2] - node.position[2]);
+    const vertical = Math.abs(point[1] - node.position[1]);
+    const score = horizontal + vertical * 4;
+    if (score < bestScore) {
+      bestScore = score;
+      bestId = node.id;
+    }
+  }
+  return bestId;
+}
+
+function shortestPath(graph: Map<string, GraphEdge[]>, start: string, goal: string): string[] {
+  if (start === goal) return [start];
+
+  const distanceById = new Map<string, number>();
+  const previous = new Map<string, string>();
+  const unvisited = new Set(graph.keys());
+
+  for (const id of unvisited) distanceById.set(id, Number.POSITIVE_INFINITY);
+  distanceById.set(start, 0);
+
+  while (unvisited.size > 0) {
+    let current: string | null = null;
+    let currentDistance = Number.POSITIVE_INFINITY;
+
+    for (const id of unvisited) {
+      const candidate = distanceById.get(id) ?? Number.POSITIVE_INFINITY;
+      if (candidate < currentDistance) {
+        currentDistance = candidate;
+        current = id;
+      }
+    }
+
+    if (!current || currentDistance === Number.POSITIVE_INFINITY) break;
+    if (current === goal) break;
+    unvisited.delete(current);
+
+    for (const edge of graph.get(current) ?? []) {
+      if (!unvisited.has(edge.id)) continue;
+      const nextDistance = currentDistance + edge.cost;
+      if (nextDistance < (distanceById.get(edge.id) ?? Number.POSITIVE_INFINITY)) {
+        distanceById.set(edge.id, nextDistance);
+        previous.set(edge.id, current);
+      }
+    }
+  }
+
+  if (!previous.has(goal)) return [];
+
+  const result = [goal];
+  let cursor = goal;
+  while (cursor !== start) {
+    const previousId = previous.get(cursor);
+    if (!previousId) return [];
+    result.push(previousId);
+    cursor = previousId;
+  }
+  result.reverse();
+  return result;
+}
+
 function moveActor(
   actor: ActorRuntime,
   target: Triplet,
@@ -103,9 +229,15 @@ function moveActor(
 
 export class CharacterSystem {
   private readonly actors: ActorRuntime[] = [];
+  private readonly graph: Map<string, GraphEdge[]>;
+  private readonly navById: Map<string, Triplet>;
 
-  constructor(app: Application, map: MapDefinition) {
-    const navById = new Map(map.navNodes.map((node) => [node.id, node.position] as const));
+  constructor(
+    app: Application,
+    private readonly map: MapDefinition,
+  ) {
+    this.navById = new Map(map.navNodes.map((node) => [node.id, node.position] as const));
+    this.graph = buildNavigationGraph(map);
 
     for (const spawn of map.actorSpawns) {
       const root = new Entity(`actor-${spawn.id}`);
@@ -130,10 +262,31 @@ export class CharacterSystem {
 
       root.addChild(visual);
       root.addChild(head);
+
+      let limbs: ActorRuntime['limbs'] = null;
+      if (!matchMedia('(pointer: coarse)').matches) {
+        const makeLimb = (name: string, x: number, y: number): Entity => {
+          const limb = new Entity(`${spawn.id}-${name}`);
+          limb.addComponent('render', { type: 'box' });
+          limb.setLocalScale(0.18, 0.62, 0.2);
+          limb.setLocalPosition(x, y, 0);
+          if (limb.render) limb.render.material = actorMaterial;
+          root.addChild(limb);
+          return limb;
+        };
+
+        limbs = {
+          leftArm: makeLimb('left-arm', -0.52, 0.24),
+          rightArm: makeLimb('right-arm', 0.52, 0.24),
+          leftLeg: makeLimb('left-leg', -0.22, -0.78),
+          rightLeg: makeLimb('right-leg', 0.22, -0.78),
+        };
+      }
+
       app.root.addChild(root);
 
       const path = spawn.patrol
-        .map((nodeId) => navById.get(nodeId))
+        .map((nodeId) => this.navById.get(nodeId))
         .filter((point): point is Triplet => Boolean(point));
 
       this.actors.push({
@@ -148,6 +301,10 @@ export class CharacterSystem {
         state: path.length > 0 ? stateForRole(spawn.role) : 'idle',
         animationPhase: Math.random() * Math.PI * 2,
         alertSeconds: 0,
+        limbs,
+        chasePath: [],
+        chasePathIndex: 0,
+        chaseRepathSeconds: 0,
       });
     }
   }
@@ -178,8 +335,12 @@ export class CharacterSystem {
       const radius = detectionRadius(actor.role);
       const sameFloor = Math.abs(playerPosition.y - actorPosition.y) < 4;
       const visibilityScale = playerHidden ? 0.34 : 1;
+      const directSight = sameFloor && lineClear(this.map, current, player);
       const detected =
-        radius > 0 && sameFloor && currentDistance <= Math.max(1.5, radius * visibilityScale);
+        radius > 0 &&
+        sameFloor &&
+        directSight &&
+        currentDistance <= Math.max(1.5, radius * visibilityScale);
 
       if (detected && isHostile(actor.role)) {
         actor.alertSeconds = Math.max(actor.alertSeconds, actor.role === 'monster' ? 4.5 : 3);
@@ -190,8 +351,42 @@ export class CharacterSystem {
       const chasing = isHostile(actor.role) && actor.alertSeconds > 0 && sameFloor;
       if (chasing) {
         actor.state = actor.role === 'monster' || actor.role === 'seeker' ? 'sprint' : 'run';
-        moveActor(actor, player, dt, actor.role === 'monster' ? 1.08 : 1);
+        actor.chaseRepathSeconds = Math.max(0, actor.chaseRepathSeconds - dt);
+
+        if (directSight) {
+          actor.chasePath = [];
+          actor.chasePathIndex = 0;
+          moveActor(actor, player, dt, actor.role === 'monster' ? 1.08 : 1);
+        } else {
+          if (actor.chaseRepathSeconds <= 0) {
+            const startId = nearestNodeId(this.map, current);
+            const goalId = nearestNodeId(this.map, player);
+            if (startId && goalId) {
+              const ids = shortestPath(this.graph, startId, goalId);
+              actor.chasePath = ids
+                .map((id) => this.navById.get(id))
+                .filter((point): point is Triplet => Boolean(point));
+              actor.chasePathIndex = actor.chasePath.length > 1 ? 1 : 0;
+            }
+            actor.chaseRepathSeconds = 0.55;
+          }
+
+          const waypoint = actor.chasePath[actor.chasePathIndex] ?? null;
+          if (waypoint) {
+            if (distance(current, waypoint) < 0.75) {
+              actor.chasePathIndex = Math.min(actor.chasePath.length - 1, actor.chasePathIndex + 1);
+            }
+            moveActor(
+              actor,
+              actor.chasePath[actor.chasePathIndex] ?? waypoint,
+              dt,
+              actor.role === 'monster' ? 1.08 : 1,
+            );
+          }
+        }
       } else if (actor.path.length > 0) {
+        actor.chasePath = [];
+        actor.chasePathIndex = 0;
         actor.state = stateForRole(actor.role);
         const target = actor.path[actor.pathIndex]!;
         const remaining = distance(current, target);
@@ -216,6 +411,15 @@ export class CharacterSystem {
       const bob = Math.abs(Math.sin(actor.animationPhase)) * amplitude;
       actor.visual.setLocalPosition(0, bob, 0);
       actor.head.setLocalPosition(0, (actor.role === 'monster' ? 1.55 : 1.18) + bob, 0);
+
+      if (actor.limbs) {
+        const moving = actor.state !== 'idle';
+        const swing = moving ? Math.sin(actor.animationPhase) * 28 : 0;
+        actor.limbs.leftArm.setLocalEulerAngles(swing, 0, 0);
+        actor.limbs.rightArm.setLocalEulerAngles(-swing, 0, 0);
+        actor.limbs.leftLeg.setLocalEulerAngles(-swing * 0.75, 0, 0);
+        actor.limbs.rightLeg.setLocalEulerAngles(swing * 0.75, 0, 0);
+      }
 
       if (radius > 0) {
         const rawDanger = Math.max(0, 1 - currentDistance / radius);

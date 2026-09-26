@@ -10,11 +10,12 @@
     "start": "node server.mjs",
     "typecheck": "tsc --noEmit",
     "smoke": "node scripts/verify-build.mjs",
-    "verify": "npm run verify:ravenwood && npm run verify:roadmap && npm run typecheck && npm run build && npm run smoke",
+    "verify": "npm run verify:ravenwood && npm run verify:roadmap && npm run verify:release && npm run typecheck && npm run build && npm run smoke",
     "verify:ravenwood": "node scripts/verify-ravenwood-layout.mjs",
     "build:pages": "vite build --base=/Hideverse.io/game/",
     "build:static": "vite build --base=./",
-    "verify:roadmap": "node scripts/verify-roadmap.mjs"
+    "verify:roadmap": "node scripts/verify-roadmap.mjs",
+    "verify:release": "node scripts/verify-release.mjs"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "0.20.0",
