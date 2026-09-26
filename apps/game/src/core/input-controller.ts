@@ -16,6 +16,7 @@ export class InputController {
   private joystickZ = 0;
   private jumpQueued = false;
   private interactQueued = false;
+  private viewToggleQueued = false;
   private sprintTouch = false;
   private crouchTouch = false;
   private yawValue = 0;
@@ -44,6 +45,9 @@ export class InputController {
     });
     this.bindButton('mobile-interact', () => {
       this.interactQueued = true;
+    });
+    this.bindButton('mobile-view', () => {
+      this.viewToggleQueued = true;
     });
     this.bindHoldButton('mobile-sprint', (active) => {
       this.sprintTouch = active;
@@ -108,6 +112,12 @@ export class InputController {
     return queued;
   }
 
+  consumeViewToggle(): boolean {
+    const queued = this.viewToggleQueued;
+    this.viewToggleQueued = false;
+    return queued;
+  }
+
   consumeReset(): boolean {
     if (!this.keys.has('KeyR')) return false;
     this.keys.delete('KeyR');
@@ -131,6 +141,9 @@ export class InputController {
     }
     if (event.code === 'KeyE' && !event.repeat) {
       this.interactQueued = true;
+    }
+    if (event.code === 'KeyV' && !event.repeat) {
+      this.viewToggleQueued = true;
     }
   };
 

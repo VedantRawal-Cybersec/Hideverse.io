@@ -486,6 +486,74 @@
       ],
       "notes": "CC0 low-poly rigged character with 76 embedded animation clips. Loaded lazily on non-coarse-pointer devices; mobile keeps the lightweight procedural role avatar.",
       "maxRuntimeFileBytes": 4000000
+    },
+    {
+      "id": "kaykit-character-barbarian",
+      "name": "Barbarian — rigged human role character",
+      "category": "character",
+      "source": "KayKit Character Pack: Adventurers 1.0",
+      "sourceRepo": "KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0",
+      "sourceCommit": "672074b73ba276876a19e8816ecdc5241817ab47",
+      "sourcePath": "addons/kaykit_character_pack_adventures/Characters/gltf/Barbarian.glb",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/blob/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Characters/gltf/Barbarian.glb",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/characters/kaykit/Barbarian.glb"
+      ],
+      "notes": "CC0 clothed low-poly rigged human with embedded locomotion/action animation clips; used for role-specific desktop NPC variety.",
+      "maxRuntimeFileBytes": 4000000
+    },
+    {
+      "id": "kaykit-character-knight",
+      "name": "Knight — rigged human role character",
+      "category": "character",
+      "source": "KayKit Character Pack: Adventurers 1.0",
+      "sourceRepo": "KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0",
+      "sourceCommit": "672074b73ba276876a19e8816ecdc5241817ab47",
+      "sourcePath": "addons/kaykit_character_pack_adventures/Characters/gltf/Knight.glb",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/blob/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Characters/gltf/Knight.glb",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/characters/kaykit/Knight.glb"
+      ],
+      "notes": "CC0 clothed low-poly rigged human with embedded locomotion/action animation clips; used for role-specific desktop NPC variety.",
+      "maxRuntimeFileBytes": 4000000
+    },
+    {
+      "id": "kaykit-character-mage",
+      "name": "Mage — rigged human role character",
+      "category": "character",
+      "source": "KayKit Character Pack: Adventurers 1.0",
+      "sourceRepo": "KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0",
+      "sourceCommit": "672074b73ba276876a19e8816ecdc5241817ab47",
+      "sourcePath": "addons/kaykit_character_pack_adventures/Characters/gltf/Mage.glb",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/blob/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Characters/gltf/Mage.glb",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/characters/kaykit/Mage.glb"
+      ],
+      "notes": "CC0 clothed low-poly rigged human with embedded locomotion/action animation clips; used for role-specific desktop NPC variety.",
+      "maxRuntimeFileBytes": 4000000
+    },
+    {
+      "id": "kaykit-character-rogue",
+      "name": "Rogue — rigged human role character",
+      "category": "character",
+      "source": "KayKit Character Pack: Adventurers 1.0",
+      "sourceRepo": "KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0",
+      "sourceCommit": "672074b73ba276876a19e8816ecdc5241817ab47",
+      "sourcePath": "addons/kaykit_character_pack_adventures/Characters/gltf/Rogue.glb",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/blob/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Characters/gltf/Rogue.glb",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/characters/kaykit/Rogue.glb"
+      ],
+      "notes": "CC0 clothed low-poly rigged human with embedded locomotion/action animation clips; used for role-specific desktop NPC variety.",
+      "maxRuntimeFileBytes": 4000000
     }
   ]
 }
