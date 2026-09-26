@@ -17,6 +17,9 @@ type AssetSummary = {
   generatedAt: string;
 };
 
+const siteBase = import.meta.env.BASE_URL;
+const gameHref = `${siteBase}game/`;
+
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Hideverse website root is missing.');
 
@@ -30,7 +33,7 @@ app.innerHTML = `
       <a href="#progress">Progress</a>
       <a href="#assets">Assets</a>
       <a href="#roadmap">Roadmap</a>
-      <a class="nav-play" href="/game/">Play Current Build</a>
+      <a class="nav-play" href="${gameHref}">Play Current Build</a>
     </nav>
   </header>
 
@@ -44,7 +47,7 @@ app.innerHTML = `
           the latest verified Hideverse build deployed from the main branch.
         </p>
         <div class="actions">
-          <a class="button primary" href="/game/">Launch Current Build</a>
+          <a class="button primary" href="${gameHref}">Launch Current Build</a>
           <a class="button secondary" href="#progress">See What Works</a>
         </div>
       </div>
@@ -100,7 +103,7 @@ app.innerHTML = `
             Ravenwood is being built from a pinned CC0 Victorian house source, then optimized
             for browser play and combined with our existing Kenney and KayKit environment library.
           </p>
-          <a class="button primary" href="/game/">Enter Ravenwood Build</a>
+          <a class="button primary" href="${gameHref}">Enter Ravenwood Build</a>
         </div>
         <div class="map-meta">
           <div><span>ARCHITECTURE</span><strong>CC0 Victorian House</strong></div>
@@ -148,7 +151,7 @@ app.innerHTML = `
 
 async function hydrateAssets(): Promise<void> {
   try {
-    const response = await fetch('/data/asset-summary.json', { cache: 'no-store' });
+    const response = await fetch(`${siteBase}data/asset-summary.json`, { cache: 'no-store' });
     if (!response.ok) throw new Error(`Asset summary HTTP ${response.status}`);
     const summary = (await response.json()) as AssetSummary;
 
