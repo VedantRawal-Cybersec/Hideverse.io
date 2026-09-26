@@ -1,4 +1,4 @@
-import type RAPIER from '@dimforge/rapier3d-compat';
+import RAPIER from '@dimforge/rapier3d-compat';
 import { Application, Entity, Vec3 } from 'playcanvas';
 import type { RenderComponent } from 'playcanvas';
 import { loadContainer } from '../../core/load-container';
