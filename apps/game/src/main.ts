@@ -2,10 +2,12 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { Application, Color, Entity, FILLMODE_FILL_WINDOW, RESOLUTION_AUTO } from 'playcanvas';
 import { AudioFeedback } from './core/audio-feedback';
 import { CharacterSystem } from './core/character-system';
+import { GraphicsPipeline } from './core/graphics-pipeline';
 import { InputController } from './core/input-controller';
 import { ModeEngine } from './core/mode-engine';
 import { MultiplayerClient } from './core/multiplayer-client';
 import { PerformanceManager, type QualityPreset } from './core/performance-manager';
+import { PlayerAvatar } from './core/player-avatar';
 import { FirstPersonController } from './core/player-controller';
 import {
   hideverseMaps,
@@ -53,6 +55,7 @@ const modeDanger = must<HTMLElement>('#mode-danger');
 const modeOutcome = must<HTMLElement>('#mode-outcome');
 const motionValue = must<HTMLElement>('#motion-value');
 const staminaValue = must<HTMLElement>('#stamina-value');
+const viewValue = must<HTMLElement>('#view-value');
 const networkValue = must<HTMLElement>('#network-value');
 const roomValue = must<HTMLElement>('#room-value');
 const peersValue = must<HTMLElement>('#peers-value');
@@ -186,6 +189,9 @@ async function boot(): Promise<void> {
   });
   app.root.addChild(camera);
 
+  const graphicsPipeline = new GraphicsPipeline(app, camera, coarse);
+  graphicsPipeline.applyQuality(performanceManager.preset);
+
   const sun = new Entity(`${map.name} Key Light`);
   sun.addComponent('light', {
     type: 'directional',
@@ -204,6 +210,7 @@ async function boot(): Promise<void> {
 
   qualitySelect.addEventListener('change', () => {
     performanceManager.setPreset(qualitySelect.value as QualityPreset);
+    graphicsPipeline.applyQuality(performanceManager.preset);
     if (sun.light) {
       sun.light.castShadows = performanceManager.shadowsEnabled;
       sun.light.shadowResolution = performanceManager.shadowResolution;
@@ -232,7 +239,8 @@ async function boot(): Promise<void> {
     input.setLookSensitivity(Number.parseFloat(sensitivitySlider.value));
   });
 
-  const player = new FirstPersonController(world, camera, input, {
+  const playerAvatar = new PlayerAvatar(app);
+  const player = new FirstPersonController(world, camera, input, playerAvatar, {
     x: map.spawn[0],
     y: map.spawn[1],
     z: map.spawn[2],
@@ -260,6 +268,7 @@ async function boot(): Promise<void> {
     () => {
       multiplayer.dispose();
       input.dispose();
+      graphicsPipeline.destroy();
     },
     { once: true },
   );
@@ -331,6 +340,7 @@ async function boot(): Promise<void> {
     modePanel.classList.toggle('is-lost', modeState.outcome === 'lost');
     motionValue.textContent = player.motionState.toUpperCase();
     staminaValue.textContent = `${Math.round(player.staminaPercent)}%`;
+    viewValue.textContent = player.viewMode === 'first-person' ? 'FPS' : 'TPS';
 
     multiplayer.update(position, player.yaw, player.motionState, deltaSeconds);
     networkValue.textContent = multiplayer.status;
