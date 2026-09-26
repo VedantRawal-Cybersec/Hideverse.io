@@ -1,6 +1,11 @@
 import RAPIER from '@dimforge/rapier3d-compat';
-import { Application, Color, Entity, StandardMaterial } from 'playcanvas';
+import { Application, Entity, StandardMaterial } from 'playcanvas';
 import { loadContainer } from '../core/load-container';
+import {
+  colorFromTriplet,
+  createReferenceMaterial,
+  mapWallTone,
+} from '../core/reference-art-direction';
 import type { DoorDefinition, MapBox, MapDefinition, Triplet } from './map-catalog';
 import { buildRavenwood } from './ravenwood/ravenwood';
 
@@ -14,13 +19,6 @@ export type DoorRuntime = {
 export type MapRuntime = {
   doors: DoorRuntime[];
   objectCount: number;
-};
-
-type Palette = {
-  architecture: Triplet;
-  prop: Triplet;
-  accent: Triplet;
-  ground: Triplet;
 };
 
 type DressingAsset = {
@@ -61,61 +59,6 @@ const dressingAssets: Record<string, DressingAsset[]> = {
   ],
 };
 
-const palettes: Palette[] = [
-  {
-    architecture: [0.2, 0.22, 0.27],
-    prop: [0.34, 0.3, 0.26],
-    accent: [0.65, 0.72, 0.82],
-    ground: [0.08, 0.1, 0.12],
-  },
-  {
-    architecture: [0.27, 0.29, 0.33],
-    prop: [0.22, 0.38, 0.52],
-    accent: [0.92, 0.68, 0.25],
-    ground: [0.12, 0.13, 0.15],
-  },
-  {
-    architecture: [0.3, 0.27, 0.22],
-    prop: [0.44, 0.34, 0.22],
-    accent: [0.82, 0.67, 0.36],
-    ground: [0.1, 0.085, 0.07],
-  },
-  {
-    architecture: [0.18, 0.24, 0.23],
-    prop: [0.26, 0.36, 0.32],
-    accent: [0.35, 0.82, 0.64],
-    ground: [0.055, 0.08, 0.075],
-  },
-  {
-    architecture: [0.28, 0.22, 0.31],
-    prop: [0.46, 0.26, 0.28],
-    accent: [0.86, 0.48, 0.32],
-    ground: [0.09, 0.065, 0.1],
-  },
-  {
-    architecture: [0.18, 0.24, 0.34],
-    prop: [0.26, 0.38, 0.52],
-    accent: [0.52, 0.58, 0.96],
-    ground: [0.055, 0.075, 0.11],
-  },
-];
-
-function material(
-  color: Triplet,
-  options: { metalness?: number; gloss?: number; emissive?: number } = {},
-): StandardMaterial {
-  const result = new StandardMaterial();
-  result.diffuse = new Color(color[0], color[1], color[2]);
-  result.metalness = options.metalness ?? 0.05;
-  result.gloss = options.gloss ?? 0.35;
-  if ((options.emissive ?? 0) > 0) {
-    result.emissive = new Color(color[0], color[1], color[2]);
-    result.emissiveIntensity = options.emissive ?? 0;
-  }
-  result.update();
-  return result;
-}
-
 function createVisualBox(app: Application, item: MapBox, boxMaterial: StandardMaterial): Entity {
   const entity = new Entity(item.id);
   entity.addComponent('render', { type: 'box' });
@@ -126,6 +69,67 @@ function createVisualBox(app: Application, item: MapBox, boxMaterial: StandardMa
   }
   app.root.addChild(entity);
   return entity;
+}
+
+function createReferenceStructureDetails(
+  app: Application,
+  item: MapBox,
+  trimMaterial: StandardMaterial,
+  wallAltMaterial: StandardMaterial,
+  coarse: boolean,
+): number {
+  const [width, height, depth] = item.size;
+  if (height < 1.8 || width < 1.2 || depth < 1.2) return 0;
+
+  let created = 0;
+  const topCap: MapBox = {
+    id: `${item.id}-roof-cap`,
+    position: [item.position[0], item.position[1] + height / 2 + 0.08, item.position[2]],
+    size: [width + 0.12, 0.16, depth + 0.12],
+  };
+  createVisualBox(app, topCap, trimMaterial);
+  created += 1;
+
+  if (!coarse) {
+    const baseBand: MapBox = {
+      id: `${item.id}-base-band`,
+      position: [item.position[0], item.position[1] - height / 2 + 0.14, item.position[2]],
+      size: [width + 0.06, 0.28, depth + 0.06],
+    };
+    createVisualBox(app, baseBand, wallAltMaterial);
+    created += 1;
+
+    if (width >= 8 && depth >= 3) {
+      const pillarHeight = Math.min(height * 0.72, 4.8);
+      const pillarY = item.position[1] - height / 2 + pillarHeight / 2 + 0.28;
+      const pillarSize = Math.max(0.28, Math.min(0.44, Math.min(width, depth) * 0.04));
+      const corners: Array<[number, number]> = [
+        [-1, -1],
+        [1, -1],
+        [-1, 1],
+        [1, 1],
+      ];
+
+      for (const [sx, sz] of corners) {
+        createVisualBox(
+          app,
+          {
+            id: `${item.id}-pillar-${sx}-${sz}`,
+            position: [
+              item.position[0] + sx * (width / 2 - pillarSize / 2),
+              pillarY,
+              item.position[2] + sz * (depth / 2 - pillarSize / 2),
+            ],
+            size: [pillarSize, pillarHeight, pillarSize],
+          },
+          trimMaterial,
+        );
+        created += 1;
+      }
+    }
+  }
+
+  return created;
 }
 
 function createStaticCollider(world: RAPIER.World, item: MapBox): void {
@@ -267,15 +271,12 @@ async function buildProceduralMap(
   onStatus: (message: string) => void,
 ): Promise<MapRuntime> {
   const coarse = matchMedia('(pointer: coarse)').matches;
-  const palette = palettes[Math.max(0, Math.min(palettes.length - 1, map.index - 1))]!;
-  const architectureMaterial = material(palette.architecture, { metalness: 0.02, gloss: 0.26 });
-  const propMaterial = material(palette.prop, { metalness: 0.12, gloss: 0.42 });
-  const accentMaterial = material(palette.accent, {
-    metalness: 0.28,
-    gloss: 0.62,
-    emissive: 0.16,
-  });
-  const groundMaterial = material(palette.ground, { metalness: 0.01, gloss: 0.18 });
+  const architectureMaterial = createReferenceMaterial('wall', mapWallTone(map.index));
+  const wallAltMaterial = createReferenceMaterial('wall-alt');
+  const trimMaterial = createReferenceMaterial('trim');
+  const propMaterial = createReferenceMaterial('metal');
+  const accentMaterial = createReferenceMaterial('accent');
+  const groundMaterial = createReferenceMaterial('floor');
   const budget = coarse ? map.lod.mobileObjectBudget : map.lod.desktopObjectBudget;
 
   onStatus(`Building ${map.name} architecture…`);
@@ -288,6 +289,15 @@ async function buildProceduralMap(
     if (objectCount < budget) {
       createVisualBox(app, structure, architectureMaterial);
       objectCount += 1;
+      if (objectCount < budget) {
+        objectCount += createReferenceStructureDetails(
+          app,
+          structure,
+          trimMaterial,
+          wallAltMaterial,
+          coarse,
+        );
+      }
     }
   }
 
@@ -316,7 +326,7 @@ async function buildProceduralMap(
       const light = new Entity(`objective-light-${objective.id}`);
       light.addComponent('light', {
         type: 'omni',
-        color: new Color(palette.accent[0], palette.accent[1], palette.accent[2]),
+        color: colorFromTriplet([0.48, 0.56, 0.46]),
         intensity: 0.55,
         range: 7,
         castShadows: false,
@@ -344,11 +354,9 @@ export async function buildSelectedMap(
   map: MapDefinition,
   onStatus: (message: string) => void,
 ): Promise<MapRuntime> {
-  const palette = palettes[Math.max(0, Math.min(palettes.length - 1, map.index - 1))]!;
-
   if (map.id === 'ravenwood') {
     await buildRavenwood(app, world, onStatus);
-    const doorMaterial = material(palette.accent);
+    const doorMaterial = createReferenceMaterial('accent');
     const doors = map.doors.map((door) => createDoor(app, world, door, doorMaterial));
     return {
       doors,
