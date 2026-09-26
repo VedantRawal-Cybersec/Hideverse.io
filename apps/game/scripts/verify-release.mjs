@@ -143,6 +143,7 @@ for (const id of [
 
 for (const marker of [
   'materials/reference/',
+  'materials/pbr/',
   "'concrete'",
   "'brick'",
   "'asphalt'",
@@ -150,8 +151,32 @@ for (const marker of [
   "'wood'",
   'ADDRESS_REPEAT',
   'diffuseMapTiling',
+  'normalMapTiling',
+  'glossMapTiling',
+  'normalMap',
+  'glossMap',
+  'glossInvert',
+  'roughness',
 ]) {
   if (!surfaceTextures.includes(marker)) fail(`real surface runtime missing ${marker}`);
+}
+
+for (const id of [
+  'cc0-pbr-concrete',
+  'cc0-pbr-brick',
+  'cc0-pbr-asphalt',
+  'cc0-pbr-metal',
+  'cc0-pbr-wood',
+]) {
+  const asset = manifest.assets?.find(
+    (candidate) => candidate.id === id && candidate.status === 'acquired',
+  );
+  if (!asset) fail(`compressed PBR surface is not registered: ${id}`);
+
+  const pbrFiles = asset.localFiles?.filter((file) => file.endsWith('.ktx2')) ?? [];
+  if (pbrFiles.length !== 3) {
+    fail(`${id}: expected color, normal and roughness KTX2 files`);
+  }
 }
 
 for (const marker of [
@@ -186,5 +211,5 @@ for (const marker of [
 }
 
 console.log(
-  `[release-qa] PASS — ${catalog.maps.length} maps, mobile budgets, adaptive rendering, touch controls, FPS/TPS physics, shared objectives, realtime room sync, multi-character rigged locomotion, HDR graphics, real CC0 tiled surfaces and six-map architectural realism verified.`,
+  `[release-qa] PASS — ${catalog.maps.length} maps, mobile budgets, adaptive rendering, touch controls, FPS/TPS physics, shared objectives, realtime room sync, multi-character rigged locomotion, HDR graphics, real CC0 tiled surfaces, compressed PBR detail and six-map architectural realism verified.`,
 );
