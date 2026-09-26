@@ -115,9 +115,10 @@ async function loadInstances(
   placements: Array<{ x: number; y: number; z: number; scale?: number; yaw?: number }>,
 ): Promise<void> {
   const asset = await loadContainer(app, modelUrl(url));
+  const coarse = matchMedia('(pointer: coarse)').matches;
   for (const placement of placements) {
     const entity = asset.resource.instantiateRenderEntity({
-      castShadows: true,
+      castShadows: !coarse,
       receiveShadows: true,
     });
     const scale = placement.scale ?? 1;
@@ -141,11 +142,15 @@ type InteriorPlacement = {
 
 async function loadInteriorDressing(app: Application, world: RAPIER.World): Promise<void> {
   const grouped = new Map<string, InteriorPlacement[]>();
+  const coarse = matchMedia('(pointer: coarse)').matches;
+  const placements = interiorLayout.placements as InteriorPlacement[];
 
-  for (const placement of interiorLayout.placements as InteriorPlacement[]) {
-    const list = grouped.get(placement.asset) ?? [];
-    list.push(placement);
-    grouped.set(placement.asset, list);
+  for (const [index, placement] of placements.entries()) {
+    if (!coarse || index % 2 === 0) {
+      const list = grouped.get(placement.asset) ?? [];
+      list.push(placement);
+      grouped.set(placement.asset, list);
+    }
 
     const body = world.createRigidBody(
       RAPIER.RigidBodyDesc.fixed().setTranslation(
@@ -164,11 +169,11 @@ async function loadInteriorDressing(app: Application, world: RAPIER.World): Prom
     );
   }
 
-  const tasks = [...grouped.entries()].map(([asset, placements]) =>
+  const tasks = [...grouped.entries()].map(([asset, groupedPlacements]) =>
     loadInstances(
       app,
       asset,
-      placements.map((placement) => ({
+      groupedPlacements.map((placement) => ({
         x: placement.x,
         y: placement.y,
         z: placement.z,
@@ -182,32 +187,47 @@ async function loadInteriorDressing(app: Application, world: RAPIER.World): Prom
 }
 
 async function loadExteriorDressing(app: Application): Promise<void> {
-  const tasks = [
-    loadInstances(app, 'ravenwood/nature/kenney/tree_oak.glb', [
-      { x: -38, y: 0, z: 28, scale: 2.2 },
-      { x: 39, y: 0, z: 24, scale: 2.4, yaw: 70 },
-      { x: -42, y: 0, z: -18, scale: 2.1, yaw: 120 },
-      { x: 42, y: 0, z: -22, scale: 2.35, yaw: 210 },
-    ]),
-    loadInstances(app, 'ravenwood/nature/kenney/tree_pineDefaultA.glb', [
-      { x: -48, y: 0, z: 4, scale: 2.4 },
-      { x: 48, y: 0, z: 8, scale: 2.2 },
-    ]),
-    loadInstances(app, 'ravenwood/nature/kenney/rock_largeA.glb', [
-      { x: -26, y: 0, z: 34, scale: 1.8, yaw: 24 },
-      { x: 27, y: 0, z: 35, scale: 1.4, yaw: 130 },
-    ]),
-    loadInstances(app, 'ravenwood/exterior/kaykit-city/bench.gltf', [
-      { x: -10, y: 0, z: 33, scale: 1.1, yaw: 180 },
-      { x: 10, y: 0, z: 33, scale: 1.1, yaw: 180 },
-    ]),
-    loadInstances(app, 'ravenwood/exterior/kaykit-city/streetlight.gltf', [
-      { x: -7, y: 0, z: 42, scale: 1.2 },
-      { x: 7, y: 0, z: 42, scale: 1.2 },
-      { x: -7, y: 0, z: 28, scale: 1.2 },
-      { x: 7, y: 0, z: 28, scale: 1.2 },
-    ]),
-  ];
+  const coarse = matchMedia('(pointer: coarse)').matches;
+  const tasks = coarse
+    ? [
+        loadInstances(app, 'ravenwood/nature/kenney/tree_oak.glb', [
+          { x: -38, y: 0, z: 28, scale: 2.2 },
+          { x: 39, y: 0, z: 24, scale: 2.4, yaw: 70 },
+        ]),
+        loadInstances(app, 'ravenwood/nature/kenney/rock_largeA.glb', [
+          { x: -26, y: 0, z: 34, scale: 1.8, yaw: 24 },
+        ]),
+        loadInstances(app, 'ravenwood/exterior/kaykit-city/streetlight.gltf', [
+          { x: -7, y: 0, z: 42, scale: 1.2 },
+          { x: 7, y: 0, z: 42, scale: 1.2 },
+        ]),
+      ]
+    : [
+        loadInstances(app, 'ravenwood/nature/kenney/tree_oak.glb', [
+          { x: -38, y: 0, z: 28, scale: 2.2 },
+          { x: 39, y: 0, z: 24, scale: 2.4, yaw: 70 },
+          { x: -42, y: 0, z: -18, scale: 2.1, yaw: 120 },
+          { x: 42, y: 0, z: -22, scale: 2.35, yaw: 210 },
+        ]),
+        loadInstances(app, 'ravenwood/nature/kenney/tree_pineDefaultA.glb', [
+          { x: -48, y: 0, z: 4, scale: 2.4 },
+          { x: 48, y: 0, z: 8, scale: 2.2 },
+        ]),
+        loadInstances(app, 'ravenwood/nature/kenney/rock_largeA.glb', [
+          { x: -26, y: 0, z: 34, scale: 1.8, yaw: 24 },
+          { x: 27, y: 0, z: 35, scale: 1.4, yaw: 130 },
+        ]),
+        loadInstances(app, 'ravenwood/exterior/kaykit-city/bench.gltf', [
+          { x: -10, y: 0, z: 33, scale: 1.1, yaw: 180 },
+          { x: 10, y: 0, z: 33, scale: 1.1, yaw: 180 },
+        ]),
+        loadInstances(app, 'ravenwood/exterior/kaykit-city/streetlight.gltf', [
+          { x: -7, y: 0, z: 42, scale: 1.2 },
+          { x: 7, y: 0, z: 42, scale: 1.2 },
+          { x: -7, y: 0, z: 28, scale: 1.2 },
+          { x: 7, y: 0, z: 28, scale: 1.2 },
+        ]),
+      ];
 
   await Promise.allSettled(tasks);
 }
@@ -253,7 +273,7 @@ export async function buildRavenwood(
       modelUrl('ravenwood/map/ravenwood_mansion_victorian.glb'),
     );
     const mansion = asset.resource.instantiateRenderEntity({
-      castShadows: true,
+      castShadows: !matchMedia('(pointer: coarse)').matches,
       receiveShadows: true,
     });
     mansion.name = 'Ravenwood Victorian Mansion';
