@@ -281,9 +281,7 @@ function buildPlayableMansionShell(world: RAPIER.World): void {
     z: number,
   ): void => {
     world.createCollider(
-      RAPIER.ColliderDesc.cuboid(halfX, halfY, halfZ)
-        .setTranslation(x, y, z)
-        .setFriction(0.85),
+      RAPIER.ColliderDesc.cuboid(halfX, halfY, halfZ).setTranslation(x, y, z).setFriction(0.85),
     );
   };
 
