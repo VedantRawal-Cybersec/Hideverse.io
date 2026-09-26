@@ -34,6 +34,7 @@ export class PerformanceManager {
     private readonly app: Application,
     private readonly coarsePointer: boolean,
   ) {
+    this.reduced = this.presetValue === 'auto';
     this.applyPixelRatio();
   }
 
@@ -66,7 +67,7 @@ export class PerformanceManager {
   setPreset(preset: QualityPreset): void {
     this.presetValue = preset;
     this.adaptiveScale = 1;
-    this.reduced = false;
+    this.reduced = preset === 'auto';
     this.goodWindows = 0;
     localStorage.setItem(storageKey, preset);
     this.applyPixelRatio();
