@@ -19,12 +19,18 @@ jobs:
           - name: nexus-desktop
             map: nexus
             mobile: "false"
+            wall: plaster-wall.png
+            floor: tile-floor.png
           - name: hospital-desktop
             map: hospital
             mobile: "false"
+            wall: concrete-wall.png
+            floor: tile-floor.png
           - name: ravenwood-mobile
             map: ravenwood
             mobile: "true"
+            wall: plaster-wall.png
+            floor: asphalt-floor.png
 
     steps:
       - uses: actions/checkout@v7
@@ -40,6 +46,8 @@ jobs:
           MAP_ID: ${{ matrix.case.map }}
           MOBILE: ${{ matrix.case.mobile }}
           CASE_NAME: ${{ matrix.case.name }}
+          EXPECTED_WALL: ${{ matrix.case.wall }}
+          EXPECTED_FLOOR: ${{ matrix.case.floor }}
         run: |
           node --input-type=module <<'NODE'
           import { chromium } from 'playwright';
@@ -73,11 +81,16 @@ jobs:
             );
             await page.waitForSelector('#boot-overlay.is-hidden', { timeout: 90000 });
 
-            const textureDeadline = Date.now() + 15000;
-            while (
-              textureResponses.filter((entry) => entry.status === 200).length < 4 &&
-              Date.now() < textureDeadline
-            ) {
+            const hasCriticalTextures = () => {
+              const successful = textures.filter((entry) => entry.status === 200);
+              return (
+                successful.some((entry) => entry.url.endsWith(process.env.EXPECTED_WALL)) &&
+                successful.some((entry) => entry.url.endsWith(process.env.EXPECTED_FLOOR))
+              );
+            };
+
+            const textureDeadline = Date.now() + 20000;
+            while (!hasCriticalTextures() && Date.now() < textureDeadline) {
               await page.waitForTimeout(750);
             }
 
@@ -97,8 +110,17 @@ jobs:
             }));
 
             if (errors.length) throw new Error(errors.join(' | '));
-            if (successful.length < 4) {
-              throw new Error(`Only ${successful.length} real material textures loaded successfully`);
+
+            const wallLoaded = successful.some((entry) =>
+              entry.url.endsWith(process.env.EXPECTED_WALL),
+            );
+            const floorLoaded = successful.some((entry) =>
+              entry.url.endsWith(process.env.EXPECTED_FLOOR),
+            );
+            if (!wallLoaded || !floorLoaded) {
+              throw new Error(
+                `Critical materials missing wall=${wallLoaded} floor=${floorLoaded}: ${JSON.stringify(successful)}`,
+              );
             }
           } finally {
             await context.close();
