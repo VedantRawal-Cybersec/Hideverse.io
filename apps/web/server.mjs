@@ -25,7 +25,7 @@ const mime = new Map([
 ]);
 
 function resolveRequest(urlPath) {
-  const decoded = decodeURIComponent((urlPath.split('?')[0] || '/'));
+  const decoded = decodeURIComponent(urlPath.split('?')[0] || '/');
   const requested = decoded === '/' ? '/index.html' : decoded;
   const resolved = path.resolve(dist, `.${requested}`);
   return resolved.startsWith(dist) ? resolved : null;
@@ -36,7 +36,8 @@ async function send(res, filePath) {
   const ext = path.extname(filePath).toLowerCase();
   res.writeHead(200, {
     'Content-Type': mime.get(ext) ?? 'application/octet-stream',
-    'Cache-Control': ext === '.html' || ext === '.json' ? 'no-cache' : 'public, max-age=31536000, immutable',
+    'Cache-Control':
+      ext === '.html' || ext === '.json' ? 'no-cache' : 'public, max-age=31536000, immutable',
     'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
   });
