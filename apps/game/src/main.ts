@@ -112,7 +112,7 @@ async function boot(): Promise<void> {
     aiManager.update(deltaSeconds);
   });
 
-  const resize = (): void => app.resizeCanvas();
+  const resize = (): void => {\n    app.resizeCanvas();\n  };
   window.addEventListener('resize', resize, { passive: true });
 
   app.start();
