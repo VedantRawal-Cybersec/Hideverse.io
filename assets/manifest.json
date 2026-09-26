@@ -2,7 +2,8 @@
   "version": 1,
   "policy": {
     "allowedLicenses": [
-      "CC0-1.0"
+      "CC0-1.0",
+      "MIT"
     ],
     "maxRuntimeFileBytes": 2000000,
     "requirePinnedGitHubCommit": true,
