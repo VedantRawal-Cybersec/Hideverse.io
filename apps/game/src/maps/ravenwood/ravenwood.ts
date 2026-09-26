@@ -2,6 +2,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { Application, Entity, Vec3 } from 'playcanvas';
 import type { RenderComponent } from 'playcanvas';
 import { loadContainer } from '../../core/load-container';
+import interiorLayout from './interior-layout.json';
 
 export type RavenwoodStatus = (message: string) => void;
 
@@ -127,6 +128,59 @@ async function loadInstances(
   }
 }
 
+type InteriorPlacement = {
+  id: string;
+  asset: string;
+  x: number;
+  y: number;
+  z: number;
+  yaw: number;
+  scale: number;
+  collider: { x: number; y: number; z: number };
+};
+
+async function loadInteriorDressing(app: Application, world: RAPIER.World): Promise<void> {
+  const grouped = new Map<string, InteriorPlacement[]>();
+
+  for (const placement of interiorLayout.placements as InteriorPlacement[]) {
+    const list = grouped.get(placement.asset) ?? [];
+    list.push(placement);
+    grouped.set(placement.asset, list);
+
+    const body = world.createRigidBody(
+      RAPIER.RigidBodyDesc.fixed().setTranslation(
+        placement.x,
+        placement.y + placement.collider.y,
+        placement.z,
+      ),
+    );
+    world.createCollider(
+      RAPIER.ColliderDesc.cuboid(
+        placement.collider.x,
+        placement.collider.y,
+        placement.collider.z,
+      ).setFriction(0.8),
+      body,
+    );
+  }
+
+  const tasks = [...grouped.entries()].map(([asset, placements]) =>
+    loadInstances(
+      app,
+      asset,
+      placements.map((placement) => ({
+        x: placement.x,
+        y: placement.y,
+        z: placement.z,
+        yaw: placement.yaw,
+        scale: placement.scale,
+      })),
+    ),
+  );
+
+  await Promise.allSettled(tasks);
+}
+
 async function loadExteriorDressing(app: Application): Promise<void> {
   const tasks = [
     loadInstances(app, 'ravenwood/nature/kenney/tree_oak.glb', [
@@ -191,6 +245,7 @@ export async function buildRavenwood(
   );
 
   void loadExteriorDressing(app);
+  void loadInteriorDressing(app, world);
 
   try {
     const asset = await loadContainer(
