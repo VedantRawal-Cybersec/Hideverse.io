@@ -74,9 +74,7 @@ try {
     }),
   });
 
-  const room = await json(
-    '/api/multiplayer/room?map=ravenwood&room=QA-ROOM&playerId=qa-player-2',
-  );
+  const room = await json('/api/multiplayer/room?map=ravenwood&room=QA-ROOM&playerId=qa-player-2');
   if (room.playerCount !== 2 || room.peers?.length !== 1) {
     throw new Error(`unexpected room state: ${JSON.stringify(room)}`);
   }
@@ -106,7 +104,9 @@ try {
     body: JSON.stringify({ map: 'ravenwood', room: 'QA-ROOM', playerId: 'qa-player-1' }),
   });
 
-  console.log('[multiplayer-qa] PASS — health, join, first state, room sync, SSE, and leave verified.');
+  console.log(
+    '[multiplayer-qa] PASS — health, join, first state, room sync, SSE, and leave verified.',
+  );
 } finally {
   server.kill('SIGTERM');
 }

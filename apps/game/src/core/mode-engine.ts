@@ -54,10 +54,7 @@ function riskRate(modeId: string, threat: ThreatSnapshot): number {
   if (modeId === 'monster-hunt' && threat.role === 'monster') return threat.danger * 36;
   if (modeId === 'hide-and-heist' && threat.role === 'guard') return threat.danger * 30;
   if (modeId === 'kick-the-box' && threat.role === 'seeker') return threat.danger * 28;
-  if (
-    modeId === 'floor-by-floor' &&
-    (threat.role === 'seeker' || threat.role === 'guard')
-  ) {
+  if (modeId === 'floor-by-floor' && (threat.role === 'seeker' || threat.role === 'guard')) {
     return threat.danger * 24;
   }
   if (modeId === 'traitor' && threat.role === 'traitor') return threat.danger * 22;
@@ -66,7 +63,12 @@ function riskRate(modeId: string, threat: ThreatSnapshot): number {
   return threat.detected ? threat.danger * 10 : threat.danger * 3;
 }
 
-function statusFor(modeId: string, danger: number, threat: ThreatSnapshot, hidden: boolean): string {
+function statusFor(
+  modeId: string,
+  danger: number,
+  threat: ThreatSnapshot,
+  hidden: boolean,
+): string {
   if (hidden && danger > 5) return 'CONCEALED · RISK DECAYING';
   if (threat.detected) return threat.label;
   if (modeId === 'who-is-real' && threat.role === 'mimic' && threat.danger > 0.15) {
@@ -80,10 +82,12 @@ function statusFor(modeId: string, danger: number, threat: ThreatSnapshot, hidde
 function objectiveGuidance(modeId: string): string {
   if (modeId === 'kick-the-box') return 'Activate the box chain and avoid seeker contact.';
   if (modeId === 'who-is-real') return 'Complete scans and isolate the mimic before time expires.';
-  if (modeId === 'hide-and-heist') return 'Secure the heist objectives while keeping security heat low.';
+  if (modeId === 'hide-and-heist')
+    return 'Secure the heist objectives while keeping security heat low.';
   if (modeId === 'monster-hunt') return 'Restore hunting systems and survive monster pursuit.';
   if (modeId === 'floor-by-floor') return 'Clear each floor in sequence, then secure extraction.';
-  if (modeId === 'traitor') return 'Finish facility tasks, collect evidence, and expose the traitor.';
+  if (modeId === 'traitor')
+    return 'Finish facility tasks, collect evidence, and expose the traitor.';
   return 'Complete the active objectives.';
 }
 

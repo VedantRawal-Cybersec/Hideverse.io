@@ -76,7 +76,12 @@ function distance(a: Triplet, b: Triplet): number {
   return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 }
 
-function moveActor(actor: ActorRuntime, target: Triplet, deltaSeconds: number, speedScale = 1): void {
+function moveActor(
+  actor: ActorRuntime,
+  target: Triplet,
+  deltaSeconds: number,
+  speedScale = 1,
+): void {
   const current = actor.root.getPosition();
   const dx = target[0] - current.x;
   const dy = target[1] - current.y;
@@ -231,7 +236,8 @@ export class CharacterSystem {
             distance: currentDistance,
             detected: detected || chasing,
             danger,
-            label: detected || chasing ? `${actor.role.toUpperCase()} ALERT` : actor.role.toUpperCase(),
+            label:
+              detected || chasing ? `${actor.role.toUpperCase()} ALERT` : actor.role.toUpperCase(),
           };
         }
       }
