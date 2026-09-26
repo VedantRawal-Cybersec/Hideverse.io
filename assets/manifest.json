@@ -557,21 +557,21 @@
     },
     {
       "id": "cc0-surface-concrete",
-      "name": "Concrete034 — lightweight concrete surface",
+      "name": "Concrete013 — lightweight concrete surface",
       "category": "surface-texture",
       "source": "CC0 Public Domain Textures / AmbientCG",
       "sourceRepo": "Papyszoo/CC0-Public-Domain-Textures",
       "sourceCommit": "fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2",
-      "sourcePath": "packs/ambientcg-textures/textures/Concrete034/Concrete034_1K-PNG_Color_preview.png",
-      "sourceUrl": "https://github.com/Papyszoo/CC0-Public-Domain-Textures/blob/fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2/packs/ambientcg-textures/textures/Concrete034/Concrete034_1K-PNG_Color_preview.png",
+      "sourcePath": "packs/ambientcg-textures/textures/Concrete013/Concrete013_1K-PNG_Color_preview.png",
+      "sourceUrl": "https://github.com/Papyszoo/CC0-Public-Domain-Textures/blob/fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2/packs/ambientcg-textures/textures/Concrete013/Concrete013_1K-PNG_Color_preview.png",
       "license": "CC0-1.0",
       "status": "acquired",
       "localFiles": [
-        "assets/runtime/materials/reference/concrete.png",
-        "assets/runtime/materials/reference/LICENSE",
-        "assets/runtime/materials/reference/SOURCE.md"
+        "assets/runtime/materials/cc0/concrete-wall.png",
+        "assets/runtime/materials/cc0/LICENSE-CC0.txt",
+        "assets/runtime/materials/cc0/SOURCE.md"
       ],
-      "notes": "Lightweight tiled CC0 color texture used to replace flat blockout materials while preserving browser/mobile performance.",
+      "notes": "Lightweight tiled CC0 color texture used for real wall/floor/prop surface detail while preserving browser/mobile performance.",
       "maxRuntimeFileBytes": 150000
     },
     {
@@ -586,11 +586,11 @@
       "license": "CC0-1.0",
       "status": "acquired",
       "localFiles": [
-        "assets/runtime/materials/reference/brick.png",
-        "assets/runtime/materials/reference/LICENSE",
-        "assets/runtime/materials/reference/SOURCE.md"
+        "assets/runtime/materials/cc0/brick-wall.png",
+        "assets/runtime/materials/cc0/LICENSE-CC0.txt",
+        "assets/runtime/materials/cc0/SOURCE.md"
       ],
-      "notes": "Lightweight tiled CC0 color texture used to replace flat blockout materials while preserving browser/mobile performance.",
+      "notes": "Lightweight tiled CC0 color texture used for real wall/floor/prop surface detail while preserving browser/mobile performance.",
       "maxRuntimeFileBytes": 150000
     },
     {
@@ -605,49 +605,87 @@
       "license": "CC0-1.0",
       "status": "acquired",
       "localFiles": [
-        "assets/runtime/materials/reference/asphalt.png",
-        "assets/runtime/materials/reference/LICENSE",
-        "assets/runtime/materials/reference/SOURCE.md"
+        "assets/runtime/materials/cc0/asphalt-floor.png",
+        "assets/runtime/materials/cc0/LICENSE-CC0.txt",
+        "assets/runtime/materials/cc0/SOURCE.md"
       ],
-      "notes": "Lightweight tiled CC0 color texture used to replace flat blockout materials while preserving browser/mobile performance.",
+      "notes": "Lightweight tiled CC0 color texture used for real wall/floor/prop surface detail while preserving browser/mobile performance.",
       "maxRuntimeFileBytes": 150000
     },
     {
       "id": "cc0-surface-metal",
-      "name": "Metal004 — lightweight metal surface",
+      "name": "Metal012 — lightweight metal surface",
       "category": "surface-texture",
       "source": "CC0 Public Domain Textures / AmbientCG",
       "sourceRepo": "Papyszoo/CC0-Public-Domain-Textures",
       "sourceCommit": "fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2",
-      "sourcePath": "packs/ambientcg-textures/textures/Metal004/Metal004_1K-PNG_Color_preview.png",
-      "sourceUrl": "https://github.com/Papyszoo/CC0-Public-Domain-Textures/blob/fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2/packs/ambientcg-textures/textures/Metal004/Metal004_1K-PNG_Color_preview.png",
+      "sourcePath": "packs/ambientcg-textures/textures/Metal012/Metal012_1K-PNG_Color_preview.png",
+      "sourceUrl": "https://github.com/Papyszoo/CC0-Public-Domain-Textures/blob/fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2/packs/ambientcg-textures/textures/Metal012/Metal012_1K-PNG_Color_preview.png",
       "license": "CC0-1.0",
       "status": "acquired",
       "localFiles": [
-        "assets/runtime/materials/reference/metal.png",
-        "assets/runtime/materials/reference/LICENSE",
-        "assets/runtime/materials/reference/SOURCE.md"
+        "assets/runtime/materials/cc0/metal.png",
+        "assets/runtime/materials/cc0/LICENSE-CC0.txt",
+        "assets/runtime/materials/cc0/SOURCE.md"
       ],
-      "notes": "Lightweight tiled CC0 color texture used to replace flat blockout materials while preserving browser/mobile performance.",
+      "notes": "Lightweight tiled CC0 color texture used for real wall/floor/prop surface detail while preserving browser/mobile performance.",
       "maxRuntimeFileBytes": 150000
     },
     {
       "id": "cc0-surface-wood",
-      "name": "WoodSiding004 — lightweight wood surface",
+      "name": "Wood011 — lightweight wood surface",
       "category": "surface-texture",
       "source": "CC0 Public Domain Textures / AmbientCG",
       "sourceRepo": "Papyszoo/CC0-Public-Domain-Textures",
       "sourceCommit": "fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2",
-      "sourcePath": "packs/ambientcg-textures/textures/WoodSiding004/WoodSiding004_1K-PNG_Color_preview.png",
-      "sourceUrl": "https://github.com/Papyszoo/CC0-Public-Domain-Textures/blob/fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2/packs/ambientcg-textures/textures/WoodSiding004/WoodSiding004_1K-PNG_Color_preview.png",
+      "sourcePath": "packs/ambientcg-textures/textures/Wood011/Wood011_1K-PNG_Color_preview.png",
+      "sourceUrl": "https://github.com/Papyszoo/CC0-Public-Domain-Textures/blob/fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2/packs/ambientcg-textures/textures/Wood011/Wood011_1K-PNG_Color_preview.png",
       "license": "CC0-1.0",
       "status": "acquired",
       "localFiles": [
-        "assets/runtime/materials/reference/wood.png",
-        "assets/runtime/materials/reference/LICENSE",
-        "assets/runtime/materials/reference/SOURCE.md"
+        "assets/runtime/materials/cc0/wood.png",
+        "assets/runtime/materials/cc0/LICENSE-CC0.txt",
+        "assets/runtime/materials/cc0/SOURCE.md"
       ],
-      "notes": "Lightweight tiled CC0 color texture used to replace flat blockout materials while preserving browser/mobile performance.",
+      "notes": "Lightweight tiled CC0 color texture used for real wall/floor/prop surface detail while preserving browser/mobile performance.",
+      "maxRuntimeFileBytes": 150000
+    },
+    {
+      "id": "cc0-surface-plaster",
+      "name": "Plaster001 — lightweight plaster wall surface",
+      "category": "surface-texture",
+      "source": "CC0 Public Domain Textures / AmbientCG",
+      "sourceRepo": "Papyszoo/CC0-Public-Domain-Textures",
+      "sourceCommit": "fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2",
+      "sourcePath": "packs/ambientcg-textures/textures/Plaster001/Plaster001_1K-PNG_Color_preview.png",
+      "sourceUrl": "https://github.com/Papyszoo/CC0-Public-Domain-Textures/blob/fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2/packs/ambientcg-textures/textures/Plaster001/Plaster001_1K-PNG_Color_preview.png",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/materials/cc0/plaster-wall.png",
+        "assets/runtime/materials/cc0/LICENSE-CC0.txt",
+        "assets/runtime/materials/cc0/SOURCE.md"
+      ],
+      "notes": "Lightweight tiled CC0 color texture used for real wall/floor surface detail while preserving browser/mobile performance.",
+      "maxRuntimeFileBytes": 150000
+    },
+    {
+      "id": "cc0-surface-tile",
+      "name": "Tiles010 — lightweight tile floor surface",
+      "category": "surface-texture",
+      "source": "CC0 Public Domain Textures / AmbientCG",
+      "sourceRepo": "Papyszoo/CC0-Public-Domain-Textures",
+      "sourceCommit": "fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2",
+      "sourcePath": "packs/ambientcg-textures/textures/Tiles010/Tiles010_1K-PNG_Color_preview.png",
+      "sourceUrl": "https://github.com/Papyszoo/CC0-Public-Domain-Textures/blob/fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2/packs/ambientcg-textures/textures/Tiles010/Tiles010_1K-PNG_Color_preview.png",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/materials/cc0/tile-floor.png",
+        "assets/runtime/materials/cc0/LICENSE-CC0.txt",
+        "assets/runtime/materials/cc0/SOURCE.md"
+      ],
+      "notes": "Lightweight tiled CC0 color texture used for real wall/floor surface detail while preserving browser/mobile performance.",
       "maxRuntimeFileBytes": 150000
     }
   ]
