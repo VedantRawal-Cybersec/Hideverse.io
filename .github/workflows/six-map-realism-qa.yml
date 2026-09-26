@@ -1,0 +1,105 @@
+name: Six Map Realism Browser QA
+
+on:
+  push:
+    branches:
+      - feature/realism-wave3-secondary-v2
+
+permissions:
+  contents: read
+
+jobs:
+  browser-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.23.2
+
+      - run: npm install --no-audit --no-fund
+      - run: npm run build:live
+      - run: npm install --no-save --no-audit --no-fund playwright@1.55.0
+      - run: npx playwright install --with-deps chromium
+
+      - name: Start production server
+        run: |
+          PORT=43995 npm run start --workspace @hideverse/web > /tmp/hideverse-realism-server.log 2>&1 &
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:43995/api/multiplayer/health >/dev/null; then
+              exit 0
+            fi
+            sleep 0.2
+          done
+          cat /tmp/hideverse-realism-server.log
+          exit 1
+
+      - name: Verify all maps boot with real surfaces
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+
+          const maps = ['ravenwood', 'nexus', 'museum', 'hospital', 'hotel', 'axiom'];
+          const expectedTextures = ['concrete.png', 'brick.png', 'asphalt.png', 'metal.png', 'wood.png'];
+          const browser = await chromium.launch({ headless: true });
+
+          try {
+            for (const map of maps) {
+              const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+              const page = await context.newPage();
+              const errors = [];
+              const failed = [];
+              const textures = new Map();
+
+              page.on('pageerror', (error) => errors.push(String(error)));
+              page.on('requestfailed', (request) => {
+                failed.push({ url: request.url(), error: request.failure()?.errorText ?? 'unknown' });
+              });
+              page.on('response', (response) => {
+                for (const name of expectedTextures) {
+                  if (response.url().includes('/materials/reference/') && response.url().endsWith(name)) {
+                    textures.set(name, response.status());
+                  }
+                }
+              });
+
+              await page.goto(
+                `http://127.0.0.1:43995/game/?map=${map}&room=REALISM-QA`,
+                { waitUntil: 'domcontentloaded', timeout: 60000 },
+              );
+              await page.waitForSelector('#boot-overlay.is-hidden', { timeout: 60000 });
+              await page.waitForTimeout(map === 'ravenwood' ? 4500 : 2500);
+
+              const state = await page.evaluate(() => ({
+                status: document.querySelector('#map-status')?.textContent ?? '',
+                fps: document.querySelector('#fps-value')?.textContent ?? '',
+                canvasWidth: document.querySelector('#game-canvas')?.getBoundingClientRect().width ?? 0,
+                canvasHeight: document.querySelector('#game-canvas')?.getBoundingClientRect().height ?? 0,
+              }));
+
+              if (errors.length) throw new Error(`${map}: page errors: ${errors.join(' | ')}`);
+              if (failed.length) throw new Error(`${map}: failed requests: ${JSON.stringify(failed)}`);
+              if (state.canvasWidth < 300 || state.canvasHeight < 300) {
+                throw new Error(`${map}: invalid canvas ${JSON.stringify(state)}`);
+              }
+              if (/failed/i.test(state.status)) {
+                throw new Error(`${map}: bad status ${state.status}`);
+              }
+              const missing = expectedTextures.filter((name) => textures.get(name) !== 200);
+              if (missing.length) {
+                throw new Error(`${map}: missing real surfaces ${missing.join(', ')}`);
+              }
+
+              console.log('[six-map-realism]', JSON.stringify({
+                map,
+                status: state.status,
+                fpsHud: state.fps,
+                textures: Object.fromEntries(textures),
+              }));
+              await context.close();
+            }
+          } finally {
+            await browser.close();
+          }
+          NODE
