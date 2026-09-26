@@ -186,7 +186,8 @@ export async function applyRealSurfaceTextures(
   );
 
   const quality = localStorage.getItem('hideverse-quality') ?? 'auto';
-  const fullPbr = !coarsePointer && quality !== 'low';
+  const fullPbr =
+    !coarsePointer && (quality === 'balanced' || quality === 'high');
 
   await delay(coarsePointer ? 700 : 420);
 
