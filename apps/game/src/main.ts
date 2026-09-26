@@ -46,6 +46,9 @@ const modeTitle = must<HTMLElement>('#mode-title');
 const modeObjective = must<HTMLParagraphElement>('#mode-objective');
 const modeProgress = must<HTMLElement>('#mode-progress');
 const modePanel = must<HTMLElement>('#mode-panel');
+const modeTimer = must<HTMLElement>('#mode-timer');
+const modeDanger = must<HTMLElement>('#mode-danger');
+const modeOutcome = must<HTMLElement>('#mode-outcome');
 const motionValue = must<HTMLElement>('#motion-value');
 const staminaValue = must<HTMLElement>('#stamina-value');
 const networkValue = must<HTMLElement>('#network-value');
@@ -137,6 +140,13 @@ function setMapStatus(message: string): void {
   mapStatus.textContent = message;
 }
 
+function formatTimer(seconds: number): string {
+  const safe = Math.max(0, Math.ceil(seconds));
+  const minutes = Math.floor(safe / 60);
+  const remainder = safe % 60;
+  return `${minutes}:${String(remainder).padStart(2, '0')}`;
+}
+
 async function boot(): Promise<void> {
   const coarse = matchMedia('(pointer: coarse)').matches;
   const app = new Application(canvas);
@@ -219,9 +229,14 @@ async function boot(): Promise<void> {
 
     const interactPressed = input.consumeInteract();
     const interaction = interactions.update(position, interactPressed);
-    const modeState = mode.update(position, interactPressed && !interaction.handled);
-
     player.setMovementLocked(interaction.hidden);
+
+    const threat = characters.update(deltaSeconds, position, interaction.hidden);
+    const modeState = mode.update(position, interactPressed && !interaction.handled, {
+      deltaSeconds,
+      hidden: interaction.hidden,
+      threat,
+    });
 
     const area = nearestAreaLabel(map, position);
     zoneValue.textContent = area.toUpperCase();
@@ -237,11 +252,15 @@ async function boot(): Promise<void> {
 
     modeObjective.textContent = modeState.objective;
     modeProgress.textContent = modeState.progress;
-    modePanel.classList.toggle('is-complete', modeState.complete);
+    modeTimer.textContent = formatTimer(modeState.timerSeconds);
+    modeDanger.textContent = `${Math.round(modeState.dangerPercent)}%`;
+    modeOutcome.textContent =
+      modeState.outcome === 'playing' ? modeState.status : modeState.outcome.toUpperCase();
+    modePanel.classList.toggle('is-complete', modeState.outcome === 'won');
+    modePanel.classList.toggle('is-lost', modeState.outcome === 'lost');
     motionValue.textContent = player.motionState.toUpperCase();
     staminaValue.textContent = `${Math.round(player.staminaPercent)}%`;
 
-    characters.update(deltaSeconds);
     multiplayer.update(position, player.yaw, player.motionState);
     networkValue.textContent = multiplayer.status;
     roomValue.textContent = multiplayer.roomCode;
@@ -251,7 +270,7 @@ async function boot(): Promise<void> {
     if (debugEnabled) {
       debugPosition.textContent = `POSITION ${position.x.toFixed(2)} · ${position.y.toFixed(2)} · ${position.z.toFixed(2)}`;
       debugZone.textContent = `AREA ${area.toUpperCase()}`;
-      debugRole.textContent = `NEAREST ROLE ${characters.nearestRole(position)}`;
+      debugRole.textContent = `THREAT ${threat.role.toUpperCase()} · ${threat.distance.toFixed(1)}M`;
       debugMeta.textContent = `MAP QA ${map.structures.length} ARCH · ${map.doors.length} DOORS · ${map.objectives.length} OBJECTIVES · ${map.navNodes.length} NAV · ${runtime.objectCount} RUNTIME`;
     }
 
@@ -264,9 +283,22 @@ async function boot(): Promise<void> {
     }
   });
 
-  const initialMode = mode.update(player.position, false);
+  const initialMode = mode.update(player.position, false, {
+    deltaSeconds: 0,
+    hidden: false,
+    threat: {
+      role: 'none',
+      distance: Number.POSITIVE_INFINITY,
+      detected: false,
+      danger: 0,
+      label: 'CLEAR',
+    },
+  });
   modeProgress.textContent = initialMode.progress;
   modeObjective.textContent = initialMode.objective;
+  modeTimer.textContent = formatTimer(initialMode.timerSeconds);
+  modeDanger.textContent = '0%';
+  modeOutcome.textContent = 'CLEAR';
   setMapStatus(
     `${map.name} ready · ${map.mode.name} · ${characters.count} active role actors · ${map.navNodes.length} nav nodes`,
   );
