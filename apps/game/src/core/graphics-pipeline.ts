@@ -41,7 +41,7 @@ export class GraphicsPipeline {
     const lightweight = low || autoMobile || runtimeReduced;
     const autoDesktop = preset === 'auto' && !this.coarsePointer && !runtimeReduced;
 
-    this.frame.enabled = !low;
+    this.frame.enabled = !lightweight;
     this.frame.grading.enabled = !lightweight;
     this.frame.grading.brightness = high ? 1.06 : 1.035;
     this.frame.grading.contrast = high || autoDesktop ? 1.09 : 1.055;
