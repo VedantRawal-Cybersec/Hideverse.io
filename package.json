@@ -15,13 +15,15 @@
     "dev:game": "npm run dev --workspace @hideverse/game",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "verify": "npm run verify --workspace @hideverse/game",
+    "verify": "npm run verify --workspace @hideverse/game && npm run verify --workspace @hideverse/web",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "assets:validate-manifest": "node tools/assets/validate-manifest.mjs",
     "assets:validate-gltf": "node tools/assets/validate-gltf.mjs",
     "assets:stats": "node tools/assets/asset-stats.mjs",
-    "assets:verify": "npm run assets:validate-manifest && npm run assets:validate-gltf && npm run assets:stats"
+    "assets:verify": "npm run assets:validate-manifest && npm run assets:validate-gltf && npm run assets:stats",
+    "dev:web": "npm run dev --workspace @hideverse/web",
+    "build:live": "npm run build --workspace @hideverse/game && npm run build --workspace @hideverse/web"
   },
   "devDependencies": {
     "prettier": "3.9.9",
