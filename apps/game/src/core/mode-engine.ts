@@ -2,6 +2,7 @@ import type { MapDefinition, ObjectiveDefinition } from '../maps/map-catalog';
 import type { ThreatSnapshot } from './character-system';
 
 export type ModeOutcome = 'playing' | 'won' | 'lost';
+export type ModeEvent = 'objective' | 'won' | 'lost' | null;
 
 export type ModeRuntimeState = {
   prompt: string | null;
@@ -12,12 +13,15 @@ export type ModeRuntimeState = {
   timerSeconds: number;
   dangerPercent: number;
   status: string;
+  completedObjectiveId: string | null;
+  event: ModeEvent;
 };
 
 type ModeContext = {
   deltaSeconds: number;
   hidden: boolean;
   threat: ThreatSnapshot;
+  roundElapsedSeconds?: number;
 };
 
 const roundTimerByMode: Record<string, number> = {
@@ -82,17 +86,20 @@ function statusFor(
 function objectiveGuidance(modeId: string): string {
   if (modeId === 'kick-the-box') return 'Activate the box chain and avoid seeker contact.';
   if (modeId === 'who-is-real') return 'Complete scans and isolate the mimic before time expires.';
-  if (modeId === 'hide-and-heist')
+  if (modeId === 'hide-and-heist') {
     return 'Secure the heist objectives while keeping security heat low.';
+  }
   if (modeId === 'monster-hunt') return 'Restore hunting systems and survive monster pursuit.';
   if (modeId === 'floor-by-floor') return 'Clear each floor in sequence, then secure extraction.';
-  if (modeId === 'traitor')
+  if (modeId === 'traitor') {
     return 'Finish facility tasks, collect evidence, and expose the traitor.';
+  }
   return 'Complete the active objectives.';
 }
 
 export class ModeEngine {
   private readonly completed = new Set<string>();
+  private readonly validObjectiveIds: Set<string>;
   private readonly totalSeconds: number;
   private timerSeconds: number;
   private danger = 0;
@@ -101,6 +108,20 @@ export class ModeEngine {
   constructor(private readonly map: MapDefinition) {
     this.totalSeconds = roundTimerByMode[map.mode.id] ?? 300;
     this.timerSeconds = this.totalSeconds;
+    this.validObjectiveIds = new Set(map.objectives.map((objective) => objective.id));
+  }
+
+  completeObjectives(ids: readonly string[]): void {
+    for (const id of ids) {
+      if (this.validObjectiveIds.has(id)) this.completed.add(id);
+    }
+  }
+
+  reset(): void {
+    this.completed.clear();
+    this.timerSeconds = this.totalSeconds;
+    this.danger = 0;
+    this.outcome = 'playing';
   }
 
   update(
@@ -108,9 +129,23 @@ export class ModeEngine {
     interactPressed: boolean,
     context: ModeContext,
   ): ModeRuntimeState {
+    let event: ModeEvent = null;
+    let completedObjectiveId: string | null = null;
+    const outcomeBeforeUpdate = this.outcome;
+
     if (this.outcome === 'playing') {
       const dt = Math.min(Math.max(context.deltaSeconds, 0), 0.1);
-      this.timerSeconds = Math.max(0, this.timerSeconds - dt);
+      if (
+        context.roundElapsedSeconds !== undefined &&
+        Number.isFinite(context.roundElapsedSeconds)
+      ) {
+        this.timerSeconds = Math.min(
+          this.timerSeconds,
+          Math.max(0, this.totalSeconds - context.roundElapsedSeconds),
+        );
+      } else {
+        this.timerSeconds = Math.max(0, this.timerSeconds - dt);
+      }
 
       const gain = riskRate(this.map.mode.id, context.threat) * dt;
       const recovery = context.hidden ? 17 * dt : context.threat.detected ? 0 : 5 * dt;
@@ -142,6 +177,8 @@ export class ModeEngine {
 
       if (nearest && interactPressed) {
         this.completed.add(nearest.id);
+        completedObjectiveId = nearest.id;
+        event = 'objective';
         this.danger = Math.max(0, this.danger - 12);
       }
     }
@@ -150,6 +187,9 @@ export class ModeEngine {
     if (completedCount === this.map.objectives.length && this.outcome === 'playing') {
       this.outcome = 'won';
     }
+
+    if (outcomeBeforeUpdate === 'playing' && this.outcome === 'won') event = 'won';
+    if (outcomeBeforeUpdate === 'playing' && this.outcome === 'lost') event = 'lost';
 
     const complete = this.outcome === 'won';
     const activeIncomplete = this.map.objectives.filter(
@@ -178,6 +218,8 @@ export class ModeEngine {
       timerSeconds: this.timerSeconds,
       dangerPercent: this.danger,
       status: statusFor(this.map.mode.id, this.danger, context.threat, context.hidden),
+      completedObjectiveId,
+      event,
     };
   }
 }
