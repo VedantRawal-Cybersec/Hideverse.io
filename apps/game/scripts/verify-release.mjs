@@ -12,6 +12,7 @@ const [
   playerController,
   playerAvatar,
   graphicsPipeline,
+  surfaceTextures,
   manifestText,
 ] = await Promise.all([
   readFile(path.join(root, 'src/maps/map-data.json'), 'utf8'),
@@ -23,6 +24,7 @@ const [
   readFile(path.join(root, 'src/core/player-controller.ts'), 'utf8'),
   readFile(path.join(root, 'src/core/player-avatar.ts'), 'utf8'),
   readFile(path.join(root, 'src/core/graphics-pipeline.ts'), 'utf8'),
+  readFile(path.join(root, 'src/core/surface-textures.ts'), 'utf8'),
   readFile(path.resolve(root, '../../assets/manifest.json'), 'utf8'),
 ]);
 
@@ -122,6 +124,31 @@ for (const marker of ['CameraFrame', 'TONEMAP_ACES', 'bloom', 'grading', 'fog'])
   if (!graphicsPipeline.includes(marker)) fail(`graphics pipeline missing ${marker}`);
 }
 
+for (const id of [
+  'cc0-surface-concrete',
+  'cc0-surface-brick',
+  'cc0-surface-asphalt',
+  'cc0-surface-metal',
+  'cc0-surface-wood',
+]) {
+  const asset = manifest.assets?.find(
+    (candidate) => candidate.id === id && candidate.status === 'acquired',
+  );
+  if (!asset) fail(`real CC0 surface texture is not registered: ${id}`);
+}
+
+for (const marker of [
+  'materials/reference/concrete.png',
+  'materials/reference/brick.png',
+  'materials/reference/asphalt.png',
+  'materials/reference/metal.png',
+  'materials/reference/wood.png',
+  'ADDRESS_REPEAT',
+  'diffuseMapTiling',
+]) {
+  if (!surfaceTextures.includes(marker)) fail(`real surface runtime missing ${marker}`);
+}
+
 console.log(
-  `[release-qa] PASS — ${catalog.maps.length} maps, mobile budgets, adaptive rendering, touch controls, FPS/TPS physics, shared objectives, realtime room sync, multi-character rigged locomotion and HDR graphics verified.`,
+  `[release-qa] PASS — ${catalog.maps.length} maps, mobile budgets, adaptive rendering, touch controls, FPS/TPS physics, shared objectives, realtime room sync, multi-character rigged locomotion, HDR graphics and real CC0 tiled surfaces verified.`,
 );
