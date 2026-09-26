@@ -59,7 +59,7 @@ export class CharacterSystem {
 
   constructor(
     app: Application,
-    private readonly map: MapDefinition,
+    map: MapDefinition,
   ) {
     const navById = new Map(map.navNodes.map((node) => [node.id, node.position] as const));
 
