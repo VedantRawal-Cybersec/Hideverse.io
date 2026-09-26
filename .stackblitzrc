@@ -1,3 +1,4 @@
 {
-  "startCommand": "npm run stackblitz"
+  "installDependencies": false,
+  "startCommand": "cd apps/game && npm install --workspaces=false --no-audit --no-fund && npm run dev"
 }
