@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "approved": [
+    {
+      "id": "kenney",
+      "name": "Kenney",
+      "licensePolicy": "CC0-1.0",
+      "useFor": [
+        "nature",
+        "props",
+        "roads",
+        "buildings",
+        "UI"
+      ],
+      "officialLicenseUrl": "https://kenney.nl/support",
+      "mirrorRepo": "shorepine/kenney"
+    },
+    {
+      "id": "kaykit",
+      "name": "KayKit",
+      "licensePolicy": "Verify each pack; selected Phase 2 packs are CC0-1.0",
+      "useFor": [
+        "furniture",
+        "architecture",
+        "props",
+        "characters"
+      ],
+      "selectedRepo": "KayKit-Game-Assets/KayKit-Furniture-Bits-1.0"
+    },
+    {
+      "id": "polyhaven",
+      "name": "Poly Haven",
+      "licensePolicy": "CC0-1.0",
+      "useFor": [
+        "PBR ground materials",
+        "stone",
+        "wood",
+        "HDRI",
+        "selected realistic props"
+      ],
+      "officialLicenseUrl": "https://polyhaven.com/license"
+    },
+    {
+      "id": "opengameart-mansion",
+      "name": "OpenGameArt 3D Tileset - Mansion",
+      "licensePolicy": "CC0-1.0 on asset page",
+      "useFor": [
+        "Ravenwood base architecture candidate"
+      ],
+      "officialAssetUrl": "https://opengameart.org/content/3d-tileset-mansion"
+    }
+  ]
+}
