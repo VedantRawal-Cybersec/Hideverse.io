@@ -19,6 +19,52 @@ type AssetSummary = {
 
 const siteBase = import.meta.env.BASE_URL;
 const gameHref = `${siteBase}game/index.html`;
+const mapHref = (id: string): string => `${gameHref}?map=${encodeURIComponent(id)}`;
+
+const maps = [
+  {
+    id: 'ravenwood',
+    index: '01',
+    name: 'Ravenwood Mansion',
+    mode: 'Kick the Box',
+    detail: 'Victorian mansion, estate cover, interactive doors, hiding and five objectives.',
+  },
+  {
+    id: 'nexus',
+    index: '02',
+    name: 'Nexus Mega Mall',
+    mode: 'Who Is Real?',
+    detail: 'Mall atrium, retail wings, crowds, mimic role and verification objectives.',
+  },
+  {
+    id: 'museum',
+    index: '03',
+    name: 'Grand Museum & Vault',
+    mode: 'Hide & Heist',
+    detail: 'Gallery lanes, security roles, vault route, artifacts and extraction objective.',
+  },
+  {
+    id: 'hospital',
+    index: '04',
+    name: 'Blackwood Hospital',
+    mode: 'Monster Hunt',
+    detail: 'Dark wards, surgery wing, monster patrol, power restoration and survival cover.',
+  },
+  {
+    id: 'hotel',
+    index: '05',
+    name: 'Vertigo Hotel',
+    mode: 'Floor by Floor',
+    detail: 'Stacked playable floors, stair route, service cover and sequential floor objectives.',
+  },
+  {
+    id: 'axiom',
+    index: '06',
+    name: 'Axiom Research Facility',
+    mode: 'Traitor',
+    detail: 'Research wings, reactor route, scientists, security and hidden-traitor tasks.',
+  },
+];
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Hideverse website root is missing.');
@@ -31,9 +77,9 @@ app.innerHTML = `
     </a>
     <nav>
       <a href="#progress">Progress</a>
+      <a href="#maps">Maps</a>
       <a href="#assets">Assets</a>
-      <a href="#roadmap">Roadmap</a>
-      <a class="nav-play" href="${gameHref}">Play Current Build</a>
+      <a class="nav-play" href="${mapHref('ravenwood')}">Play Build</a>
     </nav>
   </header>
 
@@ -43,12 +89,12 @@ app.innerHTML = `
         <p class="eyebrow">LIVE DEVELOPMENT BUILD</p>
         <h1>HIDE.<br />PLAY.<br /><span>BELONG.</span></h1>
         <p class="lede">
-          A browser-first multiplayer social-stealth playground. This page always represents
-          the latest verified Hideverse build deployed from the main branch.
+          Six maps, six game modes, shared role characters, PC/mobile movement and a room-sync
+          multiplayer foundation in one browser-first social-stealth runtime.
         </p>
         <div class="actions">
-          <a class="button primary" href="${gameHref}">Launch Current Build</a>
-          <a class="button secondary" href="#progress">See What Works</a>
+          <a class="button primary" href="${mapHref('ravenwood')}">Launch Current Build</a>
+          <a class="button secondary" href="#maps">Choose a Map</a>
         </div>
       </div>
       <div class="hero-card">
@@ -56,58 +102,98 @@ app.innerHTML = `
         <div class="card-grid">
           <div><span>ENGINE</span><strong>PlayCanvas</strong></div>
           <div><span>PHYSICS</span><strong>Rapier 3D</strong></div>
-          <div><span>AI BASE</span><strong>Yuka</strong></div>
+          <div><span>MAPS / MODES</span><strong>6 / 6</strong></div>
           <div><span>DEPLOY</span><strong>Static CDN</strong></div>
         </div>
-        <p>Every verified change merged to <code>main</code> is intended to become visible here.</p>
+        <p>
+          The public build is generated from the latest verified <code>main</code> commit. The
+          multiplayer client uses local room sync on static hosting and switches to the
+          authoritative room API on a backend-capable deployment.
+        </p>
       </div>
     </section>
 
     <section id="progress" class="section shell">
       <div class="section-head">
         <p class="eyebrow">BUILD STATUS</p>
-        <h2>What exists right now</h2>
+        <h2>Production roadmap</h2>
       </div>
-      <div class="phase-grid">
+      <div class="phase-grid extended">
         <article class="phase done">
-          <span>PHASE 01</span>
-          <h3>Technical Foundation</h3>
-          <p>Renderer, physics, AI bootstrap, TypeScript/Vite, CI and Railway-ready server.</p>
-          <b>VERIFIED</b>
+          <span>PHASE 01</span><h3>Technical Foundation</h3>
+          <p>Renderer, TypeScript/Vite, Rapier physics, validation and CI.</p><b>VERIFIED</b>
         </article>
         <article class="phase done">
-          <span>PHASE 02</span>
-          <h3>Asset Pipeline</h3>
-          <p>CC0 source registry, local runtime assets, glTF validation, size budgets and license tracking.</p>
-          <b>ACTIVE</b>
+          <span>PHASE 02</span><h3>Asset Pipeline</h3>
+          <p>Source registry, local runtime assets, glTF validation and size budgets.</p><b>VERIFIED</b>
+        </article>
+        <article class="phase done">
+          <span>PHASE 03</span><h3>Ravenwood Mansion</h3>
+          <p>Optimized CC0 mansion, furniture, environment, spawns, hiding and collision.</p><b>PLAYABLE</b>
+        </article>
+        <article class="phase done">
+          <span>PHASE 04</span><h3>All Six Maps</h3>
+          <p>Shared full-3D layout runtime with doors, objectives, navigation and mobile LOD.</p><b>IMPLEMENTED</b>
+        </article>
+        <article class="phase done">
+          <span>PHASE 05</span><h3>Role Characters</h3>
+          <p>Hiders, seekers, guards, civilians, mimic, monster and traitor actors.</p><b>IMPLEMENTED</b>
+        </article>
+        <article class="phase done">
+          <span>PHASE 06</span><h3>Movement + Animation</h3>
+          <p>PC/mobile controls, sprint stamina, crouch, jump and shared motion states.</p><b>IMPLEMENTED</b>
+        </article>
+        <article class="phase done">
+          <span>PHASE 07</span><h3>Six Modes</h3>
+          <p>Map-bound objectives and complete mode progress state for all six game modes.</p><b>IMPLEMENTED</b>
         </article>
         <article class="phase active">
-          <span>PHASE 03</span>
-          <h3>Ravenwood Mansion</h3>
-          <p>CC0 Victorian mansion base + mixed-source nature, furniture, Rapier movement, collision and map QA.</p>
-          <b id="ravenwood-card-status">IN DEVELOPMENT</b>
+          <span>PHASE 08</span><h3>Multiplayer Rooms</h3>
+          <p>Private room codes, peer state sync, matchmaking path and authoritative HTTP room API.</p><b>SERVER-READY</b>
         </article>
+      </div>
+    </section>
+
+    <section id="maps" class="section shell">
+      <div class="section-head">
+        <p class="eyebrow">SIX PLAYABLE ROUTES</p>
+        <h2>Choose the map and mode</h2>
+      </div>
+      <div class="maps-grid">
+        ${maps
+          .map(
+            (map) => `
+              <article class="map-card">
+                <span>MAP ${map.index}</span>
+                <h3>${map.name}</h3>
+                <b>${map.mode}</b>
+                <p>${map.detail}</p>
+                <a class="button secondary" href="${mapHref(map.id)}">Play ${map.name}</a>
+              </article>
+            `,
+          )
+          .join('')}
       </div>
     </section>
 
     <section id="ravenwood" class="section shell">
       <div class="section-head">
-        <p class="eyebrow">MAP 01 · PHASE 03</p>
+        <p class="eyebrow">ASSET-BACKED MAP 01</p>
         <h2>Ravenwood Mansion</h2>
       </div>
       <div class="map-feature">
         <div class="map-feature-copy">
-          <span class="map-kicker">CURRENT PLAYABLE MAP</span>
+          <span class="map-kicker">CURRENT ASSET-BACKED MAP</span>
           <h3>Victorian shell.<br />Hideverse systems.</h3>
           <p>
-            Ravenwood is being built from a pinned CC0 Victorian house source, then optimized
-            for browser play and combined with our existing Kenney and KayKit environment library.
+            Ravenwood uses the pinned CC0 Victorian house asset, optimized below the runtime
+            triangle budget and combined with local Kenney and KayKit environment assets.
           </p>
-          <a class="button primary" href="${gameHref}">Enter Ravenwood Build</a>
+          <a class="button primary" href="${mapHref('ravenwood')}">Enter Ravenwood</a>
         </div>
         <div class="map-meta">
           <div><span>ARCHITECTURE</span><strong>CC0 Victorian House</strong></div>
-          <div><span>ASSET STATE</span><strong id="ravenwood-asset-state">VENDORING</strong></div>
+          <div><span>ASSET STATE</span><strong id="ravenwood-asset-state">LOADING</strong></div>
           <div><span>RUNTIME TRIANGLES</span><strong id="ravenwood-triangles">—</strong></div>
           <div><span>TARGET</span><strong id="ravenwood-target">≤ 400K</strong></div>
         </div>
@@ -125,21 +211,6 @@ app.innerHTML = `
         <div><strong>—</strong><span>Runtime Files</span></div>
       </div>
       <div class="source-list" id="source-list"></div>
-    </section>
-
-    <section id="roadmap" class="section shell">
-      <div class="section-head">
-        <p class="eyebrow">PRODUCTION ORDER</p>
-        <h2>Where Hideverse goes next</h2>
-      </div>
-      <ol class="roadmap">
-        <li><span>03</span><div><b>Ravenwood Mansion</b><p>Complete, explorable production map.</p></div></li>
-        <li><span>04</span><div><b>All Six Maps</b><p>Mall, museum, hospital, hotel and research facility.</p></div></li>
-        <li><span>05</span><div><b>Characters</b><p>Players, seekers, NPCs, guards and monster actors.</p></div></li>
-        <li><span>06</span><div><b>Movement + Animation</b><p>Desktop/mobile controller and common animation state machine.</p></div></li>
-        <li><span>07</span><div><b>Six Modes</b><p>Gameplay rules, objectives, AI and interactions.</p></div></li>
-        <li><span>08</span><div><b>Multiplayer</b><p>Authoritative rooms, private codes, matchmaking and persistence.</p></div></li>
-      </ol>
     </section>
   </main>
 
@@ -167,7 +238,6 @@ async function hydrateAssets(): Promise<void> {
     const ravenwoodState = document.querySelector<HTMLElement>('#ravenwood-asset-state');
     const ravenwoodTriangles = document.querySelector<HTMLElement>('#ravenwood-triangles');
     const ravenwoodTarget = document.querySelector<HTMLElement>('#ravenwood-target');
-    const ravenwoodCardStatus = document.querySelector<HTMLElement>('#ravenwood-card-status');
 
     if (summary.ravenwood) {
       const ready = summary.ravenwood.status === 'acquired';
@@ -179,9 +249,6 @@ async function hydrateAssets(): Promise<void> {
       }
       if (ravenwoodTarget && summary.ravenwood.targetTriangles) {
         ravenwoodTarget.textContent = `≤ ${summary.ravenwood.targetTriangles.toLocaleString()}`;
-      }
-      if (ravenwoodCardStatus) {
-        ravenwoodCardStatus.textContent = ready ? 'PLAYABLE BUILD' : 'IN DEVELOPMENT';
       }
     }
 
