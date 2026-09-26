@@ -1,10 +1,4 @@
-import {
-  ADDRESS_REPEAT,
-  Application,
-  Color,
-  StandardMaterial,
-  Texture,
-} from 'playcanvas';
+import { ADDRESS_REPEAT, Application, Color, StandardMaterial, Texture } from 'playcanvas';
 
 type SurfaceTextureName = 'concrete' | 'brick' | 'asphalt' | 'metal' | 'wood';
 
@@ -87,7 +81,11 @@ export async function applyRealSurfaceTextures(
   const floorTiling = coarsePointer ? 5.5 : 8;
 
   attachTexture(materials.wall, wall, wallTiling);
-  attachTexture(materials.wallAlt, mapIndex === 4 || mapIndex === 6 ? concrete : brick, detailTiling);
+  attachTexture(
+    materials.wallAlt,
+    mapIndex === 4 || mapIndex === 6 ? concrete : brick,
+    detailTiling,
+  );
   attachTexture(materials.floor, asphalt, floorTiling, new Color(0.74, 0.74, 0.74));
   attachTexture(materials.trim, concrete, detailTiling, new Color(0.72, 0.72, 0.72));
   attachTexture(materials.metal, metal, coarsePointer ? 1.8 : 2.8, new Color(0.82, 0.84, 0.86));

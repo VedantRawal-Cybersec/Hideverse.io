@@ -441,7 +441,10 @@ async function buildProceduralMap(
         map.index,
         coarse,
       ).catch((error) => {
-        console.warn('[Hideverse surfaces] Real surface textures unavailable; using fallback.', error);
+        console.warn(
+          '[Hideverse surfaces] Real surface textures unavailable; using fallback.',
+          error,
+        );
       });
     },
     coarse ? 900 : 450,

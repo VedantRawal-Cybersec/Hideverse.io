@@ -3,10 +3,7 @@ import { Application, Entity, Vec3 } from 'playcanvas';
 import type { RenderComponent } from 'playcanvas';
 import { loadContainer } from '../../core/load-container';
 import { createReferenceMaterial, mapWallTone } from '../../core/reference-art-direction';
-import {
-  applyRealSurfaceTextures,
-  type SurfaceMaterialSet,
-} from '../../core/surface-textures';
+import { applyRealSurfaceTextures, type SurfaceMaterialSet } from '../../core/surface-textures';
 import interiorLayout from './interior-layout.json';
 
 export type RavenwoodStatus = (message: string) => void;
