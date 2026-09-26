@@ -6,16 +6,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
-  group: pages
+  group: hideverse-live
   cancel-in-progress: true
 
 jobs:
-  build:
+  build-and-publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -33,8 +31,8 @@ jobs:
       - name: Verify source
         run: npm run assets:verify && npm run verify
 
-      - name: Build GitHub Pages bundle
-        run: npm run build:pages
+      - name: Build portable live bundle
+        run: npm run build:static
 
       - name: Verify published files
         run: |
@@ -42,23 +40,29 @@ jobs:
           test -f apps/web/dist/game/index.html
           test -f apps/web/dist/game/ravenwood/map/ravenwood_mansion_victorian.glb
           test -f apps/web/dist/data/asset-summary.json
-          touch apps/web/dist/.nojekyll
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
+      - name: Publish live-static branch
+        shell: bash
+        run: |
+          set -euo pipefail
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: apps/web/dist
+          publish_dir="$(mktemp -d)"
+          worktree_dir="$(mktemp -d)"
 
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy
-        id: deployment
-        uses: actions/deploy-pages@v4
+          cp -a apps/web/dist/. "$publish_dir/"
+
+          git worktree add --detach "$worktree_dir" "$GITHUB_SHA"
+          cd "$worktree_dir"
+          git switch --orphan live-static
+          git rm -rf . >/dev/null 2>&1 || true
+          git clean -fdx >/dev/null 2>&1 || true
+
+          cp -a "$publish_dir/." .
+          touch .nojekyll
+          printf '%s\n' "$GITHUB_SHA" > .source-commit
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Deploy Hideverse live from $GITHUB_SHA"
+          git push --force origin HEAD:live-static
