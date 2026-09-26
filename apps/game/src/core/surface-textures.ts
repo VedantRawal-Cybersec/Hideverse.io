@@ -127,7 +127,7 @@ export async function applyRealSurfaceTextures(
   const floorTiling = coarsePointer ? 5.2 : 7.4;
   const anisotropy = coarsePointer ? 2 : 4;
 
-  const bindings: SurfaceBinding[] = [
+  const bindings = [
     {
       material: materials.wall,
       surface: wallName,
@@ -170,12 +170,14 @@ export async function applyRealSurfaceTextures(
       tint: new Color(0.9, 0.86, 0.8),
       bumpiness: 0.32,
     },
-  ].filter((binding) => Boolean(binding.material));
+  ] satisfies SurfaceBinding[];
+
+  const activeBindings = bindings.filter((binding) => Boolean(binding.material));
 
   // Pass 1: tiny preview color maps. This immediately removes flat-color blockout surfaces
   // without delaying map boot or causing a large GPU upload spike.
   await Promise.all(
-    bindings.map(async (binding) => {
+    activeBindings.map(async (binding) => {
       const preview = await loadTexture(
         app,
         referenceTextureUrl(binding.surface),
@@ -194,7 +196,7 @@ export async function applyRealSurfaceTextures(
   // Pass 2A: upgrade every visible surface to the compressed full-detail color map in parallel.
   // Color is the most noticeable realism improvement and remains cheap at render time.
   await Promise.all(
-    bindings.map(async (binding) => {
+    activeBindings.map(async (binding) => {
       try {
         const color = await loadTexture(
           app,
@@ -217,7 +219,7 @@ export async function applyRealSurfaceTextures(
 
   // Pass 2B: Balanced / High desktop gains normal + roughness one shared material at a time.
   // These uploads are staggered so they never arrive as one large frame-time spike.
-  for (const binding of bindings) {
+  for (const binding of activeBindings) {
     try {
       const [normal, roughness] = await Promise.all([
         loadTexture(app, pbrTextureUrl(binding.surface, 'normal'), anisotropy),
