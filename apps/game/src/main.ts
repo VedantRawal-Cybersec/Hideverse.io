@@ -146,7 +146,9 @@ async function boot(): Promise<void> {
   let fpsAccumulator = 0;
   let fpsFrames = 0;
 
-  const resize = (): void => app.resizeCanvas();
+  const resize = (): void => {
+    app.resizeCanvas();
+  };
   window.addEventListener('resize', resize, { passive: true });
   window.addEventListener('beforeunload', () => multiplayer.dispose(), { once: true });
 
