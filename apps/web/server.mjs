@@ -56,6 +56,13 @@ function sanitizeToken(value, fallback) {
   return normalized || fallback;
 }
 
+function sanitizeObjective(value) {
+  return String(value ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9-_]/g, '')
+    .slice(0, 64);
+}
+
 async function readJson(req) {
   const chunks = [];
   let bytes = 0;
@@ -76,7 +83,15 @@ function getRoom(map, room) {
   const key = roomKey(map, room);
   let current = rooms.get(key);
   if (!current) {
-    current = { map, room, players: new Map(), createdAt: Date.now() };
+    const now = Date.now();
+    current = {
+      map,
+      room,
+      players: new Map(),
+      objectives: new Set(),
+      createdAt: now,
+      roundStartedAt: now,
+    };
     rooms.set(key, current);
   }
   return current;
@@ -106,9 +121,7 @@ function writeEvent(res, event, payload) {
 function broadcastRoom(map, room, event, payload) {
   const clients = streams.get(roomKey(map, room));
   if (!clients) return;
-  for (const client of clients) {
-    writeEvent(client.res, event, payload);
-  }
+  for (const client of clients) writeEvent(client.res, event, payload);
 }
 
 function pruneRoom(room) {
@@ -155,6 +168,20 @@ function publicPlayerState(state) {
   return { ...publicState, updatedAt: serverUpdatedAt };
 }
 
+function roomSnapshot(room, playerId = '') {
+  return {
+    room: room.room,
+    map: room.map,
+    peers: [...room.players.values()]
+      .filter((state) => state.playerId !== playerId)
+      .map(publicPlayerState),
+    playerCount: room.players.size,
+    maxPlayers: 8,
+    objectives: [...room.objectives],
+    roundStartedAt: room.roundStartedAt,
+  };
+}
+
 async function handleMultiplayer(req, res, url) {
   if (req.method === 'OPTIONS') {
     res.writeHead(204, apiHeaders());
@@ -169,6 +196,7 @@ async function handleMultiplayer(req, res, url) {
       streamClients: streamClientCount(),
       maxRoomSize: 8,
       transport: 'http+sse',
+      sharedObjectives: true,
     });
     return true;
   }
@@ -210,11 +238,8 @@ async function handleMultiplayer(req, res, url) {
     });
 
     sendJson(res, 200, {
-      room: roomCode,
-      map,
+      ...roomSnapshot(room, playerId),
       playerId,
-      peers: room.players.size - 1,
-      maxPlayers: 8,
       transport: 'http+sse',
     });
     return true;
@@ -266,6 +291,61 @@ async function handleMultiplayer(req, res, url) {
     return true;
   }
 
+  if (req.method === 'POST' && url.pathname === '/api/multiplayer/objective') {
+    const body = await readJson(req);
+    const map = sanitizeToken(body.map, 'RAVENWOOD').toLowerCase();
+    const roomCode = sanitizeToken(body.room, 'LOCAL');
+    const playerId = String(body.playerId ?? '').slice(0, 80);
+    const objectiveId = sanitizeObjective(body.objectiveId);
+    if (!playerId || !objectiveId) {
+      sendJson(res, 400, { error: 'playerId and objectiveId required' });
+      return true;
+    }
+
+    const room = getRoom(map, roomCode);
+    pruneRoom(room);
+    if (!room.players.has(playerId)) {
+      sendJson(res, 403, { error: 'join room first' });
+      return true;
+    }
+
+    const added = !room.objectives.has(objectiveId);
+    room.objectives.add(objectiveId);
+    if (added) {
+      broadcastRoom(map, roomCode, 'objective', { objectiveId, playerId });
+    }
+
+    sendJson(res, 200, {
+      ok: true,
+      added,
+      objectives: [...room.objectives],
+    });
+    return true;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/multiplayer/reset') {
+    const body = await readJson(req);
+    const map = sanitizeToken(body.map, 'RAVENWOOD').toLowerCase();
+    const roomCode = sanitizeToken(body.room, 'LOCAL');
+    const playerId = String(body.playerId ?? '').slice(0, 80);
+    const room = getRoom(map, roomCode);
+    pruneRoom(room);
+
+    if (!playerId || !room.players.has(playerId)) {
+      sendJson(res, 403, { error: 'join room first' });
+      return true;
+    }
+
+    room.objectives.clear();
+    room.roundStartedAt = Date.now();
+    broadcastRoom(map, roomCode, 'round-reset', {
+      playerId,
+      roundStartedAt: room.roundStartedAt,
+    });
+    sendJson(res, 200, { ok: true, roundStartedAt: room.roundStartedAt });
+    return true;
+  }
+
   if (req.method === 'POST' && url.pathname === '/api/multiplayer/leave') {
     const body = await readJson(req);
     const map = sanitizeToken(body.map, 'RAVENWOOD').toLowerCase();
@@ -304,14 +384,7 @@ async function handleMultiplayer(req, res, url) {
     const client = { playerId, res };
     clients.add(client);
 
-    writeEvent(res, 'snapshot', {
-      room: roomCode,
-      map,
-      peers: [...room.players.values()]
-        .filter((state) => state.playerId !== playerId)
-        .map(publicPlayerState),
-      playerCount: room.players.size,
-    });
+    writeEvent(res, 'snapshot', roomSnapshot(room, playerId));
 
     const heartbeat = setInterval(() => {
       res.write(': heartbeat\n\n');
@@ -331,18 +404,7 @@ async function handleMultiplayer(req, res, url) {
     const playerId = String(url.searchParams.get('playerId') ?? '').slice(0, 80);
     const room = getRoom(map, roomCode);
     pruneRoom(room);
-
-    const peers = [...room.players.values()]
-      .filter((state) => state.playerId !== playerId)
-      .map(publicPlayerState);
-
-    sendJson(res, 200, {
-      room: roomCode,
-      map,
-      peers,
-      playerCount: room.players.size,
-      maxPlayers: 8,
-    });
+    sendJson(res, 200, roomSnapshot(room, playerId));
     return true;
   }
 
