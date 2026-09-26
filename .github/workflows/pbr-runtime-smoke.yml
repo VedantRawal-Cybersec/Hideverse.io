@@ -81,8 +81,15 @@ jobs:
 
           const page = await context.newPage();
           const errors = [];
+          const warnings = [];
           const failed = [];
           const pbrResponses = [];
+
+          page.on('console', (message) => {
+            if (message.type() === 'warning' || message.type() === 'error') {
+              warnings.push(message.text());
+            }
+          });
 
           page.on('pageerror', (error) => errors.push(String(error)));
           page.on('requestfailed', (request) => {
@@ -106,7 +113,7 @@ jobs:
               { waitUntil: 'domcontentloaded', timeout: 60000 },
             );
             await page.waitForSelector('#boot-overlay.is-hidden', { timeout: 60000 });
-            await page.waitForTimeout(5000);
+            await page.waitForTimeout(18000);
 
             const color = pbrResponses.filter((entry) => entry.url.includes('-color.ktx2'));
             const normal = pbrResponses.filter((entry) => entry.url.includes('-normal.ktx2'));
@@ -140,6 +147,16 @@ jobs:
               JSON.stringify({
                 case: process.env.CASE_NAME,
                 state,
+                warnings,
+                resources: await page.evaluate(() =>
+                  performance
+                    .getEntriesByType('resource')
+                    .map((entry) => entry.name)
+                    .filter(
+                      (name) =>
+                        name.includes('/materials/') || name.includes('/wasm/basis/'),
+                    ),
+                ),
                 colorCount: color.length,
                 normalCount: normal.length,
                 roughnessCount: roughness.length,
