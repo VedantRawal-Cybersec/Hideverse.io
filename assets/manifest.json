@@ -2,7 +2,8 @@
   "version": 1,
   "policy": {
     "allowedLicenses": [
-      "CC0-1.0"
+      "CC0-1.0",
+      "MIT"
     ],
     "maxRuntimeFileBytes": 2000000,
     "requirePinnedGitHubCommit": true,
@@ -649,6 +650,132 @@
       ],
       "notes": "Lightweight tiled CC0 color texture used to replace flat blockout materials while preserving browser/mobile performance.",
       "maxRuntimeFileBytes": 150000
+    },
+    {
+      "id": "cc0-pbr-concrete",
+      "name": "Concrete034 — compressed PBR concrete surface",
+      "category": "surface-texture-pbr",
+      "source": "CC0 Public Domain Textures / AmbientCG",
+      "sourceRepo": "Papyszoo/CC0-Public-Domain-Textures",
+      "sourceCommit": "fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2",
+      "sourcePath": "packs/ambientcg-textures/textures/Concrete034/Concrete034_1K-PNG_Color.ktx2",
+      "sourceUrl": "https://github.com/Papyszoo/CC0-Public-Domain-Textures/blob/fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2/packs/ambientcg-textures/textures/Concrete034/Concrete034_1K-PNG_Color.ktx2",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/materials/pbr/concrete-color.ktx2",
+        "assets/runtime/materials/pbr/concrete-normal.ktx2",
+        "assets/runtime/materials/pbr/concrete-roughness.ktx2",
+        "assets/runtime/materials/pbr/LICENSE",
+        "assets/runtime/materials/pbr/SOURCE.md"
+      ],
+      "notes": "GPU-compressed KTX2 color/normal/roughness maps. Color streams on all quality tiers; normal and roughness are desktop-only outside Low quality to preserve mobile smoothness.",
+      "maxRuntimeFileBytes": 400000
+    },
+    {
+      "id": "cc0-pbr-brick",
+      "name": "Bricks004 — compressed PBR brick surface",
+      "category": "surface-texture-pbr",
+      "source": "CC0 Public Domain Textures / AmbientCG",
+      "sourceRepo": "Papyszoo/CC0-Public-Domain-Textures",
+      "sourceCommit": "fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2",
+      "sourcePath": "packs/ambientcg-textures/textures/Bricks004/Bricks004_1K-PNG_Color.ktx2",
+      "sourceUrl": "https://github.com/Papyszoo/CC0-Public-Domain-Textures/blob/fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2/packs/ambientcg-textures/textures/Bricks004/Bricks004_1K-PNG_Color.ktx2",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/materials/pbr/brick-color.ktx2",
+        "assets/runtime/materials/pbr/brick-normal.ktx2",
+        "assets/runtime/materials/pbr/brick-roughness.ktx2",
+        "assets/runtime/materials/pbr/LICENSE",
+        "assets/runtime/materials/pbr/SOURCE.md"
+      ],
+      "notes": "GPU-compressed KTX2 color/normal/roughness maps. Color streams on all quality tiers; normal and roughness are desktop-only outside Low quality to preserve mobile smoothness.",
+      "maxRuntimeFileBytes": 400000
+    },
+    {
+      "id": "cc0-pbr-asphalt",
+      "name": "Asphalt007 — compressed PBR asphalt surface",
+      "category": "surface-texture-pbr",
+      "source": "CC0 Public Domain Textures / AmbientCG",
+      "sourceRepo": "Papyszoo/CC0-Public-Domain-Textures",
+      "sourceCommit": "fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2",
+      "sourcePath": "packs/ambientcg-textures/textures/Asphalt007/Asphalt007_1K-PNG_Color.ktx2",
+      "sourceUrl": "https://github.com/Papyszoo/CC0-Public-Domain-Textures/blob/fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2/packs/ambientcg-textures/textures/Asphalt007/Asphalt007_1K-PNG_Color.ktx2",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/materials/pbr/asphalt-color.ktx2",
+        "assets/runtime/materials/pbr/asphalt-normal.ktx2",
+        "assets/runtime/materials/pbr/asphalt-roughness.ktx2",
+        "assets/runtime/materials/pbr/LICENSE",
+        "assets/runtime/materials/pbr/SOURCE.md"
+      ],
+      "notes": "GPU-compressed KTX2 color/normal/roughness maps. Color streams on all quality tiers; normal and roughness are desktop-only outside Low quality to preserve mobile smoothness.",
+      "maxRuntimeFileBytes": 400000
+    },
+    {
+      "id": "cc0-pbr-metal",
+      "name": "Metal004 — compressed PBR metal surface",
+      "category": "surface-texture-pbr",
+      "source": "CC0 Public Domain Textures / AmbientCG",
+      "sourceRepo": "Papyszoo/CC0-Public-Domain-Textures",
+      "sourceCommit": "fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2",
+      "sourcePath": "packs/ambientcg-textures/textures/Metal004/Metal004_1K-PNG_Color.ktx2",
+      "sourceUrl": "https://github.com/Papyszoo/CC0-Public-Domain-Textures/blob/fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2/packs/ambientcg-textures/textures/Metal004/Metal004_1K-PNG_Color.ktx2",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/materials/pbr/metal-color.ktx2",
+        "assets/runtime/materials/pbr/metal-normal.ktx2",
+        "assets/runtime/materials/pbr/metal-roughness.ktx2",
+        "assets/runtime/materials/pbr/LICENSE",
+        "assets/runtime/materials/pbr/SOURCE.md"
+      ],
+      "notes": "GPU-compressed KTX2 color/normal/roughness maps. Color streams on all quality tiers; normal and roughness are desktop-only outside Low quality to preserve mobile smoothness.",
+      "maxRuntimeFileBytes": 400000
+    },
+    {
+      "id": "cc0-pbr-wood",
+      "name": "WoodSiding004 — compressed PBR wood surface",
+      "category": "surface-texture-pbr",
+      "source": "CC0 Public Domain Textures / AmbientCG",
+      "sourceRepo": "Papyszoo/CC0-Public-Domain-Textures",
+      "sourceCommit": "fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2",
+      "sourcePath": "packs/ambientcg-textures/textures/WoodSiding004/WoodSiding004_1K-PNG_Color.ktx2",
+      "sourceUrl": "https://github.com/Papyszoo/CC0-Public-Domain-Textures/blob/fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2/packs/ambientcg-textures/textures/WoodSiding004/WoodSiding004_1K-PNG_Color.ktx2",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/materials/pbr/wood-color.ktx2",
+        "assets/runtime/materials/pbr/wood-normal.ktx2",
+        "assets/runtime/materials/pbr/wood-roughness.ktx2",
+        "assets/runtime/materials/pbr/LICENSE",
+        "assets/runtime/materials/pbr/SOURCE.md"
+      ],
+      "notes": "GPU-compressed KTX2 color/normal/roughness maps. Color streams on all quality tiers; normal and roughness are desktop-only outside Low quality to preserve mobile smoothness.",
+      "maxRuntimeFileBytes": 400000
+    },
+    {
+      "id": "playcanvas-basis-transcoder",
+      "name": "PlayCanvas Basis/KTX2 transcoder",
+      "category": "runtime-codec",
+      "source": "PlayCanvas Engine",
+      "sourceRepo": "playcanvas/engine",
+      "sourceCommit": "81ca99b7c2398800b1c5a3bc68b40a08aad21a51",
+      "sourcePath": "examples/assets/wasm/basis/basis.wasm.wasm",
+      "sourceUrl": "https://github.com/playcanvas/engine/blob/81ca99b7c2398800b1c5a3bc68b40a08aad21a51/examples/assets/wasm/basis/basis.wasm.wasm",
+      "license": "MIT",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/wasm/basis/basis.wasm.js",
+        "assets/runtime/wasm/basis/basis.wasm.wasm",
+        "assets/runtime/wasm/basis/basis.js",
+        "assets/runtime/wasm/basis/LICENSE",
+        "assets/runtime/wasm/basis/SOURCE.md"
+      ],
+      "notes": "Official PlayCanvas Basis transcoder used by basisInitialize() so GPU-compressed KTX2 surface textures can load without expanding to heavyweight raw image textures.",
+      "maxRuntimeFileBytes": 1200000
     }
   ]
 }
