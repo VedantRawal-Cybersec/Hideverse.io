@@ -97,11 +97,7 @@ function pointInsideStructure(map: MapDefinition, point: Triplet, margin = 0.65)
     const [sx, sy, sz] = structure.position;
     const [wx, wy, wz] = structure.size;
     const insideHeight = Math.abs(y - sy) < wy / 2 + 1.1;
-    return (
-      insideHeight &&
-      Math.abs(x - sx) < wx / 2 + margin &&
-      Math.abs(z - sz) < wz / 2 + margin
-    );
+    return insideHeight && Math.abs(x - sx) < wx / 2 + margin && Math.abs(z - sz) < wz / 2 + margin;
   });
 }
 
@@ -156,11 +152,7 @@ function nearestNodeId(map: MapDefinition, point: Triplet): string | null {
   return bestId;
 }
 
-function shortestPath(
-  graph: Map<string, GraphEdge[]>,
-  start: string,
-  goal: string,
-): string[] {
+function shortestPath(graph: Map<string, GraphEdge[]>, start: string, goal: string): string[] {
   if (start === goal) return [start];
 
   const distanceById = new Map<string, number>();
@@ -382,10 +374,7 @@ export class CharacterSystem {
           const waypoint = actor.chasePath[actor.chasePathIndex] ?? null;
           if (waypoint) {
             if (distance(current, waypoint) < 0.75) {
-              actor.chasePathIndex = Math.min(
-                actor.chasePath.length - 1,
-                actor.chasePathIndex + 1,
-              );
+              actor.chasePathIndex = Math.min(actor.chasePath.length - 1, actor.chasePathIndex + 1);
             }
             moveActor(
               actor,

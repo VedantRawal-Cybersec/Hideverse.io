@@ -5,10 +5,7 @@ import { CharacterSystem } from './core/character-system';
 import { InputController } from './core/input-controller';
 import { ModeEngine } from './core/mode-engine';
 import { MultiplayerClient } from './core/multiplayer-client';
-import {
-  PerformanceManager,
-  type QualityPreset,
-} from './core/performance-manager';
+import { PerformanceManager, type QualityPreset } from './core/performance-manager';
 import { FirstPersonController } from './core/player-controller';
 import {
   hideverseMaps,

@@ -97,10 +97,7 @@ export class PerformanceManager {
 
   private applyPixelRatio(): void {
     const deviceRatio = Math.max(1, window.devicePixelRatio || 1);
-    const ratio = Math.max(
-      0.65,
-      Math.min(deviceRatio, this.basePixelRatio() * this.adaptiveScale),
-    );
+    const ratio = Math.max(0.65, Math.min(deviceRatio, this.basePixelRatio() * this.adaptiveScale));
     this.lastAppliedPixelRatio = ratio;
     this.app.graphicsDevice.maxPixelRatio = ratio;
   }

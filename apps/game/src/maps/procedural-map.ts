@@ -210,10 +210,7 @@ function createGround(
   createStaticCollider(world, ground);
 }
 
-async function loadProgressiveDressing(
-  app: Application,
-  map: MapDefinition,
-): Promise<void> {
+async function loadProgressiveDressing(app: Application, map: MapDefinition): Promise<void> {
   const specs = dressingAssets[map.id] ?? [];
   if (specs.length === 0 || map.navNodes.length === 0) return;
 
@@ -295,11 +292,7 @@ async function buildProceduralMap(
     const marker = new Entity(`objective-marker-${objective.id}`);
     marker.addComponent('render', { type: 'sphere' });
     marker.setLocalScale(0.38, 0.38, 0.38);
-    marker.setPosition(
-      objective.position[0],
-      objective.position[1] + 0.7,
-      objective.position[2],
-    );
+    marker.setPosition(objective.position[0], objective.position[1] + 0.7, objective.position[2]);
     if (marker.render) marker.render.material = accentMaterial;
     app.root.addChild(marker);
     objectCount += 1;
