@@ -191,19 +191,17 @@ async function buildProceduralMap(
   let objectCount = 1;
 
   for (const structure of map.structures) {
-    if (objectCount >= budget) break;
-    createVisualBox(app, structure, architectureMaterial);
     createStaticCollider(world, structure);
-    objectCount += 1;
+    if (objectCount < budget) {
+      createVisualBox(app, structure, architectureMaterial);
+      objectCount += 1;
+    }
   }
 
   for (const prop of map.props) {
-    if (objectCount >= budget) break;
-    if (coarse && prop.decorative) continue;
+    if (!prop.decorative) createStaticCollider(world, prop);
+    if (objectCount >= budget || (coarse && prop.decorative)) continue;
     createVisualBox(app, prop, propMaterial);
-    if (!prop.decorative) {
-      createStaticCollider(world, prop);
-    }
     objectCount += 1;
   }
 
@@ -212,8 +210,23 @@ async function buildProceduralMap(
     return createDoor(app, world, door, accentMaterial);
   });
 
+  for (const objective of map.objectives) {
+    if (objectCount >= budget + map.objectives.length) break;
+    const marker = new Entity(`objective-marker-${objective.id}`);
+    marker.addComponent('render', { type: 'sphere' });
+    marker.setLocalScale(0.38, 0.38, 0.38);
+    marker.setPosition(
+      objective.position[0],
+      objective.position[1] + 0.7,
+      objective.position[2],
+    );
+    if (marker.render) marker.render.material = accentMaterial;
+    app.root.addChild(marker);
+    objectCount += 1;
+  }
+
   onStatus(
-    `${map.name} ready · ${objectCount} runtime objects · ${map.navNodes.length} navigation nodes`,
+    `${map.name} ready · ${objectCount} visible runtime objects · ${map.navNodes.length} navigation nodes`,
   );
 
   return { doors, objectCount };
