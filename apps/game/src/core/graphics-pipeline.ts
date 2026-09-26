@@ -1,13 +1,13 @@
 import {
   Application,
   CameraFrame,
-  Color,
   Entity,
   FOG_EXP,
   FOG_NONE,
   TONEMAP_ACES,
 } from 'playcanvas';
 import type { QualityPreset } from './performance-manager';
+import { colorFromTriplet, referenceScene } from './reference-art-direction';
 
 export class GraphicsPipeline {
   private readonly frame: CameraFrame;
@@ -23,8 +23,10 @@ export class GraphicsPipeline {
 
     this.frame = new CameraFrame(app, camera.camera);
     this.frame.rendering.sceneColorMap = true;
+    this.frame.rendering.sceneDepthMap = true;
     this.frame.rendering.toneMapping = TONEMAP_ACES;
-    this.app.scene.fog.color = new Color(0.055, 0.065, 0.08);
+    this.frame.rendering.sharpness = 0.12;
+    this.app.scene.fog.color = colorFromTriplet(referenceScene.fog);
     this.applyQuality('auto');
   }
 
@@ -37,32 +39,39 @@ export class GraphicsPipeline {
     const balanced = preset === 'balanced';
     const autoMobile = preset === 'auto' && this.coarsePointer;
     const lightweight = low || autoMobile || runtimeReduced;
-    const autoHigh = preset === 'auto' && !this.coarsePointer && !runtimeReduced;
+    const autoDesktop = preset === 'auto' && !this.coarsePointer && !runtimeReduced;
 
-    this.frame.enabled = !lightweight;
+    this.frame.enabled = !low;
+    this.frame.grading.enabled = !lightweight;
+    this.frame.grading.brightness = high ? 1.06 : 1.035;
+    this.frame.grading.contrast = high || autoDesktop ? 1.09 : 1.055;
+    this.frame.grading.saturation = high || autoDesktop ? 1.07 : 1.035;
 
-    if (!lightweight) {
-      this.frame.grading.enabled = true;
-      this.frame.grading.brightness = high ? 1.04 : 1.02;
-      this.frame.grading.contrast = high || autoHigh ? 1.07 : 1.035;
-      this.frame.grading.saturation = high || autoHigh ? 1.06 : 1.03;
-      this.frame.bloom.intensity = high || autoHigh ? 0.018 : balanced ? 0.01 : 0.006;
-      this.frame.bloom.blurLevel = high ? 8 : 5;
-      this.frame.vignette.inner = 0.7;
-      this.frame.vignette.outer = 1;
-      this.frame.vignette.curvature = 0.6;
-      this.frame.vignette.intensity = high || autoHigh ? 0.1 : 0.06;
-      this.frame.taa.enabled = high && !this.coarsePointer;
-      this.frame.taa.jitter = 0.7;
-    } else {
-      this.frame.grading.enabled = false;
-      this.frame.bloom.intensity = 0;
-      this.frame.vignette.intensity = 0;
-      this.frame.taa.enabled = false;
-    }
+    // The references are crisp rather than cinematic: almost no bloom and only light vignette.
+    this.frame.bloom.intensity = lightweight ? 0 : high ? 0.008 : balanced ? 0.004 : 0.003;
+    this.frame.bloom.blurLevel = high ? 6 : 4;
+    this.frame.vignette.inner = 0.76;
+    this.frame.vignette.outer = 1;
+    this.frame.vignette.curvature = 0.55;
+    this.frame.vignette.intensity = lightweight ? 0 : 0.035;
+
+    this.frame.taa.enabled = high && !this.coarsePointer;
+    this.frame.taa.jitter = 0.6;
+
+    // Contact shading creates the baked-lightmap / clean competitive-FPS depth visible
+    // in the supplied references without forcing expensive dynamic lights everywhere.
+    this.frame.ssao.type = lightweight ? 'none' : 'combine';
+    this.frame.ssao.blurEnabled = true;
+    this.frame.ssao.randomize = false;
+    this.frame.ssao.intensity = high ? 0.42 : 0.3;
+    this.frame.ssao.radius = high ? 4.2 : 3.2;
+    this.frame.ssao.samples = high ? 12 : 7;
+    this.frame.ssao.power = 2.2;
+    this.frame.ssao.minAngle = 12;
+    this.frame.ssao.scale = high ? 0.75 : 0.62;
 
     this.app.scene.fog.type = low ? FOG_NONE : FOG_EXP;
-    this.app.scene.fog.density = this.coarsePointer || runtimeReduced ? 0.0035 : high ? 0.0038 : 0.0044;
+    this.app.scene.fog.density = this.coarsePointer || runtimeReduced ? 0.0018 : 0.0025;
     this.frame.update();
   }
 
