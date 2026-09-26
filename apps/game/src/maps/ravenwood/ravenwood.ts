@@ -54,19 +54,11 @@ function fitMansion(root: Entity): number {
   const targetFootprint = 66;
   const scale = targetFootprint / Math.max(bounds.width, bounds.depth);
   root.setLocalScale(scale, scale, scale);
-  root.setPosition(
-    -bounds.centerX * scale,
-    -bounds.minY * scale,
-    -bounds.centerZ * scale,
-  );
+  root.setPosition(-bounds.centerX * scale, -bounds.minY * scale, -bounds.centerZ * scale);
   return scale;
 }
 
-function buildStaticTrimesh(
-  world: RAPIER.World,
-  root: Entity,
-  onStatus: RavenwoodStatus,
-): void {
+function buildStaticTrimesh(world: RAPIER.World, root: Entity, onStatus: RavenwoodStatus): void {
   const renders = root.findComponents('render') as RenderComponent[];
   const vertices: number[] = [];
   const indices: number[] = [];
@@ -111,7 +103,9 @@ function buildStaticTrimesh(
     new Uint32Array(indices),
   ).setFriction(0.85);
   world.createCollider(collider);
-  onStatus(`Mansion collision ready · ${Math.floor(indices.length / 3).toLocaleString()} triangles`);
+  onStatus(
+    `Mansion collision ready · ${Math.floor(indices.length / 3).toLocaleString()} triangles`,
+  );
 }
 
 async function loadInstances(

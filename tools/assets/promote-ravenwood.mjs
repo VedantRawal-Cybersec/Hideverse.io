@@ -4,10 +4,7 @@ import process from 'node:process';
 
 const root = process.cwd();
 const manifestPath = path.join(root, 'assets/manifest.json');
-const outputPath = path.join(
-  root,
-  'assets/runtime/ravenwood/map/ravenwood_mansion_victorian.glb',
-);
+const outputPath = path.join(root, 'assets/runtime/ravenwood/map/ravenwood_mansion_victorian.glb');
 const metadataPath = path.join(
   root,
   'assets/runtime/ravenwood/map/ravenwood_mansion_victorian.meta.json',
@@ -24,7 +21,12 @@ const jsonLength = bytes.readUInt32LE(12);
 const jsonType = bytes.readUInt32LE(16);
 if (jsonType !== 0x4e4f534a) throw new Error('Ravenwood GLB JSON chunk is missing.');
 
-const json = JSON.parse(bytes.subarray(20, 20 + jsonLength).toString('utf8').trim());
+const json = JSON.parse(
+  bytes
+    .subarray(20, 20 + jsonLength)
+    .toString('utf8')
+    .trim(),
+);
 let triangles = 0;
 let primitives = 0;
 

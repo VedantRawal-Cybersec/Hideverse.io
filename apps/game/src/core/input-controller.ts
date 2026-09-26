@@ -30,18 +30,12 @@ export class InputController {
     this.bindButton('mobile-jump', () => {
       this.jumpQueued = true;
     });
-    this.bindHoldButton(
-      'mobile-sprint',
-      (active) => {
-        this.sprintTouch = active;
-      },
-    );
-    this.bindHoldButton(
-      'mobile-crouch',
-      (active) => {
-        this.crouchTouch = active;
-      },
-    );
+    this.bindHoldButton('mobile-sprint', (active) => {
+      this.sprintTouch = active;
+    });
+    this.bindHoldButton('mobile-crouch', (active) => {
+      this.crouchTouch = active;
+    });
   }
 
   get yaw(): number {

@@ -1,10 +1,4 @@
-import {
-  Application,
-  Color,
-  Entity,
-  FILLMODE_FILL_WINDOW,
-  RESOLUTION_AUTO,
-} from 'playcanvas';
+import { Application, Color, Entity, FILLMODE_FILL_WINDOW, RESOLUTION_AUTO } from 'playcanvas';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { EntityManager } from 'yuka';
 import { InputController } from './core/input-controller';

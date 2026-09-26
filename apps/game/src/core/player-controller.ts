@@ -16,11 +16,7 @@ export class FirstPersonController {
     private readonly spawn = { x: 0, y: 2.2, z: 38 },
   ) {
     this.body = world.createRigidBody(
-      RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(
-        spawn.x,
-        spawn.y,
-        spawn.z,
-      ),
+      RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(spawn.x, spawn.y, spawn.z),
     );
     this.collider = world.createCollider(
       RAPIER.ColliderDesc.capsule(0.62, 0.34).setFriction(0),
