@@ -7,6 +7,7 @@ import { InputController } from './core/input-controller';
 import { ModeEngine } from './core/mode-engine';
 import { MultiplayerClient } from './core/multiplayer-client';
 import { PerformanceManager, type QualityPreset } from './core/performance-manager';
+import { colorFromTriplet, referenceScene } from './core/reference-art-direction';
 import { PlayerAvatar } from './core/player-avatar';
 import { FirstPersonController } from './core/player-controller';
 import {
@@ -27,7 +28,7 @@ function must<T extends Element>(selector: string): T {
 }
 
 function color(value: Triplet): Color {
-  return new Color(value[0], value[1], value[2]);
+  return colorFromTriplet(value);
 }
 
 const canvas = must<HTMLCanvasElement>('#game-canvas');
@@ -180,14 +181,14 @@ async function boot(): Promise<void> {
   const app = new Application(canvas);
   app.setCanvasFillMode(FILLMODE_FILL_WINDOW);
   app.setCanvasResolution(RESOLUTION_AUTO);
-  app.scene.ambientLight = color(map.lighting.ambient);
+  app.scene.ambientLight = color(referenceScene.ambient);
 
   const performanceManager = new PerformanceManager(app, coarse);
   qualitySelect.value = performanceManager.preset;
 
   const camera = new Entity('Player Camera');
   camera.addComponent('camera', {
-    clearColor: color(map.lighting.clear),
+    clearColor: color(referenceScene.sky),
     nearClip: 0.08,
     farClip: coarse ? 190 : 260,
     fov: coarse ? 76 : 72,
@@ -200,16 +201,16 @@ async function boot(): Promise<void> {
   const sun = new Entity(`${map.name} Key Light`);
   sun.addComponent('light', {
     type: 'directional',
-    color: color(map.lighting.sun),
-    intensity: map.lighting.sunIntensity,
+    color: color(referenceScene.sun),
+    intensity: referenceScene.sunIntensity,
     castShadows: performanceManager.shadowsEnabled,
     shadowResolution: performanceManager.shadowResolution,
     shadowDistance: coarse ? Math.min(55, map.lod.shadowDistance) : map.lod.shadowDistance,
   });
   sun.setEulerAngles(
-    map.lighting.sunAngles[0],
-    map.lighting.sunAngles[1],
-    map.lighting.sunAngles[2],
+    referenceScene.sunAngles[0],
+    referenceScene.sunAngles[1],
+    referenceScene.sunAngles[2],
   );
   app.root.addChild(sun);
 
@@ -225,14 +226,14 @@ async function boot(): Promise<void> {
   const fill = new Entity(`${map.name} Fill Light`);
   fill.addComponent('light', {
     type: 'directional',
-    color: color(map.lighting.fill),
-    intensity: map.lighting.fillIntensity,
+    color: color(referenceScene.fill),
+    intensity: referenceScene.fillIntensity,
     castShadows: false,
   });
   fill.setEulerAngles(
-    map.lighting.fillAngles[0],
-    map.lighting.fillAngles[1],
-    map.lighting.fillAngles[2],
+    referenceScene.fillAngles[0],
+    referenceScene.fillAngles[1],
+    referenceScene.fillAngles[2],
   );
   app.root.addChild(fill);
 
