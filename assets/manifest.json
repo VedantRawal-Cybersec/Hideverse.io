@@ -486,6 +486,128 @@
       ],
       "notes": "CC0 low-poly rigged character with 76 embedded animation clips. Loaded lazily on non-coarse-pointer devices; mobile keeps the lightweight procedural role avatar.",
       "maxRuntimeFileBytes": 4000000
+    },
+    {
+      "id": "kaykit-character-barbarian",
+      "name": "Barbarian — rigged role character",
+      "category": "character",
+      "source": "KayKit Character Pack: Adventurers 1.0",
+      "sourceRepo": "KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0",
+      "sourceCommit": "672074b73ba276876a19e8816ecdc5241817ab47",
+      "sourcePath": "addons/kaykit_character_pack_adventures/Characters/gltf/Barbarian.glb",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/blob/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Characters/gltf/Barbarian.glb",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/characters/kaykit/Barbarian.glb",
+        "assets/runtime/characters/kaykit/LICENSE.txt"
+      ],
+      "notes": "CC0 rigged humanoid with embedded locomotion, interaction, hit and emote clips. Desktop role variety asset.",
+      "maxRuntimeFileBytes": 4000000
+    },
+    {
+      "id": "kaykit-character-knight",
+      "name": "Knight — rigged role character",
+      "category": "character",
+      "source": "KayKit Character Pack: Adventurers 1.0",
+      "sourceRepo": "KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0",
+      "sourceCommit": "672074b73ba276876a19e8816ecdc5241817ab47",
+      "sourcePath": "addons/kaykit_character_pack_adventures/Characters/gltf/Knight.glb",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/blob/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Characters/gltf/Knight.glb",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/characters/kaykit/Knight.glb",
+        "assets/runtime/characters/kaykit/LICENSE.txt"
+      ],
+      "notes": "CC0 rigged humanoid with embedded locomotion, interaction, hit and emote clips. Desktop role variety asset.",
+      "maxRuntimeFileBytes": 4000000
+    },
+    {
+      "id": "kaykit-character-mage",
+      "name": "Mage — rigged role character",
+      "category": "character",
+      "source": "KayKit Character Pack: Adventurers 1.0",
+      "sourceRepo": "KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0",
+      "sourceCommit": "672074b73ba276876a19e8816ecdc5241817ab47",
+      "sourcePath": "addons/kaykit_character_pack_adventures/Characters/gltf/Mage.glb",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/blob/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Characters/gltf/Mage.glb",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/characters/kaykit/Mage.glb",
+        "assets/runtime/characters/kaykit/LICENSE.txt"
+      ],
+      "notes": "CC0 rigged humanoid with embedded locomotion, interaction, hit and emote clips. Desktop role variety asset.",
+      "maxRuntimeFileBytes": 4000000
+    },
+    {
+      "id": "kaykit-character-rogue",
+      "name": "Rogue — rigged role character",
+      "category": "character",
+      "source": "KayKit Character Pack: Adventurers 1.0",
+      "sourceRepo": "KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0",
+      "sourceCommit": "672074b73ba276876a19e8816ecdc5241817ab47",
+      "sourcePath": "addons/kaykit_character_pack_adventures/Characters/gltf/Rogue.glb",
+      "sourceUrl": "https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/blob/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Characters/gltf/Rogue.glb",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/characters/kaykit/Rogue.glb",
+        "assets/runtime/characters/kaykit/LICENSE.txt"
+      ],
+      "notes": "CC0 rigged humanoid with embedded locomotion, interaction, hit and emote clips. Desktop role variety asset.",
+      "maxRuntimeFileBytes": 4000000
+    },
+    {
+      "id": "vrm-seed-san-expression-reference",
+      "name": "Seed-san expressive humanoid avatar",
+      "category": "character-expression",
+      "source": "VRM Specification Samples",
+      "sourceRepo": "vrm-c/vrm-specification",
+      "sourceCommit": "821c11b250d8c70d5804ee13431e42bee56ea9c0",
+      "sourcePath": "samples/Seed-san/vrm/Seed-san.vrm",
+      "sourceUrl": "https://github.com/vrm-c/vrm-specification/blob/821c11b250d8c70d5804ee13431e42bee56ea9c0/samples/Seed-san/vrm/Seed-san.vrm",
+      "license": "VRM-Public-License-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/characters/vrm/Seed-san.vrm",
+        "assets/runtime/characters/vrm/Seed-san-LICENSE-README.md"
+      ],
+      "notes": "Expression-capable reference avatar with morph expressions and look-at metadata. Kept out of the mobile locomotion path.",
+      "maxRuntimeFileBytes": 12000000
+    },
+    {
+      "id": "cc0-map-surface-textures",
+      "name": "CC0 map surface texture set",
+      "category": "materials",
+      "source": "CC0 Public Domain Textures / Poly Haven",
+      "sourceRepo": "Papyszoo/CC0-Public-Domain-Textures",
+      "sourceCommit": "fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/materials/cc0/concrete.png",
+        "assets/runtime/materials/cc0/walnut.png",
+        "assets/runtime/materials/cc0/tiles.png",
+        "assets/runtime/materials/cc0/LICENSE.txt"
+      ],
+      "notes": "Small albedo surfaces used progressively with physically-based StandardMaterial gloss and metalness settings."
+    },
+    {
+      "id": "khronos-neutral-environment",
+      "name": "Khronos neutral panorama",
+      "category": "environment",
+      "source": "Khronos glTF Sample Environments",
+      "sourceRepo": "KhronosGroup/glTF-Sample-Environments",
+      "sourceCommit": "83d50e3aa24052872569c33568809c08bec1bcba",
+      "license": "Repository sample license",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/environment/khronos/neutral.jpg",
+        "assets/runtime/environment/khronos/README.md"
+      ],
+      "notes": "Desktop environment panorama used as a non-blocking visual dome."
     }
   ]
 }
