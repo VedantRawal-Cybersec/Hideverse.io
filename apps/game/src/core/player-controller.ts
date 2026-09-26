@@ -1,4 +1,4 @@
-import type RAPIER from '@dimforge/rapier3d-compat';
+import RAPIER from '@dimforge/rapier3d-compat';
 import { Entity } from 'playcanvas';
 import type { InputController } from './input-controller';
 
