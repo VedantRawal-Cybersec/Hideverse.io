@@ -161,6 +161,11 @@ mapSelect.addEventListener('change', () => {
 
 function setMapStatus(message: string): void {
   mapStatus.textContent = message;
+
+  if (!bootOverlay.classList.contains('is-hidden')) {
+    const bootText = bootOverlay.querySelector<HTMLSpanElement>('span');
+    if (bootText) bootText.textContent = message.toUpperCase();
+  }
 }
 
 function formatTimer(seconds: number): string {
