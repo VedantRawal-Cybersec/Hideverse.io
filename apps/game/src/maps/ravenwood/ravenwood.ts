@@ -26,7 +26,6 @@ function collectBounds(root: Entity): {
   let maxX = Number.NEGATIVE_INFINITY;
   let maxZ = Number.NEGATIVE_INFINITY;
 
-  let processedInstances = 0;
   for (const render of renders) {
     for (const instance of render.meshInstances) {
       const box = instance.aabb;
@@ -70,6 +69,7 @@ async function buildStaticTrimesh(
   const indices: number[] = [];
   const source = new Vec3();
   const target = new Vec3();
+  let processedInstances = 0;
 
   for (const render of renders) {
     for (const instance of render.meshInstances) {
