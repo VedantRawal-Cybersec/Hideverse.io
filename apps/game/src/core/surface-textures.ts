@@ -1,13 +1,6 @@
 import { ADDRESS_REPEAT, Application, Color, StandardMaterial, Texture } from 'playcanvas';
 
-type SurfaceTextureName =
-  | 'plaster'
-  | 'concrete'
-  | 'brick'
-  | 'asphalt'
-  | 'tile'
-  | 'metal'
-  | 'wood';
+type SurfaceTextureName = 'plaster' | 'concrete' | 'brick' | 'asphalt' | 'tile' | 'metal' | 'wood';
 
 export type SurfaceMaterialSet = {
   wall?: StandardMaterial;
@@ -131,10 +124,7 @@ function attachTexture(
   material.update();
 }
 
-function tilingForRole(
-  role: keyof SurfaceMaterialSet,
-  coarsePointer: boolean,
-): number {
+function tilingForRole(role: keyof SurfaceMaterialSet, coarsePointer: boolean): number {
   if (role === 'floor') return coarsePointer ? 6 : 9;
   if (role === 'wall' || role === 'wallAlt') return coarsePointer ? 2.8 : 4.2;
   if (role === 'metal') return coarsePointer ? 1.8 : 2.8;
@@ -187,10 +177,7 @@ export async function applyRealSurfaceTextures(
       );
       decoded.add(job.texture);
     } catch (error) {
-      console.warn(
-        `[Hideverse surfaces] ${job.texture} failed; color fallback retained.`,
-        error,
-      );
+      console.warn(`[Hideverse surfaces] ${job.texture} failed; color fallback retained.`, error);
     }
 
     await new Promise<void>((resolve) => {
