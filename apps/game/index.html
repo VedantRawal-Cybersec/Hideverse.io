@@ -45,6 +45,28 @@
           <span>MOTION <b id="motion-value">IDLE</b></span>
           <span>STAMINA <b id="stamina-value">100%</b></span>
         </div>
+        <div class="runtime-settings">
+          <label>
+            QUALITY
+            <select id="quality-select" aria-label="Graphics quality">
+              <option value="auto">AUTO</option>
+              <option value="low">LOW</option>
+              <option value="balanced">BALANCED</option>
+              <option value="high">HIGH</option>
+            </select>
+          </label>
+          <label>
+            LOOK
+            <input
+              id="sensitivity-slider"
+              type="range"
+              min="0.55"
+              max="1.7"
+              step="0.05"
+              aria-label="Look sensitivity"
+            />
+          </label>
+        </div>
       </aside>
 
       <aside class="network-panel" aria-label="Multiplayer room controls">
@@ -99,6 +121,13 @@
           <button id="mobile-jump" class="primary-touch" type="button">JUMP</button>
         </div>
       </div>
+
+      <section id="round-result" class="round-result" aria-live="assertive">
+        <span id="round-result-kicker">ROUND COMPLETE</span>
+        <h2 id="round-result-title">MISSION COMPLETE</h2>
+        <p id="round-result-copy">Preparing result…</p>
+        <button id="restart-round" type="button">PLAY AGAIN</button>
+      </section>
 
       <div id="boot-overlay" class="boot-overlay">
         <div class="spinner"></div>
