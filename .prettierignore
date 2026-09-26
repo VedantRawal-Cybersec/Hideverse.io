@@ -10,3 +10,6 @@ assets/manifest.json
 assets/sources.json
 docs/PHASE_2_ASSETS.md
 .github/workflows
+
+# Preserve pinned upstream Deadshot open-source artifacts byte-for-byte.
+vendor/deadshot-open-source
