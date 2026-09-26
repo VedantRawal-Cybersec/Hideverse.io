@@ -51,6 +51,13 @@ try {
     throw new Error(`unexpected health payload: ${JSON.stringify(health)}`);
   }
 
+  const compressed = await fetch(`${base}/game/index.html`, {
+    headers: { 'accept-encoding': 'br' },
+  });
+  if (!compressed.ok || compressed.headers.get('content-encoding') !== 'br') {
+    throw new Error('Brotli delivery is not active for compressible game assets');
+  }
+
   const headers = { 'content-type': 'application/json' };
   const first = await json('/api/multiplayer/join', {
     method: 'POST',
@@ -142,7 +149,7 @@ try {
   });
 
   console.log(
-    '[multiplayer-qa] PASS — health, join, authoritative state, shared objectives, SSE, reset, and leave verified.',
+    '[multiplayer-qa] PASS — compressed delivery, health, join, authoritative state, shared objectives, SSE, reset, and leave verified.',
   );
 } finally {
   server.kill('SIGTERM');
