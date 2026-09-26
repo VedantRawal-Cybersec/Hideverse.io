@@ -754,6 +754,27 @@
       ],
       "notes": "GPU-compressed KTX2 color/normal/roughness maps. Color streams on all quality tiers; normal and roughness are desktop-only outside Low quality to preserve mobile smoothness.",
       "maxRuntimeFileBytes": 400000
+    },
+    {
+      "id": "playcanvas-basis-transcoder",
+      "name": "PlayCanvas Basis/KTX2 transcoder",
+      "category": "runtime-codec",
+      "source": "PlayCanvas Engine",
+      "sourceRepo": "playcanvas/engine",
+      "sourceCommit": "81ca99b7c2398800b1c5a3bc68b40a08aad21a51",
+      "sourcePath": "examples/assets/wasm/basis/basis.wasm.wasm",
+      "sourceUrl": "https://github.com/playcanvas/engine/blob/81ca99b7c2398800b1c5a3bc68b40a08aad21a51/examples/assets/wasm/basis/basis.wasm.wasm",
+      "license": "MIT",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/wasm/basis/basis.wasm.js",
+        "assets/runtime/wasm/basis/basis.wasm.wasm",
+        "assets/runtime/wasm/basis/basis.js",
+        "assets/runtime/wasm/basis/LICENSE",
+        "assets/runtime/wasm/basis/SOURCE.md"
+      ],
+      "notes": "Official PlayCanvas Basis transcoder used by basisInitialize() so GPU-compressed KTX2 surface textures can load without expanding to heavyweight raw image textures.",
+      "maxRuntimeFileBytes": 1200000
     }
   ]
 }
