@@ -179,9 +179,6 @@ async function boot(): Promise<void> {
 
   const performanceManager = new PerformanceManager(app, coarse);
   qualitySelect.value = performanceManager.preset;
-  qualitySelect.addEventListener('change', () => {
-    performanceManager.setPreset(qualitySelect.value as QualityPreset);
-  });
 
   const camera = new Entity('Player Camera');
   camera.addComponent('camera', {
@@ -207,6 +204,14 @@ async function boot(): Promise<void> {
     map.lighting.sunAngles[2],
   );
   app.root.addChild(sun);
+
+  qualitySelect.addEventListener('change', () => {
+    performanceManager.setPreset(qualitySelect.value as QualityPreset);
+    if (sun.light) {
+      sun.light.castShadows = performanceManager.shadowsEnabled;
+      sun.light.shadowResolution = performanceManager.shadowResolution;
+    }
+  });
 
   const fill = new Entity(`${map.name} Fill Light`);
   fill.addComponent('light', {
