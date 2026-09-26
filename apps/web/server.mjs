@@ -52,7 +52,11 @@ const server = createServer(async (req, res) => {
     let file = requested;
     try {
       const info = await stat(file);
-      if (!info.isFile()) throw new Error('not a file');
+      if (info.isDirectory()) {
+        file = path.join(file, 'index.html');
+      } else if (!info.isFile()) {
+        throw new Error('not a file');
+      }
     } catch {
       file = path.join(dist, 'index.html');
     }
