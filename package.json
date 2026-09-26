@@ -1,0 +1,25 @@
+{
+  "name": "hideverse-io",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hideverse.io browser game monorepo",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services/*"
+  ],
+  "scripts": {
+    "dev:game": "npm run dev --workspace @hideverse/game",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "verify": "npm run verify --workspace @hideverse/game",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "3.9.9"
+  }
+}
