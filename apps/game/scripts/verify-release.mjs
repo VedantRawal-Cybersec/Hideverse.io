@@ -161,9 +161,18 @@ for (const marker of [
   'hospital-entry-frame-top',
   'hospital-ward-window',
   'hospital-ceiling-light',
+  'museum-display-glass',
+  'museum-vault-frame',
+  'museum-entry-canopy',
+  'hotel-entry-glass',
+  'hotel-room-door-frame',
+  'hotel-floor-band',
+  'axiom-reactor-glow',
+  'axiom-specimen-glass',
+  'axiom-ceiling-trunk',
   'loadPlacedAssets',
 ]) {
-  if (!mapDetailPass.includes(marker)) fail(`top-map realism detail missing ${marker}`);
+  if (!mapDetailPass.includes(marker)) fail(`map realism detail missing ${marker}`);
 }
 
 for (const marker of [
@@ -177,5 +186,5 @@ for (const marker of [
 }
 
 console.log(
-  `[release-qa] PASS — ${catalog.maps.length} maps, mobile budgets, adaptive rendering, touch controls, FPS/TPS physics, shared objectives, realtime room sync, multi-character rigged locomotion, HDR graphics, real CC0 tiled surfaces and top-map architectural realism verified.`,
+  `[release-qa] PASS — ${catalog.maps.length} maps, mobile budgets, adaptive rendering, touch controls, FPS/TPS physics, shared objectives, realtime room sync, multi-character rigged locomotion, HDR graphics, real CC0 tiled surfaces and six-map architectural realism verified.`,
 );
