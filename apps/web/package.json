@@ -8,7 +8,8 @@
     "build": "node scripts/prepare-site.mjs && vite build && node scripts/embed-game.mjs",
     "start": "node server.mjs",
     "smoke": "node scripts/verify-build.mjs",
-    "verify": "npm run build && npm run smoke"
+    "verify": "npm run build && npm run smoke",
+    "build:pages": "node scripts/prepare-site.mjs && vite build --base=/Hideverse.io/ && node scripts/embed-game.mjs"
   },
   "devDependencies": {
     "typescript": "7.0.2",
