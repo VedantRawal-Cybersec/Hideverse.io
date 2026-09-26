@@ -191,38 +191,52 @@ export async function applyRealSurfaceTextures(
 
   await delay(coarsePointer ? 700 : 420);
 
-  // Pass 2: all devices receive the higher-detail GPU-compressed KTX2 color surface.
-  // Only capable desktop profiles add normal + roughness maps. This keeps Low/mobile
-  // visually textured without increasing their fragment-shader cost.
+  // Pass 2A: upgrade every visible surface to the compressed full-detail color map in parallel.
+  // Color is the most noticeable realism improvement and remains cheap at render time.
+  await Promise.all(
+    bindings.map(async (binding) => {
+      try {
+        const color = await loadTexture(
+          app,
+          pbrTextureUrl(binding.surface, 'color'),
+          anisotropy,
+        );
+        applyPbrMaps(binding.material, color, null, null, binding);
+      } catch (error) {
+        console.warn(
+          `[Hideverse surfaces] Detailed color skipped for ${binding.surface}; keeping preview.`,
+          error,
+        );
+      }
+    }),
+  );
+
+  if (!fullPbr) return;
+
+  await delay(650);
+
+  // Pass 2B: Balanced / High desktop gains normal + roughness one shared material at a time.
+  // These uploads are staggered so they never arrive as one large frame-time spike.
   for (const binding of bindings) {
     try {
-      const color = await loadTexture(
-        app,
-        pbrTextureUrl(binding.surface, 'color'),
-        anisotropy,
-      );
-
-      if (!fullPbr) {
-        applyPbrMaps(binding.material, color, null, null, binding);
-        await delay(coarsePointer ? 90 : 55);
-        continue;
-      }
-
-      await delay(45);
-
       const [normal, roughness] = await Promise.all([
         loadTexture(app, pbrTextureUrl(binding.surface, 'normal'), anisotropy),
         loadTexture(app, pbrTextureUrl(binding.surface, 'roughness'), anisotropy),
       ]);
 
+      const color = await loadTexture(
+        app,
+        pbrTextureUrl(binding.surface, 'color'),
+        anisotropy,
+      );
       applyPbrMaps(binding.material, color, normal, roughness, binding);
     } catch (error) {
       console.warn(
-        `[Hideverse surfaces] PBR upgrade skipped for ${binding.surface}; keeping lightweight texture.`,
+        `[Hideverse surfaces] Normal/roughness upgrade skipped for ${binding.surface}.`,
         error,
       );
     }
 
-    await delay(85);
+    await delay(140);
   }
 }
