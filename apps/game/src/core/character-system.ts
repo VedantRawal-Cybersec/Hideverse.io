@@ -376,69 +376,68 @@ export class CharacterSystem {
     };
 
     for (const actor of this.actors) {
-        const file = roleCharacterAsset[actor.role];
-        if (!file || actor.role === 'monster') return;
+      const file = roleCharacterAsset[actor.role];
+      if (!file || actor.role === 'monster') continue;
 
-        try {
-          const { asset, tracks } = await loadCharacter(file);
-          const idle = tracks.get('Idle');
-          const walking = tracks.get('Walking_A');
-          const running = tracks.get('Running_A');
-          if (!idle || !walking || !running) {
-            console.warn(`[Hideverse characters] ${file} is missing required locomotion clips.`);
-            return;
-          }
-
-          const rigged = asset.resource.instantiateRenderEntity({
-            castShadows: true,
-            receiveShadows: true,
-          });
-          rigged.name = `rigged-${actor.id}`;
-          rigged.setLocalPosition(0, -1.2, 0);
-          rigged.setLocalScale(0.88, 0.88, 0.88);
-          rigged.setLocalEulerAngles(0, 180, 0);
-          rigged.addComponent('anim', { activate: true, speed: 1 });
-          if (!rigged.anim) {
-            rigged.destroy();
-            return;
-          }
-
-          rigged.anim.rootBone = rigged;
-          rigged.anim.assignAnimation('idle', idle);
-          rigged.anim.assignAnimation('walk', walking);
-          rigged.anim.assignAnimation('run', running);
-          const baseLayer = rigged.anim.baseLayer;
-          if (!baseLayer) {
-            rigged.destroy();
-            return;
-          }
-          baseLayer.transition('idle', 0);
-
-          const marker = new Entity(`role-marker-${actor.id}`);
-          marker.addComponent('render', { type: 'cylinder' });
-          marker.setLocalScale(0.7, 0.035, 0.7);
-          marker.setLocalPosition(0, -1.17, 0);
-          if (marker.render) marker.render.material = makeMaterial(roleColors[actor.role]);
-
-          actor.root.addChild(rigged);
-          actor.root.addChild(marker);
-          actor.rigged = rigged;
-          actor.riggedState = 'idle';
-          actor.roleMarker = marker;
-          actor.visual.enabled = false;
-          actor.head.enabled = false;
-          if (actor.limbs) {
-            actor.limbs.leftArm.enabled = false;
-            actor.limbs.rightArm.enabled = false;
-            actor.limbs.leftLeg.enabled = false;
-            actor.limbs.rightLeg.enabled = false;
-          }
-        } catch (error) {
-          console.warn(
-            `[Hideverse characters] ${file} unavailable for ${actor.id}; using fallback.`,
-            error,
-          );
+      try {
+        const { asset, tracks } = await loadCharacter(file);
+        const idle = tracks.get('Idle');
+        const walking = tracks.get('Walking_A');
+        const running = tracks.get('Running_A');
+        if (!idle || !walking || !running) {
+          console.warn(`[Hideverse characters] ${file} is missing required locomotion clips.`);
+          continue;
         }
+
+        const rigged = asset.resource.instantiateRenderEntity({
+          castShadows: true,
+          receiveShadows: true,
+        });
+        rigged.name = `rigged-${actor.id}`;
+        rigged.setLocalPosition(0, -1.2, 0);
+        rigged.setLocalScale(0.88, 0.88, 0.88);
+        rigged.setLocalEulerAngles(0, 180, 0);
+        rigged.addComponent('anim', { activate: true, speed: 1 });
+        if (!rigged.anim) {
+          rigged.destroy();
+          continue;
+        }
+
+        rigged.anim.rootBone = rigged;
+        rigged.anim.assignAnimation('idle', idle);
+        rigged.anim.assignAnimation('walk', walking);
+        rigged.anim.assignAnimation('run', running);
+        const baseLayer = rigged.anim.baseLayer;
+        if (!baseLayer) {
+          rigged.destroy();
+          continue;
+        }
+        baseLayer.transition('idle', 0);
+
+        const marker = new Entity(`role-marker-${actor.id}`);
+        marker.addComponent('render', { type: 'cylinder' });
+        marker.setLocalScale(0.7, 0.035, 0.7);
+        marker.setLocalPosition(0, -1.17, 0);
+        if (marker.render) marker.render.material = makeMaterial(roleColors[actor.role]);
+
+        actor.root.addChild(rigged);
+        actor.root.addChild(marker);
+        actor.rigged = rigged;
+        actor.riggedState = 'idle';
+        actor.roleMarker = marker;
+        actor.visual.enabled = false;
+        actor.head.enabled = false;
+        if (actor.limbs) {
+          actor.limbs.leftArm.enabled = false;
+          actor.limbs.rightArm.enabled = false;
+          actor.limbs.leftLeg.enabled = false;
+          actor.limbs.rightLeg.enabled = false;
+        }
+      } catch (error) {
+        console.warn(
+          `[Hideverse characters] ${file} unavailable for ${actor.id}; using fallback.`,
+          error,
+        );
       }
 
       await new Promise<void>((resolve) => {
