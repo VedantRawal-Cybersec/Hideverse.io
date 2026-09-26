@@ -83,6 +83,25 @@ function statusFor(
   return 'CLEAR';
 }
 
+function progressText(modeId: string, completed: number, total: number): string {
+  if (modeId === 'kick-the-box') return `${completed}/${total} BOXES`;
+  if (modeId === 'who-is-real') return `${completed}/${total} VERIFIED`;
+  if (modeId === 'hide-and-heist') {
+    const loot = Math.min(completed, Math.max(0, total - 1));
+    return completed === total ? 'EXTRACTED' : `${loot}/${Math.max(0, total - 1)} LOOT`;
+  }
+  if (modeId === 'monster-hunt') {
+    return completed === total ? 'TRACKER ONLINE' : `${completed}/${total} SYSTEMS`;
+  }
+  if (modeId === 'floor-by-floor') {
+    return completed === total ? 'ROOF SECURED' : `${completed}/${total} CLEARED`;
+  }
+  if (modeId === 'traitor') {
+    return completed === total ? 'TRAITOR EXPOSED' : `${completed}/${total} EVIDENCE`;
+  }
+  return `${completed}/${total}`;
+}
+
 function objectiveGuidance(modeId: string): string {
   if (modeId === 'kick-the-box') return 'Activate the box chain and avoid seeker contact.';
   if (modeId === 'who-is-real') return 'Complete scans and isolate the mimic before time expires.';
@@ -159,6 +178,7 @@ export class ModeEngine {
     const incomplete = this.map.objectives.filter((objective) => !this.completed.has(objective.id));
     const orderedMode =
       this.map.mode.id === 'hide-and-heist' ||
+      this.map.mode.id === 'monster-hunt' ||
       this.map.mode.id === 'floor-by-floor' ||
       this.map.mode.id === 'traitor';
     const eligible = orderedMode && incomplete.length > 0 ? [incomplete[0]!] : incomplete;
@@ -212,7 +232,7 @@ export class ModeEngine {
           ? `E · ${nearest.action} · ${nearest.label.toUpperCase()}`
           : null,
       objective,
-      progress: `${completedCount}/${this.map.objectives.length}`,
+      progress: progressText(this.map.mode.id, completedCount, this.map.objectives.length),
       complete,
       outcome: this.outcome,
       timerSeconds: this.timerSeconds,
