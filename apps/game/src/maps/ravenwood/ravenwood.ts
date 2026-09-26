@@ -59,12 +59,17 @@ function fitMansion(root: Entity): number {
   return scale;
 }
 
-function buildStaticTrimesh(world: RAPIER.World, root: Entity, onStatus: RavenwoodStatus): void {
+async function buildStaticTrimesh(
+  world: RAPIER.World,
+  root: Entity,
+  onStatus: RavenwoodStatus,
+): Promise<void> {
   const renders = root.findComponents('render') as RenderComponent[];
   const vertices: number[] = [];
   const indices: number[] = [];
   const source = new Vec3();
   const target = new Vec3();
+  let processedInstances = 0;
 
   for (const render of renders) {
     for (const instance of render.meshInstances) {
@@ -91,6 +96,11 @@ function buildStaticTrimesh(world: RAPIER.World, root: Entity, onStatus: Ravenwo
         for (let i = 0; i < count; i += 1) {
           indices.push(vertexOffset + i);
         }
+      }
+
+      processedInstances += 1;
+      if (processedInstances % 4 === 0) {
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
       }
     }
   }
@@ -232,12 +242,64 @@ async function loadExteriorDressing(app: Application): Promise<void> {
   await Promise.allSettled(tasks);
 }
 
+async function streamMansionDetail(
+  app: Application,
+  world: RAPIER.World,
+  onStatus: RavenwoodStatus,
+): Promise<void> {
+  try {
+    const asset = await loadContainer(
+      app,
+      modelUrl('ravenwood/map/ravenwood_mansion_victorian.glb'),
+    );
+    const mansion = asset.resource.instantiateRenderEntity({
+      castShadows: !matchMedia('(pointer: coarse)').matches,
+      receiveShadows: true,
+    });
+    mansion.name = 'Ravenwood Victorian Mansion';
+    app.root.addChild(mansion);
+
+    const scale = fitMansion(mansion);
+    onStatus(`Ravenwood visual streamed · scale ${scale.toFixed(3)} · refining collision…`);
+
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    await buildStaticTrimesh(world, mansion, onStatus);
+    onStatus('Ravenwood Mansion fully streamed · detailed collision active');
+  } catch (error) {
+    console.warn('[Ravenwood] Mansion detail unavailable, keeping playable fallback shell.', error);
+    onStatus('Ravenwood playable fallback active · mansion detail unavailable');
+  }
+}
+
+function buildPlayableMansionShell(world: RAPIER.World): void {
+  const createWall = (
+    halfX: number,
+    halfY: number,
+    halfZ: number,
+    x: number,
+    y: number,
+    z: number,
+  ): void => {
+    world.createCollider(
+      RAPIER.ColliderDesc.cuboid(halfX, halfY, halfZ).setTranslation(x, y, z).setFriction(0.85),
+    );
+  };
+
+  // Lightweight exterior shell keeps gameplay physically bounded while the high-detail
+  // Victorian mesh and its triangle collision stream in asynchronously.
+  createWall(0.35, 3.1, 11, -12, 3.1, 2);
+  createWall(0.35, 3.1, 11, 12, 3.1, 2);
+  createWall(12, 3.1, 0.35, 0, 3.1, -9);
+  createWall(5.25, 3.1, 0.35, -6.75, 3.1, 13);
+  createWall(5.25, 3.1, 0.35, 6.75, 3.1, 13);
+}
+
 export async function buildRavenwood(
   app: Application,
   world: RAPIER.World,
   onStatus: RavenwoodStatus,
 ): Promise<void> {
-  onStatus('Loading Ravenwood environment…');
+  onStatus('Preparing Ravenwood playable shell…');
 
   const ground = new Entity('Ravenwood Ground');
   ground.addComponent('render', { type: 'box' });
@@ -264,28 +326,12 @@ export async function buildRavenwood(
     RAPIER.ColliderDesc.cuboid(wallThickness, wallHeight, 60).setTranslation(60, wallHeight, 0),
   );
 
+  buildPlayableMansionShell(world);
+
+  // None of the decorative/detail work below blocks entering the game.
   void loadExteriorDressing(app);
   void loadInteriorDressing(app, world);
+  void streamMansionDetail(app, world, onStatus);
 
-  try {
-    const asset = await loadContainer(
-      app,
-      modelUrl('ravenwood/map/ravenwood_mansion_victorian.glb'),
-    );
-    const mansion = asset.resource.instantiateRenderEntity({
-      castShadows: !matchMedia('(pointer: coarse)').matches,
-      receiveShadows: true,
-    });
-    mansion.name = 'Ravenwood Victorian Mansion';
-    app.root.addChild(mansion);
-
-    const scale = fitMansion(mansion);
-    onStatus(`Mansion visual ready · normalized scale ${scale.toFixed(3)}`);
-
-    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-    buildStaticTrimesh(world, mansion, onStatus);
-  } catch (error) {
-    console.warn('[Ravenwood] Mansion asset unavailable, using environment staging area.', error);
-    onStatus('Mansion asset is still being vendored · exterior staging mode');
-  }
+  onStatus('Ravenwood playable · mansion detail streaming in background');
 }
