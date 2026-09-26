@@ -1,0 +1,159 @@
+{
+  "version": 1,
+  "placements": [
+    {
+      "id": "dining-table",
+      "asset": "ravenwood/furniture/kaykit/table_medium_long.gltf",
+      "x": 4.3,
+      "y": 1.25,
+      "z": 6.7,
+      "yaw": 0,
+      "scale": 1,
+      "collider": {
+        "x": 1.5,
+        "y": 0.5,
+        "z": 1
+      }
+    },
+    {
+      "id": "dining-chair-west",
+      "asset": "ravenwood/furniture/kaykit/chair_A.gltf",
+      "x": 2.45,
+      "y": 1.25,
+      "z": 6.7,
+      "yaw": 90,
+      "scale": 1,
+      "collider": {
+        "x": 0.42,
+        "y": 0.63,
+        "z": 0.38
+      }
+    },
+    {
+      "id": "dining-chair-east",
+      "asset": "ravenwood/furniture/kaykit/chair_A.gltf",
+      "x": 6.15,
+      "y": 1.25,
+      "z": 6.7,
+      "yaw": -90,
+      "scale": 1,
+      "collider": {
+        "x": 0.42,
+        "y": 0.63,
+        "z": 0.38
+      }
+    },
+    {
+      "id": "dining-chair-north",
+      "asset": "ravenwood/furniture/kaykit/chair_A.gltf",
+      "x": 4.3,
+      "y": 1.25,
+      "z": 5.25,
+      "yaw": 180,
+      "scale": 1,
+      "collider": {
+        "x": 0.38,
+        "y": 0.63,
+        "z": 0.42
+      }
+    },
+    {
+      "id": "dining-chair-south",
+      "asset": "ravenwood/furniture/kaykit/chair_A.gltf",
+      "x": 4.3,
+      "y": 1.25,
+      "z": 8.15,
+      "yaw": 0,
+      "scale": 1,
+      "collider": {
+        "x": 0.38,
+        "y": 0.63,
+        "z": 0.42
+      }
+    },
+    {
+      "id": "ground-couch",
+      "asset": "ravenwood/furniture/kaykit/couch.gltf",
+      "x": -5.3,
+      "y": 1.25,
+      "z": 7.5,
+      "yaw": 0,
+      "scale": 1,
+      "collider": {
+        "x": 1.5,
+        "y": 0.61,
+        "z": 0.8
+      }
+    },
+    {
+      "id": "ground-shelf",
+      "asset": "ravenwood/furniture/kaykit/shelf_B_large_decorated.gltf",
+      "x": -7.3,
+      "y": 1.25,
+      "z": 2,
+      "yaw": 90,
+      "scale": 1,
+      "collider": {
+        "x": 0.25,
+        "y": 0.41,
+        "z": 1
+      }
+    },
+    {
+      "id": "ground-lamp",
+      "asset": "ravenwood/furniture/kaykit/lamp_standing.gltf",
+      "x": -6.4,
+      "y": 1.25,
+      "z": 8.65,
+      "yaw": 0,
+      "scale": 1,
+      "collider": {
+        "x": 0.35,
+        "y": 1.26,
+        "z": 0.35
+      }
+    },
+    {
+      "id": "upper-bed",
+      "asset": "ravenwood/furniture/kaykit/bed_double_A.gltf",
+      "x": -6.1,
+      "y": 4.2,
+      "z": 6.6,
+      "yaw": 0,
+      "scale": 1,
+      "collider": {
+        "x": 1.55,
+        "y": 0.5,
+        "z": 1.5
+      }
+    },
+    {
+      "id": "upper-shelf",
+      "asset": "ravenwood/furniture/kaykit/shelf_B_large_decorated.gltf",
+      "x": 5.7,
+      "y": 4.2,
+      "z": 7.2,
+      "yaw": 90,
+      "scale": 1,
+      "collider": {
+        "x": 0.25,
+        "y": 0.41,
+        "z": 1
+      }
+    },
+    {
+      "id": "upper-lamp",
+      "asset": "ravenwood/furniture/kaykit/lamp_standing.gltf",
+      "x": 5.1,
+      "y": 4.2,
+      "z": 8.4,
+      "yaw": 0,
+      "scale": 1,
+      "collider": {
+        "x": 0.35,
+        "y": 1.26,
+        "z": 0.35
+      }
+    }
+  ]
+}
