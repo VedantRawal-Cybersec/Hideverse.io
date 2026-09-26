@@ -10,7 +10,8 @@
     "start": "node server.mjs",
     "typecheck": "tsc --noEmit",
     "smoke": "node scripts/verify-build.mjs",
-    "verify": "npm run typecheck && npm run build && npm run smoke"
+    "verify": "npm run verify:ravenwood && npm run typecheck && npm run build && npm run smoke",
+    "verify:ravenwood": "node scripts/verify-ravenwood-layout.mjs"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "0.20.0",
