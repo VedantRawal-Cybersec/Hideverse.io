@@ -214,6 +214,10 @@ async function handleMultiplayer(req, res, url) {
 
     const room = getRoom(map, roomCode);
     pruneRoom(room);
+    if (room.players.size === 0) {
+      room.objectives.clear();
+      room.roundStartedAt = Date.now();
+    }
     if (!room.players.has(playerId) && room.players.size >= 8) {
       sendJson(res, 409, { error: 'room full' });
       return true;
