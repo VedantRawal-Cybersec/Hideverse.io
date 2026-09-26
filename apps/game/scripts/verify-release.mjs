@@ -66,6 +66,9 @@ for (const marker of [
   'roundElapsedSeconds',
   'consumeRemoteObjectives',
   'setMovementLocked',
+  'basisInitialize',
+  'wasm/basis/basis.wasm.js',
+  'wasm/basis/basis.wasm.wasm',
 ]) {
   if (!main.includes(marker)) fail(`main runtime missing ${marker}`);
 }
@@ -160,6 +163,12 @@ for (const marker of [
 ]) {
   if (!surfaceTextures.includes(marker)) fail(`real surface runtime missing ${marker}`);
 }
+
+const basisRuntime = manifest.assets?.find(
+  (candidate) =>
+    candidate.id === 'playcanvas-basis-transcoder' && candidate.status === 'acquired',
+);
+if (!basisRuntime) fail('PlayCanvas Basis transcoder runtime is not registered');
 
 for (const id of [
   'cc0-pbr-concrete',
