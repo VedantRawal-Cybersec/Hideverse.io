@@ -1,7 +1,12 @@
 import RAPIER from '@dimforge/rapier3d-compat';
-import { Entity } from 'playcanvas';
+import { Entity, Quat, Vec3 } from 'playcanvas';
 import type { MotionState } from './character-system';
 import type { InputController } from './input-controller';
+import type { PlayerAvatar, PlayerViewMode } from './player-avatar';
+
+const forward = new Vec3();
+const right = new Vec3();
+const rotation = new Quat();
 
 export class FirstPersonController {
   private readonly body: RAPIER.RigidBody;
@@ -14,18 +19,22 @@ export class FirstPersonController {
   private motion: MotionState = 'idle';
   private jumpMotionTimer = 0;
   private eyeHeight = 1.62;
+  private cameraDistance = 4.8;
+  private cameraHeight = 1.15;
+  private view: PlayerViewMode = 'first-person';
 
   constructor(
     private readonly world: RAPIER.World,
     private readonly camera: Entity,
     private readonly input: InputController,
+    private readonly avatar: PlayerAvatar,
     private readonly spawn = { x: 0, y: 2.2, z: 38 },
   ) {
     this.body = world.createRigidBody(
       RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(spawn.x, spawn.y, spawn.z),
     );
     this.collider = world.createCollider(
-      RAPIER.ColliderDesc.capsule(0.62, 0.34).setFriction(0),
+      RAPIER.ColliderDesc.capsule(0.62, 0.34).setFriction(0.15),
       this.body,
     );
 
@@ -34,7 +43,9 @@ export class FirstPersonController {
     this.character.setMaxSlopeClimbAngle((50 * Math.PI) / 180);
     this.character.setMinSlopeSlideAngle((30 * Math.PI) / 180);
     this.character.setApplyImpulsesToDynamicBodies(true);
+    this.character.enableSnapToGround(0.28);
 
+    this.avatar.setViewMode(this.view);
     this.syncCamera(1 / 60);
   }
 
@@ -55,12 +66,21 @@ export class FirstPersonController {
     return this.input.yaw;
   }
 
+  get viewMode(): PlayerViewMode {
+    return this.view;
+  }
+
   setMovementLocked(locked: boolean): void {
     this.movementLocked = locked;
   }
 
   update(deltaSeconds: number): void {
-    const dt = Math.min(deltaSeconds, 1 / 30);
+    const dt = Math.min(Math.max(deltaSeconds, 0), 1 / 30);
+
+    if (this.input.consumeViewToggle()) {
+      this.view = this.view === 'first-person' ? 'third-person' : 'first-person';
+      this.avatar.setViewMode(this.view);
+    }
 
     if (this.input.consumeReset()) {
       this.reset();
@@ -82,11 +102,9 @@ export class FirstPersonController {
       this.stamina = Math.min(100, this.stamina + 17 * dt);
     }
 
-    const yaw = (this.input.yaw * Math.PI) / 180;
-    const forwardX = Math.sin(yaw);
-    const forwardZ = -Math.cos(yaw);
-    const rightX = Math.cos(yaw);
-    const rightZ = Math.sin(yaw);
+    rotation.setFromEulerAngles(0, this.input.yaw, 0);
+    rotation.transformVector(Vec3.FORWARD, forward);
+    rotation.transformVector(Vec3.RIGHT, right);
 
     const speed = this.movementLocked
       ? 0
@@ -98,8 +116,8 @@ export class FirstPersonController {
             ? 2.6
             : 3.8;
 
-    const horizontalX = (rightX * axes.x + forwardX * axes.z) * speed * dt;
-    const horizontalZ = (rightZ * axes.x + forwardZ * axes.z) * speed * dt;
+    const horizontalX = (right.x * axes.x + forward.x * axes.z) * speed * dt;
+    const horizontalZ = (right.z * axes.x + forward.z * axes.z) * speed * dt;
 
     if (!this.movementLocked && this.input.consumeJump() && this.grounded) {
       this.verticalVelocity = 6.7;
@@ -145,6 +163,7 @@ export class FirstPersonController {
       this.motion = 'run';
     }
 
+    this.avatar.update(this.position, this.input.yaw, this.motion);
     this.syncCamera(dt);
   }
 
@@ -156,16 +175,57 @@ export class FirstPersonController {
     this.movementLocked = false;
     this.body.setTranslation(this.spawn, true);
     this.body.setNextKinematicTranslation(this.spawn);
+    this.avatar.update(this.spawn, this.input.yaw, 'idle');
     this.syncCamera(1 / 60);
   }
 
   private syncCamera(deltaSeconds: number): void {
     const position = this.body.translation();
     const targetEyeHeight = this.input.crouch ? 1.1 : 1.62;
-    const blend = Math.min(1, deltaSeconds * 12);
+    const blend = 1 - Math.exp(-12 * Math.min(Math.max(deltaSeconds, 0), 0.1));
     this.eyeHeight += (targetEyeHeight - this.eyeHeight) * blend;
 
-    this.camera.setPosition(position.x, position.y + this.eyeHeight, position.z);
-    this.camera.setEulerAngles(this.input.pitch, this.input.yaw, 0);
+    const eye = {
+      x: position.x,
+      y: position.y + this.eyeHeight,
+      z: position.z,
+    };
+
+    if (this.view === 'first-person') {
+      this.camera.setPosition(eye.x, eye.y, eye.z);
+      this.camera.setEulerAngles(this.input.pitch, this.input.yaw, 0);
+      return;
+    }
+
+    rotation.setFromEulerAngles(0, this.input.yaw, 0);
+    rotation.transformVector(Vec3.FORWARD, forward);
+
+    const pitchRadians = (this.input.pitch * Math.PI) / 180;
+    const horizontalDistance = Math.cos(pitchRadians) * this.cameraDistance;
+    const verticalOffset = -Math.sin(pitchRadians) * 1.35 + this.cameraHeight;
+
+    const desired = {
+      x: eye.x - forward.x * horizontalDistance,
+      y: eye.y + verticalOffset,
+      z: eye.z - forward.z * horizontalDistance,
+    };
+
+    const dx = desired.x - eye.x;
+    const dy = desired.y - eye.y;
+    const dz = desired.z - eye.z;
+    const distance = Math.max(0.001, Math.hypot(dx, dy, dz));
+    const ray = new RAPIER.Ray(
+      { x: eye.x, y: eye.y, z: eye.z },
+      { x: dx / distance, y: dy / distance, z: dz / distance },
+    );
+    const hit = this.world.castRay(ray, distance, true, undefined, undefined, this.collider);
+    const safeDistance = hit ? Math.max(0.35, hit.timeOfImpact - 0.18) : distance;
+
+    const cameraX = eye.x + (dx / distance) * safeDistance;
+    const cameraY = eye.y + (dy / distance) * safeDistance;
+    const cameraZ = eye.z + (dz / distance) * safeDistance;
+
+    this.camera.setPosition(cameraX, cameraY, cameraZ);
+    this.camera.lookAt(eye.x, eye.y + 0.15, eye.z);
   }
 }
