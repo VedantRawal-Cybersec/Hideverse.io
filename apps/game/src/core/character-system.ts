@@ -28,6 +28,12 @@ type ActorRuntime = {
   state: MotionState;
   animationPhase: number;
   alertSeconds: number;
+  limbs: {
+    leftArm: Entity;
+    rightArm: Entity;
+    leftLeg: Entity;
+    rightLeg: Entity;
+  } | null;
   chasePath: Triplet[];
   chasePathIndex: number;
   chaseRepathSeconds: number;
@@ -264,6 +270,27 @@ export class CharacterSystem {
 
       root.addChild(visual);
       root.addChild(head);
+
+      let limbs: ActorRuntime['limbs'] = null;
+      if (!matchMedia('(pointer: coarse)').matches) {
+        const makeLimb = (name: string, x: number, y: number): Entity => {
+          const limb = new Entity(`${spawn.id}-${name}`);
+          limb.addComponent('render', { type: 'box' });
+          limb.setLocalScale(0.18, 0.62, 0.2);
+          limb.setLocalPosition(x, y, 0);
+          if (limb.render) limb.render.material = actorMaterial;
+          root.addChild(limb);
+          return limb;
+        };
+
+        limbs = {
+          leftArm: makeLimb('left-arm', -0.52, 0.24),
+          rightArm: makeLimb('right-arm', 0.52, 0.24),
+          leftLeg: makeLimb('left-leg', -0.22, -0.78),
+          rightLeg: makeLimb('right-leg', 0.22, -0.78),
+        };
+      }
+
       app.root.addChild(root);
 
       const path = spawn.patrol
@@ -282,6 +309,7 @@ export class CharacterSystem {
         state: path.length > 0 ? stateForRole(spawn.role) : 'idle',
         animationPhase: Math.random() * Math.PI * 2,
         alertSeconds: 0,
+        limbs,
         chasePath: [],
         chasePathIndex: 0,
         chaseRepathSeconds: 0,
@@ -394,6 +422,15 @@ export class CharacterSystem {
       const bob = Math.abs(Math.sin(actor.animationPhase)) * amplitude;
       actor.visual.setLocalPosition(0, bob, 0);
       actor.head.setLocalPosition(0, (actor.role === 'monster' ? 1.55 : 1.18) + bob, 0);
+
+      if (actor.limbs) {
+        const moving = actor.state !== 'idle';
+        const swing = moving ? Math.sin(actor.animationPhase) * 28 : 0;
+        actor.limbs.leftArm.setLocalEulerAngles(swing, 0, 0);
+        actor.limbs.rightArm.setLocalEulerAngles(-swing, 0, 0);
+        actor.limbs.leftLeg.setLocalEulerAngles(-swing * 0.75, 0, 0);
+        actor.limbs.rightLeg.setLocalEulerAngles(swing * 0.75, 0, 0);
+      }
 
       if (radius > 0) {
         const rawDanger = Math.max(0, 1 - currentDistance / radius);
