@@ -2,10 +2,13 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { Application, Color, Entity, FILLMODE_FILL_WINDOW, RESOLUTION_AUTO } from 'playcanvas';
 import { AudioFeedback } from './core/audio-feedback';
 import { CharacterSystem } from './core/character-system';
+import { addEnvironmentDome } from './core/environment-dome';
+import { GraphicsPipeline } from './core/graphics-pipeline';
 import { InputController } from './core/input-controller';
 import { ModeEngine } from './core/mode-engine';
 import { MultiplayerClient } from './core/multiplayer-client';
 import { PerformanceManager, type QualityPreset } from './core/performance-manager';
+import { PlayerAvatar } from './core/player-avatar';
 import { FirstPersonController } from './core/player-controller';
 import {
   hideverseMaps,
@@ -53,6 +56,7 @@ const modeDanger = must<HTMLElement>('#mode-danger');
 const modeOutcome = must<HTMLElement>('#mode-outcome');
 const motionValue = must<HTMLElement>('#motion-value');
 const staminaValue = must<HTMLElement>('#stamina-value');
+const viewValue = must<HTMLElement>('#view-value');
 const networkValue = must<HTMLElement>('#network-value');
 const roomValue = must<HTMLElement>('#room-value');
 const peersValue = must<HTMLElement>('#peers-value');
@@ -176,6 +180,7 @@ async function boot(): Promise<void> {
 
   const performanceManager = new PerformanceManager(app, coarse);
   qualitySelect.value = performanceManager.preset;
+  let graphicsPipeline: GraphicsPipeline | null = null;
 
   const camera = new Entity('Player Camera');
   camera.addComponent('camera', {
@@ -203,7 +208,9 @@ async function boot(): Promise<void> {
   app.root.addChild(sun);
 
   qualitySelect.addEventListener('change', () => {
-    performanceManager.setPreset(qualitySelect.value as QualityPreset);
+    const quality = qualitySelect.value as QualityPreset;
+    performanceManager.setPreset(quality);
+    graphicsPipeline?.applyQuality(quality);
     if (sun.light) {
       sun.light.castShadows = performanceManager.shadowsEnabled;
       sun.light.shadowResolution = performanceManager.shadowResolution;
@@ -232,13 +239,24 @@ async function boot(): Promise<void> {
     input.setLookSensitivity(Number.parseFloat(sensitivitySlider.value));
   });
 
-  const player = new FirstPersonController(world, camera, input, {
-    x: map.spawn[0],
-    y: map.spawn[1],
-    z: map.spawn[2],
-  });
+  const player = new FirstPersonController(
+    world,
+    camera,
+    input,
+    {
+      x: map.spawn[0],
+      y: map.spawn[1],
+      z: map.spawn[2],
+    },
+    [...map.structures, ...map.props.filter((prop) => !prop.decorative)],
+  );
 
   app.start();
+  const playerAvatar = new PlayerAvatar(app, coarse);
+  void addEnvironmentDome(app, coarse);
+  void GraphicsPipeline.create(camera, coarse, sun, performanceManager.preset).then((pipeline) => {
+    graphicsPipeline = pipeline;
+  });
   const runtime = await buildSelectedMap(app, world, map, setMapStatus);
   const interactions = new MapInteractionSystem(map, runtime.doors);
   const mode = new ModeEngine(map);
@@ -331,6 +349,14 @@ async function boot(): Promise<void> {
     modePanel.classList.toggle('is-lost', modeState.outcome === 'lost');
     motionValue.textContent = player.motionState.toUpperCase();
     staminaValue.textContent = `${Math.round(player.staminaPercent)}%`;
+    viewValue.textContent = player.viewMode === 'first-person' ? 'FPS' : 'TPS';
+    playerAvatar.update(
+      position,
+      player.yaw,
+      player.motionState,
+      player.viewMode,
+      modeState.outcome,
+    );
 
     multiplayer.update(position, player.yaw, player.motionState, deltaSeconds);
     networkValue.textContent = multiplayer.status;
@@ -345,7 +371,7 @@ async function boot(): Promise<void> {
       debugPosition.textContent = `POSITION ${position.x.toFixed(2)} · ${position.y.toFixed(2)} · ${position.z.toFixed(2)}`;
       debugZone.textContent = `AREA ${area.toUpperCase()}`;
       debugRole.textContent = `THREAT ${threat.role.toUpperCase()} · ${threat.distance.toFixed(1)}M`;
-      debugMeta.textContent = `QA ${map.structures.length} ARCH · ${map.objectives.length} OBJ · ${map.navNodes.length} NAV · ${runtime.objectCount} RUNTIME · ${performance.quality.toUpperCase()} @ ${performance.pixelRatio.toFixed(2)}X`;
+      debugMeta.textContent = `QA ${map.structures.length} ARCH · ${map.objectives.length} OBJ · ${map.navNodes.length} NAV · ${runtime.objectCount} RUNTIME · ${performance.quality.toUpperCase()} @ ${performance.pixelRatio.toFixed(2)}X · ${player.viewMode.toUpperCase()}`;
     }
   });
 
@@ -366,6 +392,7 @@ async function boot(): Promise<void> {
   modeTimer.textContent = formatTimer(initialMode.timerSeconds);
   modeDanger.textContent = '0%';
   modeOutcome.textContent = 'CLEAR';
+  viewValue.textContent = player.viewMode === 'first-person' ? 'FPS' : 'TPS';
   setMapStatus(
     `${map.name} ready · ${map.mode.name} · ${characters.count} active role actors · adaptive ${coarse ? 'mobile' : 'desktop'} profile`,
   );
