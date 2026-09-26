@@ -410,12 +410,20 @@ export class MultiplayerClient {
     this.channel = new BroadcastChannel(`hideverse-${this.mapId}-${this.room}`);
     this.channel.addEventListener('message', (event: MessageEvent<BroadcastMessage>) => {
       const message = event.data;
-      if (!message || message.map !== this.mapId || message.room !== this.room) return;
+      if (!message) return;
 
       if (message.type === 'state') {
-        if (message.state.playerId !== this.playerId) this.applyPeerState(message.state);
+        if (
+          message.state.map === this.mapId &&
+          message.state.room === this.room &&
+          message.state.playerId !== this.playerId
+        ) {
+          this.applyPeerState(message.state);
+        }
         return;
       }
+
+      if (message.map !== this.mapId || message.room !== this.room) return;
 
       if (message.type === 'objective') {
         if (message.playerId !== this.playerId) this.applyRemoteObjective(message.objectiveId);
