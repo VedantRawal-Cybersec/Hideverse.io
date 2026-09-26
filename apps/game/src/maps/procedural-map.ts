@@ -8,6 +8,7 @@ import {
   mapWallTone,
 } from '../core/reference-art-direction';
 import type { DoorDefinition, MapBox, MapDefinition } from './map-catalog';
+import { buildMapSpecificDetailPass } from './map-detail-pass';
 import { buildRavenwood } from './ravenwood/ravenwood';
 
 export type DoorRuntime = {
@@ -396,6 +397,20 @@ async function buildProceduralMap(
       : propMaterial;
     return createDoor(app, world, door, doorMaterial);
   });
+
+  objectCount += buildMapSpecificDetailPass(
+    app,
+    map,
+    {
+      wall: architectureMaterial,
+      wallAlt: wallAltMaterial,
+      trim: trimMaterial,
+      metal: propMaterial,
+      wood: woodMaterial,
+      accent: accentMaterial,
+    },
+    coarse,
+  );
 
   for (const objective of map.objectives) {
     if (objectCount >= budget + map.objectives.length) break;
