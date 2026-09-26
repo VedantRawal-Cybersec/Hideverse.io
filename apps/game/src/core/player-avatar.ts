@@ -31,11 +31,7 @@ export class PlayerAvatar {
     if (this.visible) void this.ensureLoaded();
   }
 
-  update(
-    position: { x: number; y: number; z: number },
-    yaw: number,
-    motion: MotionState,
-  ): void {
+  update(position: { x: number; y: number; z: number }, yaw: number, motion: MotionState): void {
     this.root.setPosition(position.x, position.y, position.z);
     this.root.setEulerAngles(0, yaw, 0);
 
@@ -63,10 +59,7 @@ export class PlayerAvatar {
 
   private async loadRiggedAvatar(): Promise<void> {
     try {
-      const asset = await loadContainer(
-        this.app,
-        `${import.meta.env.BASE_URL}${playerAsset}`,
-      );
+      const asset = await loadContainer(this.app, `${import.meta.env.BASE_URL}${playerAsset}`);
       const resource = asset.resource as typeof asset.resource & {
         animations: Array<{ resource: AnimTrack }>;
       };

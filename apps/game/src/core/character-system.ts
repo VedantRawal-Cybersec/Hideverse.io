@@ -378,9 +378,7 @@ export class CharacterSystem {
           const walking = tracks.get('Walking_A');
           const running = tracks.get('Running_A');
           if (!idle || !walking || !running) {
-            console.warn(
-              `[Hideverse characters] ${file} is missing required locomotion clips.`,
-            );
+            console.warn(`[Hideverse characters] ${file} is missing required locomotion clips.`);
             return;
           }
 

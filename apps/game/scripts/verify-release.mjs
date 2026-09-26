@@ -14,17 +14,17 @@ const [
   graphicsPipeline,
   manifestText,
 ] = await Promise.all([
-    readFile(path.join(root, 'src/maps/map-data.json'), 'utf8'),
-    readFile(path.join(root, 'index.html'), 'utf8'),
-    readFile(path.join(root, 'src/main.ts'), 'utf8'),
-    readFile(path.join(root, 'src/core/performance-manager.ts'), 'utf8'),
-    readFile(path.join(root, 'src/core/multiplayer-client.ts'), 'utf8'),
-    readFile(path.join(root, 'src/core/character-system.ts'), 'utf8'),
-    readFile(path.join(root, 'src/core/player-controller.ts'), 'utf8'),
-    readFile(path.join(root, 'src/core/player-avatar.ts'), 'utf8'),
-    readFile(path.join(root, 'src/core/graphics-pipeline.ts'), 'utf8'),
-    readFile(path.resolve(root, '../../assets/manifest.json'), 'utf8'),
-  ]);
+  readFile(path.join(root, 'src/maps/map-data.json'), 'utf8'),
+  readFile(path.join(root, 'index.html'), 'utf8'),
+  readFile(path.join(root, 'src/main.ts'), 'utf8'),
+  readFile(path.join(root, 'src/core/performance-manager.ts'), 'utf8'),
+  readFile(path.join(root, 'src/core/multiplayer-client.ts'), 'utf8'),
+  readFile(path.join(root, 'src/core/character-system.ts'), 'utf8'),
+  readFile(path.join(root, 'src/core/player-controller.ts'), 'utf8'),
+  readFile(path.join(root, 'src/core/player-avatar.ts'), 'utf8'),
+  readFile(path.join(root, 'src/core/graphics-pipeline.ts'), 'utf8'),
+  readFile(path.resolve(root, '../../assets/manifest.json'), 'utf8'),
+]);
 
 const catalog = JSON.parse(catalogText);
 const manifest = JSON.parse(manifestText);
@@ -85,7 +85,9 @@ for (const id of [
   'kaykit-character-mage',
   'kaykit-character-barbarian',
 ]) {
-  const asset = manifest.assets?.find((candidate) => candidate.id === id && candidate.status === 'acquired');
+  const asset = manifest.assets?.find(
+    (candidate) => candidate.id === id && candidate.status === 'acquired',
+  );
   if (!asset) fail(`rigged CC0 character asset is not registered: ${id}`);
 }
 
@@ -102,7 +104,13 @@ for (const marker of [
   if (!characters.includes(marker)) fail(`role character runtime missing ${marker}`);
 }
 
-for (const marker of ['Vec3.FORWARD', 'Vec3.RIGHT', 'castRay', 'third-person', 'enableSnapToGround']) {
+for (const marker of [
+  'Vec3.FORWARD',
+  'Vec3.RIGHT',
+  'castRay',
+  'third-person',
+  'enableSnapToGround',
+]) {
   if (!playerController.includes(marker)) fail(`player controller missing ${marker}`);
 }
 

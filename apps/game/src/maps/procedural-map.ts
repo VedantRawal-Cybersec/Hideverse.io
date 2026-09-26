@@ -316,11 +316,7 @@ async function buildProceduralMap(
         range: 7,
         castShadows: false,
       });
-      light.setPosition(
-        objective.position[0],
-        objective.position[1] + 1.8,
-        objective.position[2],
-      );
+      light.setPosition(objective.position[0], objective.position[1] + 1.8, objective.position[2]);
       app.root.addChild(light);
     }
 
