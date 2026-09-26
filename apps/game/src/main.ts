@@ -51,9 +51,65 @@ const staminaValue = must<HTMLElement>('#stamina-value');
 const networkValue = must<HTMLElement>('#network-value');
 const roomValue = must<HTMLElement>('#room-value');
 const peersValue = must<HTMLElement>('#peers-value');
+const roomCodeInput = must<HTMLInputElement>('#room-code-input');
+const joinRoomButton = must<HTMLButtonElement>('#join-room');
+const quickMatchButton = must<HTMLButtonElement>('#quick-match');
+const copyInviteButton = must<HTMLButtonElement>('#copy-invite');
 
 const map = selectedMapFromLocation();
-const debugEnabled = new URLSearchParams(window.location.search).get('debug') === '1';
+const query = new URLSearchParams(window.location.search);
+const debugEnabled = query.get('debug') === '1';
+
+function normalizeRoomCode(value: string): string {
+  return (
+    value
+      .toUpperCase()
+      .replace(/[^A-Z0-9-]/g, '')
+      .slice(0, 16) || 'LOCAL'
+  );
+}
+
+function goToRoom(roomCode: string): void {
+  const next = new URL(window.location.href);
+  next.searchParams.set('room', normalizeRoomCode(roomCode));
+  window.location.assign(next.toString());
+}
+
+roomCodeInput.value = normalizeRoomCode(
+  query.get('room') ?? localStorage.getItem('hideverse-last-room') ?? 'LOCAL',
+);
+
+joinRoomButton.addEventListener('click', () => {
+  goToRoom(roomCodeInput.value);
+});
+
+quickMatchButton.addEventListener('click', () => {
+  goToRoom('MATCH');
+});
+
+roomCodeInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    goToRoom(roomCodeInput.value);
+  }
+});
+
+copyInviteButton.addEventListener('click', async () => {
+  const invite = new URL(window.location.href);
+  invite.searchParams.set('map', map.id);
+  invite.searchParams.set('room', normalizeRoomCode(roomValue.textContent ?? roomCodeInput.value));
+  try {
+    await navigator.clipboard.writeText(invite.toString());
+    copyInviteButton.textContent = 'COPIED';
+    window.setTimeout(() => {
+      copyInviteButton.textContent = 'COPY INVITE';
+    }, 1400);
+  } catch (error) {
+    console.warn('[Hideverse] invite copy unavailable', error);
+    roomCodeInput.value = normalizeRoomCode(roomValue.textContent ?? roomCodeInput.value);
+    roomCodeInput.select();
+  }
+});
 debugPanel.classList.toggle('is-visible', debugEnabled);
 
 document.title = `Hideverse.io — ${map.name} — ${map.mode.name}`;
@@ -189,6 +245,7 @@ async function boot(): Promise<void> {
     multiplayer.update(position, player.yaw, player.motionState);
     networkValue.textContent = multiplayer.status;
     roomValue.textContent = multiplayer.roomCode;
+    roomCodeInput.value = multiplayer.roomCode;
     peersValue.textContent = multiplayer.peerCount.toString();
 
     if (debugEnabled) {

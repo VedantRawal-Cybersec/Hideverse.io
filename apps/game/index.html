@@ -44,10 +44,29 @@
         </div>
       </aside>
 
-      <aside class="network-panel" aria-label="Multiplayer status">
-        <span id="network-value">LOCAL ROOM</span>
-        <b id="room-value">LOCAL</b>
-        <small><span id="peers-value">0</span> PEERS</small>
+      <aside class="network-panel" aria-label="Multiplayer room controls">
+        <div class="network-status-row">
+          <span id="network-value">LOCAL ROOM</span>
+          <b id="room-value">LOCAL</b>
+          <small><span id="peers-value">0</span> PEERS</small>
+        </div>
+        <label class="room-code-label" for="room-code-input">
+          ROOM CODE
+          <input
+            id="room-code-input"
+            type="text"
+            inputmode="text"
+            maxlength="16"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="ENTER CODE"
+          />
+        </label>
+        <div class="network-buttons">
+          <button id="join-room" type="button">JOIN</button>
+          <button id="quick-match" type="button">QUICK MATCH</button>
+          <button id="copy-invite" type="button">COPY INVITE</button>
+        </div>
       </aside>
 
       <aside id="debug-panel" class="debug-panel" aria-label="Hideverse debug telemetry">
