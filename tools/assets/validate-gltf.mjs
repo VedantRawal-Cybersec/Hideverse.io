@@ -31,10 +31,7 @@ for (const relative of modelFiles) {
   if ((report.issues?.numErrors ?? 0) > 0) {
     const details = (report.issues?.messages ?? [])
       .filter((message) => message.severity === 0)
-      .map(
-        (message) =>
-          `${message.code}: ${message.message} @ ${message.pointer ?? '<root>'}`,
-      )
+      .map((message) => `${message.code}: ${message.message} @ ${message.pointer ?? '<root>'}`)
       .join(' | ');
     failures.push(`${relative}: ${report.issues.numErrors} validation error(s) — ${details}`);
   } else {
