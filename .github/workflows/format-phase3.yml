@@ -41,6 +41,6 @@ jobs:
             echo "No formatting changes."
             exit 0
           fi
-          git add .
+          git add -u
           git commit -m "style: format Phase 3 Ravenwood"
           git push origin HEAD:phase/3-ravenwood
