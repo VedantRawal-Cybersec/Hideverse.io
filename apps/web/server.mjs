@@ -2,12 +2,17 @@ import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
+import { brotliCompress, gzip } from 'node:zlib';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.join(here, 'dist');
 const port = Number.parseInt(process.env.PORT ?? '4173', 10);
 const rooms = new Map();
 const streams = new Map();
+const compressionCache = new Map();
+const brotli = promisify(brotliCompress);
+const gzipAsync = promisify(gzip);
 
 const mime = new Map([
   ['.html', 'text/html; charset=utf-8'],
@@ -415,17 +420,47 @@ async function handleMultiplayer(req, res, url) {
   return false;
 }
 
-async function send(res, filePath) {
+async function compressedPayload(filePath, data, encoding) {
+  const key = `${encoding}:${filePath}`;
+  const cached = compressionCache.get(key);
+  if (cached) return cached;
+
+  const compressed = encoding === 'br' ? await brotli(data) : await gzipAsync(data);
+  compressionCache.set(key, compressed);
+  return compressed;
+}
+
+async function send(req, res, filePath) {
   const data = await readFile(filePath);
   const ext = path.extname(filePath).toLowerCase();
-  res.writeHead(200, {
+  const compressible = new Set(['.html', '.js', '.css', '.json', '.svg']);
+  const accepted = String(req.headers['accept-encoding'] ?? '');
+  let body = data;
+  let encoding = '';
+
+  if (data.length > 1024 && compressible.has(ext)) {
+    if (/\bbr\b/.test(accepted)) {
+      encoding = 'br';
+      body = await compressedPayload(filePath, data, 'br');
+    } else if (/\bgzip\b/.test(accepted)) {
+      encoding = 'gzip';
+      body = await compressedPayload(filePath, data, 'gzip');
+    }
+  }
+
+  const headers = {
     'Content-Type': mime.get(ext) ?? 'application/octet-stream',
+    'Content-Length': String(body.length),
     'Cache-Control':
       ext === '.html' || ext === '.json' ? 'no-cache' : 'public, max-age=31536000, immutable',
     'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
-  });
-  res.end(data);
+    Vary: 'Accept-Encoding',
+  };
+  if (encoding) headers['Content-Encoding'] = encoding;
+
+  res.writeHead(200, headers);
+  res.end(body);
 }
 
 const server = createServer(async (req, res) => {
@@ -452,7 +487,7 @@ const server = createServer(async (req, res) => {
       file = path.join(dist, 'index.html');
     }
 
-    await send(res, file);
+    await send(req, res, file);
   } catch (error) {
     console.error('[Hideverse web server]', error);
     if (!res.headersSent) {
