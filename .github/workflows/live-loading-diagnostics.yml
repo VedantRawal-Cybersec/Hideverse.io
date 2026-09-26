@@ -1,0 +1,141 @@
+name: Live Loading Diagnostics
+
+on:
+  push:
+    branches:
+      - qa/live-loading-diagnostics
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        case:
+          - name: axiom-desktop
+            url: "https://hideverse-io.onrender.com/game/?map=axiom&debug=1"
+            mobile: "false"
+          - name: ravenwood-desktop
+            url: "https://hideverse-io.onrender.com/game/?map=ravenwood&debug=1"
+            mobile: "false"
+          - name: axiom-mobile
+            url: "https://hideverse-io.onrender.com/game/?map=axiom&debug=1"
+            mobile: "true"
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.23.2
+
+      - name: Install Playwright
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Diagnose live loading
+        env:
+          TARGET_URL: ${{ matrix.case.url }}
+          MOBILE: ${{ matrix.case.mobile }}
+          CASE_NAME: ${{ matrix.case.name }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+
+          const browser = await chromium.launch({ headless: true });
+          const context = await browser.newContext(
+            process.env.MOBILE === 'true'
+              ? {
+                  viewport: { width: 390, height: 844 },
+                  hasTouch: true,
+                  isMobile: true,
+                  deviceScaleFactor: 2,
+                }
+              : { viewport: { width: 1440, height: 900 } },
+          );
+          const page = await context.newPage();
+          const pageErrors = [];
+          const consoleErrors = [];
+          const failedRequests = [];
+          const responses = [];
+
+          page.on('pageerror', (error) => pageErrors.push(String(error)));
+          page.on('console', (message) => {
+            if (message.type() === 'error') consoleErrors.push(message.text());
+          });
+          page.on('requestfailed', (request) => {
+            failedRequests.push({
+              url: request.url(),
+              error: request.failure()?.errorText ?? 'unknown',
+            });
+          });
+          page.on('response', (response) => {
+            if (response.status() >= 400) {
+              responses.push({ url: response.url(), status: response.status() });
+            }
+          });
+
+          try {
+            const started = Date.now();
+            await page.goto(process.env.TARGET_URL, {
+              waitUntil: 'domcontentloaded',
+              timeout: 120000,
+            });
+
+            let snapshot = null;
+            for (let attempt = 0; attempt < 12; attempt += 1) {
+              await page.waitForTimeout(5000);
+              snapshot = await page.evaluate(() => {
+                const overlay = document.querySelector('#boot-overlay');
+                const status = document.querySelector('#map-status');
+                const canvas = document.querySelector('#game-canvas');
+                return {
+                  ready: overlay?.classList.contains('is-hidden') ?? false,
+                  overlayText: overlay?.textContent?.trim() ?? '',
+                  status: status?.textContent?.trim() ?? '',
+                  canvas: canvas
+                    ? {
+                        width: canvas.getBoundingClientRect().width,
+                        height: canvas.getBoundingClientRect().height,
+                      }
+                    : null,
+                };
+              });
+              console.log('[snapshot]', attempt + 1, JSON.stringify(snapshot));
+              if (snapshot.ready) break;
+            }
+
+            console.log(
+              '[diagnostic]',
+              JSON.stringify({
+                case: process.env.CASE_NAME,
+                elapsedMs: Date.now() - started,
+                snapshot,
+                pageErrors,
+                consoleErrors,
+                failedRequests,
+                badResponses: responses,
+              }),
+            );
+
+            if (!snapshot?.ready) {
+              throw new Error(
+                `Game never left loading state: ${JSON.stringify({
+                  snapshot,
+                  pageErrors,
+                  consoleErrors,
+                  failedRequests,
+                  responses,
+                })}`,
+              );
+            }
+          } finally {
+            await context.close();
+            await browser.close();
+          }
+          NODE
