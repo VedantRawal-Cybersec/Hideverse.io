@@ -89,8 +89,8 @@ app.innerHTML = `
         <p class="eyebrow">LIVE DEVELOPMENT BUILD</p>
         <h1>HIDE.<br />PLAY.<br /><span>BELONG.</span></h1>
         <p class="lede">
-          Six maps, six game modes, shared role characters, PC/mobile movement and a room-sync
-          multiplayer foundation in one browser-first social-stealth runtime.
+          Six maps, six game modes, shared objectives, adaptive PC/mobile rendering and realtime
+          room synchronization in one browser-first social-stealth runtime.
         </p>
         <div class="actions">
           <a class="button primary" href="${mapHref('ravenwood')}">Launch Current Build</a>
@@ -103,12 +103,12 @@ app.innerHTML = `
           <div><span>ENGINE</span><strong>PlayCanvas</strong></div>
           <div><span>PHYSICS</span><strong>Rapier 3D</strong></div>
           <div><span>MAPS / MODES</span><strong>6 / 6</strong></div>
-          <div><span>DEPLOY</span><strong>Static CDN</strong></div>
+          <div><span>DEPLOY</span><strong>Render Live</strong></div>
         </div>
         <p>
           The public build is generated from the latest verified <code>main</code> commit. The
-          multiplayer client uses local room sync on static hosting and switches to the
-          authoritative room API on a backend-capable deployment.
+          Render deployment provides authoritative rooms, SSE realtime peer updates, shared
+          objectives and replay state, with local room sync retained as a static-host fallback.
         </p>
       </div>
     </section>
@@ -147,9 +147,13 @@ app.innerHTML = `
           <span>PHASE 07</span><h3>Six Modes</h3>
           <p>Map-bound objectives and complete mode progress state for all six game modes.</p><b>IMPLEMENTED</b>
         </article>
-        <article class="phase active">
+        <article class="phase done">
           <span>PHASE 08</span><h3>Multiplayer Rooms</h3>
-          <p>Private room codes, peer state sync, matchmaking path and authoritative HTTP room API.</p><b>SERVER-READY</b>
+          <p>Private rooms, Quick Match, SSE peer streaming, shared objectives and authoritative room state.</p><b>LIVE</b>
+        </article>
+        <article class="phase done">
+          <span>PHASE 09</span><h3>Cross-Platform Release Pass</h3>
+          <p>Adaptive resolution, mobile GPU budgets, collision-safe AI routing, result flow and input tuning.</p><b>VERIFIED</b>
         </article>
       </div>
     </section>
