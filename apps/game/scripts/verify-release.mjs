@@ -106,7 +106,7 @@ for (const marker of ['Vec3.FORWARD', 'Vec3.RIGHT', 'castRay', 'third-person', '
   if (!playerController.includes(marker)) fail(`player controller missing ${marker}`);
 }
 
-for (const marker of ['Rogue.glb', 'setViewMode', "assignAnimation('run'")]) {
+for (const marker of ['Rogue.glb', 'setViewMode', "assignAnimation('run'"]) {
   if (!playerAvatar.includes(marker)) fail(`third-person avatar missing ${marker}`);
 }
 
