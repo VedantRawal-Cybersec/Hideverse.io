@@ -3,21 +3,36 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { EntityManager } from 'yuka';
 import { InputController } from './core/input-controller';
 import { FirstPersonController } from './core/player-controller';
+import { RavenwoodInteractionSystem } from './maps/ravenwood/interaction-system';
 import { buildRavenwood } from './maps/ravenwood/ravenwood';
 import './styles.css';
 
 const canvasQuery = document.querySelector<HTMLCanvasElement>('#game-canvas');
 const mapStatusQuery = document.querySelector<HTMLSpanElement>('#map-status');
 const fpsValueQuery = document.querySelector<HTMLSpanElement>('#fps-value');
+const zoneValueQuery = document.querySelector<HTMLSpanElement>('#zone-value');
+const interactionPromptQuery = document.querySelector<HTMLDivElement>('#interaction-prompt');
+const hiddenStateQuery = document.querySelector<HTMLDivElement>('#hidden-state');
 const bootOverlayQuery = document.querySelector<HTMLDivElement>('#boot-overlay');
 
-if (!canvasQuery || !mapStatusQuery || !fpsValueQuery || !bootOverlayQuery) {
+if (
+  !canvasQuery ||
+  !mapStatusQuery ||
+  !fpsValueQuery ||
+  !zoneValueQuery ||
+  !interactionPromptQuery ||
+  !hiddenStateQuery ||
+  !bootOverlayQuery
+) {
   throw new Error('Hideverse Ravenwood DOM is incomplete.');
 }
 
 const canvas = canvasQuery;
 const mapStatus = mapStatusQuery;
 const fpsValue = fpsValueQuery;
+const zoneValue = zoneValueQuery;
+const interactionPrompt = interactionPromptQuery;
+const hiddenState = hiddenStateQuery;
 const bootOverlay = bootOverlayQuery;
 
 function setMapStatus(message: string): void {
@@ -65,6 +80,7 @@ async function boot(): Promise<void> {
   const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
   const input = new InputController(canvas);
   const player = new FirstPersonController(world, camera, input);
+  const interactions = new RavenwoodInteractionSystem();
   const aiManager = new EntityManager();
 
   const mapPromise = buildRavenwood(app, world, setMapStatus);
@@ -74,6 +90,17 @@ async function boot(): Promise<void> {
 
   app.on('update', (deltaSeconds: number) => {
     player.update(deltaSeconds);
+
+    const interaction = interactions.update(player.position, input.consumeInteract());
+    player.setMovementLocked(interaction.hidden);
+    zoneValue.textContent = interaction.zoneLabel.toUpperCase();
+    interactionPrompt.textContent = interaction.prompt ?? '';
+    interactionPrompt.classList.toggle('is-visible', Boolean(interaction.prompt));
+    hiddenState.textContent = interaction.hidden
+      ? `HIDDEN · ${interaction.hiddenLabel?.toUpperCase() ?? 'COVER'}`
+      : '';
+    hiddenState.classList.toggle('is-visible', interaction.hidden);
+
     aiManager.update(deltaSeconds);
 
     fpsAccumulator += deltaSeconds;
