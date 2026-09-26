@@ -134,6 +134,8 @@ for (const id of [
   'cc0-surface-asphalt',
   'cc0-surface-metal',
   'cc0-surface-wood',
+  'cc0-surface-plaster',
+  'cc0-surface-tile',
 ]) {
   const asset = manifest.assets?.find(
     (candidate) => candidate.id === id && candidate.status === 'acquired',
@@ -142,14 +144,17 @@ for (const id of [
 }
 
 for (const marker of [
-  'materials/reference/',
+  'materials/cc0/',
+  "'plaster'",
   "'concrete'",
   "'brick'",
   "'asphalt'",
+  "'tile'",
   "'metal'",
   "'wood'",
   'ADDRESS_REPEAT',
   'diffuseMapTiling',
+  'profiles',
 ]) {
   if (!surfaceTextures.includes(marker)) fail(`real surface runtime missing ${marker}`);
 }
@@ -186,5 +191,5 @@ for (const marker of [
 }
 
 console.log(
-  `[release-qa] PASS — ${catalog.maps.length} maps, mobile budgets, adaptive rendering, touch controls, FPS/TPS physics, shared objectives, realtime room sync, multi-character rigged locomotion, HDR graphics, real CC0 tiled surfaces and six-map architectural realism verified.`,
+  `[release-qa] PASS — ${catalog.maps.length} maps, mobile budgets, adaptive rendering, touch controls, FPS/TPS physics, shared objectives, realtime room sync, multi-character rigged locomotion, HDR graphics, progressive map-specific CC0 tiled surfaces and six-map architectural realism verified.`,
 );
