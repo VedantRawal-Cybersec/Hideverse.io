@@ -22,6 +22,8 @@ export class FirstPersonController {
   private cameraDistance = 4.8;
   private cameraHeight = 1.15;
   private view: PlayerViewMode = 'first-person';
+  private smoothedMoveX = 0;
+  private smoothedMoveZ = 0;
 
   constructor(
     private readonly world: RAPIER.World,
@@ -75,7 +77,7 @@ export class FirstPersonController {
   }
 
   update(deltaSeconds: number): void {
-    const dt = Math.min(Math.max(deltaSeconds, 0), 1 / 30);
+    const dt = Math.min(Math.max(deltaSeconds, 0), 0.05);
 
     if (this.input.consumeViewToggle()) {
       this.view = this.view === 'first-person' ? 'third-person' : 'first-person';
@@ -87,7 +89,14 @@ export class FirstPersonController {
       return;
     }
 
-    const axes = this.movementLocked ? { x: 0, z: 0 } : this.input.move;
+    const rawAxes = this.movementLocked ? { x: 0, z: 0 } : this.input.move;
+    const targetMagnitude = Math.hypot(rawAxes.x, rawAxes.z);
+    const response = targetMagnitude > 0.02 ? 16 : 22;
+    const inputBlend = 1 - Math.exp(-response * dt);
+    this.smoothedMoveX += (rawAxes.x - this.smoothedMoveX) * inputBlend;
+    this.smoothedMoveZ += (rawAxes.z - this.smoothedMoveZ) * inputBlend;
+
+    const axes = { x: this.smoothedMoveX, z: this.smoothedMoveZ };
     const moveMagnitude = Math.hypot(axes.x, axes.z);
     const wantsSprint =
       !this.movementLocked &&
@@ -173,6 +182,8 @@ export class FirstPersonController {
     this.motion = 'idle';
     this.stamina = 100;
     this.movementLocked = false;
+    this.smoothedMoveX = 0;
+    this.smoothedMoveZ = 0;
     this.body.setTranslation(this.spawn, true);
     this.body.setNextKinematicTranslation(this.spawn);
     this.avatar.update(this.spawn, this.input.yaw, 'idle');

@@ -2,6 +2,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { Application, Entity, Vec3 } from 'playcanvas';
 import type { RenderComponent } from 'playcanvas';
 import { loadContainer } from '../../core/load-container';
+import { createReferenceMaterial, mapWallTone } from '../../core/reference-art-direction';
 import interiorLayout from './interior-layout.json';
 
 export type RavenwoodStatus = (message: string) => void;
@@ -242,11 +243,45 @@ async function loadExteriorDressing(app: Application): Promise<void> {
   await Promise.allSettled(tasks);
 }
 
+function applyReferenceMansionMaterials(root: Entity): void {
+  const wall = createReferenceMaterial('wall', mapWallTone(1));
+  const trim = createReferenceMaterial('trim');
+  const metal = createReferenceMaterial('metal');
+  const wood = createReferenceMaterial('wood');
+
+  const renders = root.findComponents('render') as RenderComponent[];
+  for (const render of renders) {
+    for (const instance of render.meshInstances) {
+      const name = instance.node.name.toLowerCase();
+      if (/window|glass|metal|rail|pipe/.test(name)) {
+        instance.material = metal;
+      } else if (/roof|trim|frame|column|border/.test(name)) {
+        instance.material = trim;
+      } else if (/door|wood|floor/.test(name)) {
+        instance.material = wood;
+      } else {
+        instance.material = wall;
+      }
+    }
+  }
+}
+
 async function streamMansionDetail(
   app: Application,
   world: RAPIER.World,
   onStatus: RavenwoodStatus,
+  fallbackShell: Entity[],
 ): Promise<void> {
+  const coarse = matchMedia('(pointer: coarse)').matches;
+  const quality = localStorage.getItem('hideverse-quality') ?? 'auto';
+
+  if (coarse && quality !== 'high') {
+    onStatus('Ravenwood reference shell active · mobile optimized');
+    return;
+  }
+
+  await new Promise<void>((resolve) => window.setTimeout(resolve, coarse ? 4200 : 2400));
+
   try {
     const asset = await loadContainer(
       app,
@@ -258,21 +293,52 @@ async function streamMansionDetail(
     });
     mansion.name = 'Ravenwood Victorian Mansion';
     app.root.addChild(mansion);
+    applyReferenceMansionMaterials(mansion);
 
     const scale = fitMansion(mansion);
-    onStatus(`Ravenwood visual streamed · scale ${scale.toFixed(3)} · refining collision…`);
+    for (const entity of fallbackShell) entity.destroy();
 
-    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    if (quality !== 'high') {
+      onStatus(
+        `Ravenwood visual streamed · scale ${scale.toFixed(3)} · optimized collision shell active`,
+      );
+      return;
+    }
+
+    onStatus(
+      `Ravenwood visual streamed · scale ${scale.toFixed(3)} · refining high-detail collision…`,
+    );
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 1800));
     await buildStaticTrimesh(world, mansion, onStatus);
-    onStatus('Ravenwood Mansion fully streamed · detailed collision active');
+    onStatus('Ravenwood Mansion fully streamed · high-detail collision active');
   } catch (error) {
     console.warn('[Ravenwood] Mansion detail unavailable, keeping playable fallback shell.', error);
     onStatus('Ravenwood playable fallback active · mansion detail unavailable');
   }
 }
 
-function buildPlayableMansionShell(world: RAPIER.World): void {
-  const createWall = (
+function buildPlayableMansionShell(app: Application, world: RAPIER.World): Entity[] {
+  const shell: Entity[] = [];
+  const wallMaterial = createReferenceMaterial('wall', mapWallTone(1));
+  const trimMaterial = createReferenceMaterial('trim');
+  const floorMaterial = createReferenceMaterial('floor');
+
+  const createPart = (
+    name: string,
+    size: [number, number, number],
+    position: [number, number, number],
+    material = wallMaterial,
+  ): void => {
+    const entity = new Entity(name);
+    entity.addComponent('render', { type: 'box' });
+    entity.setLocalScale(size[0], size[1], size[2]);
+    entity.setPosition(position[0], position[1], position[2]);
+    if (entity.render) entity.render.material = material;
+    app.root.addChild(entity);
+    shell.push(entity);
+  };
+
+  const createWallCollider = (
     halfX: number,
     halfY: number,
     halfZ: number,
@@ -285,13 +351,22 @@ function buildPlayableMansionShell(world: RAPIER.World): void {
     );
   };
 
-  // Lightweight exterior shell keeps gameplay physically bounded while the high-detail
-  // Victorian mesh and its triangle collision stream in asynchronously.
-  createWall(0.35, 3.1, 11, -12, 3.1, 2);
-  createWall(0.35, 3.1, 11, 12, 3.1, 2);
-  createWall(12, 3.1, 0.35, 0, 3.1, -9);
-  createWall(5.25, 3.1, 0.35, -6.75, 3.1, 13);
-  createWall(5.25, 3.1, 0.35, 6.75, 3.1, 13);
+  createPart('ravenwood-shell-west', [0.7, 6.2, 22], [-12, 3.1, 2]);
+  createPart('ravenwood-shell-east', [0.7, 6.2, 22], [12, 3.1, 2]);
+  createPart('ravenwood-shell-back', [24, 6.2, 0.7], [0, 3.1, -9]);
+  createPart('ravenwood-shell-front-left', [10.5, 6.2, 0.7], [-6.75, 3.1, 13]);
+  createPart('ravenwood-shell-front-right', [10.5, 6.2, 0.7], [6.75, 3.1, 13]);
+  createPart('ravenwood-shell-roof', [24.8, 0.34, 22.8], [0, 6.35, 2], trimMaterial);
+  createPart('ravenwood-shell-porch', [13, 0.24, 5], [0, 0.12, 15], floorMaterial);
+  createPart('ravenwood-shell-foundation', [24.4, 0.35, 22.4], [0, 0.18, 2], trimMaterial);
+
+  createWallCollider(0.35, 3.1, 11, -12, 3.1, 2);
+  createWallCollider(0.35, 3.1, 11, 12, 3.1, 2);
+  createWallCollider(12, 3.1, 0.35, 0, 3.1, -9);
+  createWallCollider(5.25, 3.1, 0.35, -6.75, 3.1, 13);
+  createWallCollider(5.25, 3.1, 0.35, 6.75, 3.1, 13);
+
+  return shell;
 }
 
 export async function buildRavenwood(
@@ -305,6 +380,7 @@ export async function buildRavenwood(
   ground.addComponent('render', { type: 'box' });
   ground.setLocalScale(120, 0.2, 120);
   ground.setPosition(0, -0.1, 0);
+  if (ground.render) ground.render.material = createReferenceMaterial('floor');
   app.root.addChild(ground);
 
   world.createCollider(
@@ -326,12 +402,16 @@ export async function buildRavenwood(
     RAPIER.ColliderDesc.cuboid(wallThickness, wallHeight, 60).setTranslation(60, wallHeight, 0),
   );
 
-  buildPlayableMansionShell(world);
+  const fallbackShell = buildPlayableMansionShell(app, world);
 
   // None of the decorative/detail work below blocks entering the game.
-  void loadExteriorDressing(app);
-  void loadInteriorDressing(app, world);
-  void streamMansionDetail(app, world, onStatus);
+  window.setTimeout(() => {
+    void loadExteriorDressing(app);
+  }, 1800);
+  window.setTimeout(() => {
+    void loadInteriorDressing(app, world);
+  }, 2600);
+  void streamMansionDetail(app, world, onStatus, fallbackShell);
 
   onStatus('Ravenwood playable · mansion detail streaming in background');
 }

@@ -1,16 +1,11 @@
-import {
-  Application,
-  CameraFrame,
-  Color,
-  Entity,
-  FOG_EXP,
-  FOG_NONE,
-  TONEMAP_ACES,
-} from 'playcanvas';
+import { Application, CameraFrame, Entity, FOG_EXP, FOG_NONE, TONEMAP_ACES } from 'playcanvas';
 import type { QualityPreset } from './performance-manager';
+import { colorFromTriplet, referenceScene } from './reference-art-direction';
 
 export class GraphicsPipeline {
   private readonly frame: CameraFrame;
+  private currentPreset: QualityPreset = 'auto';
+  private runtimeReduced = false;
 
   constructor(
     private readonly app: Application,
@@ -21,52 +16,61 @@ export class GraphicsPipeline {
 
     this.frame = new CameraFrame(app, camera.camera);
     this.frame.rendering.sceneColorMap = true;
+    this.frame.rendering.sceneDepthMap = true;
     this.frame.rendering.toneMapping = TONEMAP_ACES;
-    this.frame.grading.enabled = true;
-    this.frame.grading.brightness = 1.02;
-    this.frame.grading.contrast = 1.06;
-    this.frame.grading.saturation = 1.06;
-    this.frame.vignette.inner = 0.66;
-    this.frame.vignette.outer = 1;
-    this.frame.vignette.curvature = 0.65;
-    this.frame.vignette.intensity = 0.12;
-    this.frame.update();
-
-    this.app.scene.fog.type = FOG_EXP;
-    this.app.scene.fog.color = new Color(0.055, 0.065, 0.08);
-    this.app.scene.fog.density = coarsePointer ? 0.006 : 0.0042;
+    this.frame.rendering.sharpness = 0.12;
+    this.app.scene.fog.color = colorFromTriplet(referenceScene.fog);
+    this.applyQuality('auto');
   }
 
-  applyQuality(preset: QualityPreset): void {
+  applyQuality(preset: QualityPreset, runtimeReduced = this.runtimeReduced): void {
+    this.currentPreset = preset;
+    this.runtimeReduced = runtimeReduced;
+
     const low = preset === 'low';
     const high = preset === 'high';
     const balanced = preset === 'balanced';
-    const autoHigh = preset === 'auto' && !this.coarsePointer;
+    const autoMobile = preset === 'auto' && this.coarsePointer;
+    const lightweight = low || autoMobile || runtimeReduced;
+    const autoDesktop = preset === 'auto' && !this.coarsePointer && !runtimeReduced;
 
-    this.frame.enabled = !low;
-    this.frame.bloom.intensity = low ? 0 : high || autoHigh ? 0.025 : balanced ? 0.014 : 0.008;
-    this.frame.bloom.blurLevel = high || autoHigh ? 10 : 6;
+    this.frame.enabled = !lightweight;
+    this.frame.grading.enabled = !lightweight;
+    this.frame.grading.brightness = high ? 1.06 : 1.035;
+    this.frame.grading.contrast = high || autoDesktop ? 1.09 : 1.055;
+    this.frame.grading.saturation = high || autoDesktop ? 1.07 : 1.035;
 
-    this.frame.grading.enabled = !low;
-    this.frame.grading.brightness = high ? 1.04 : 1.02;
-    this.frame.grading.contrast = high || autoHigh ? 1.08 : 1.04;
-    this.frame.grading.saturation = high || autoHigh ? 1.08 : 1.04;
+    // The references are crisp rather than cinematic: almost no bloom and only light vignette.
+    this.frame.bloom.intensity = lightweight ? 0 : high ? 0.008 : balanced ? 0.004 : 0.003;
+    this.frame.bloom.blurLevel = high ? 6 : 4;
+    this.frame.vignette.inner = 0.76;
+    this.frame.vignette.outer = 1;
+    this.frame.vignette.curvature = 0.55;
+    this.frame.vignette.intensity = lightweight ? 0 : 0.035;
 
     this.frame.taa.enabled = high && !this.coarsePointer;
-    this.frame.taa.jitter = 0.8;
+    this.frame.taa.jitter = 0.6;
 
-    this.frame.vignette.intensity = low ? 0 : high || autoHigh ? 0.14 : 0.09;
+    // Contact shading creates the baked-lightmap / clean competitive-FPS depth visible
+    // in the supplied references without forcing expensive dynamic lights everywhere.
+    this.frame.ssao.type = lightweight ? 'none' : 'combine';
+    this.frame.ssao.blurEnabled = true;
+    this.frame.ssao.randomize = false;
+    this.frame.ssao.intensity = high ? 0.42 : 0.3;
+    this.frame.ssao.radius = high ? 4.2 : 3.2;
+    this.frame.ssao.samples = high ? 12 : 7;
+    this.frame.ssao.power = 2.2;
+    this.frame.ssao.minAngle = 12;
+    this.frame.ssao.scale = high ? 0.75 : 0.62;
 
     this.app.scene.fog.type = low ? FOG_NONE : FOG_EXP;
-    this.app.scene.fog.density = this.coarsePointer
-      ? high
-        ? 0.005
-        : 0.006
-      : high || autoHigh
-        ? 0.004
-        : 0.0048;
-
+    this.app.scene.fog.density = this.coarsePointer || runtimeReduced ? 0.0018 : 0.0025;
     this.frame.update();
+  }
+
+  setRuntimeReduction(reduced: boolean): void {
+    if (this.runtimeReduced === reduced) return;
+    this.applyQuality(this.currentPreset, reduced);
   }
 
   destroy(): void {

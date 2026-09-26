@@ -7,6 +7,7 @@ import { InputController } from './core/input-controller';
 import { ModeEngine } from './core/mode-engine';
 import { MultiplayerClient } from './core/multiplayer-client';
 import { PerformanceManager, type QualityPreset } from './core/performance-manager';
+import { colorFromTriplet, referenceScene } from './core/reference-art-direction';
 import { PlayerAvatar } from './core/player-avatar';
 import { FirstPersonController } from './core/player-controller';
 import {
@@ -27,7 +28,7 @@ function must<T extends Element>(selector: string): T {
 }
 
 function color(value: Triplet): Color {
-  return new Color(value[0], value[1], value[2]);
+  return colorFromTriplet(value);
 }
 
 const canvas = must<HTMLCanvasElement>('#game-canvas');
@@ -180,42 +181,44 @@ async function boot(): Promise<void> {
   const app = new Application(canvas);
   app.setCanvasFillMode(FILLMODE_FILL_WINDOW);
   app.setCanvasResolution(RESOLUTION_AUTO);
-  app.scene.ambientLight = color(map.lighting.ambient);
+  app.scene.ambientLight = color(referenceScene.ambient);
 
   const performanceManager = new PerformanceManager(app, coarse);
   qualitySelect.value = performanceManager.preset;
 
   const camera = new Entity('Player Camera');
   camera.addComponent('camera', {
-    clearColor: color(map.lighting.clear),
+    clearColor: color(referenceScene.sky),
     nearClip: 0.08,
-    farClip: coarse ? 190 : 260,
-    fov: coarse ? 76 : 72,
+    farClip: coarse ? 175 : 230,
+    fov: coarse ? 78 : 82,
   });
   app.root.addChild(camera);
 
   const graphicsPipeline = new GraphicsPipeline(app, camera, coarse);
-  graphicsPipeline.applyQuality(performanceManager.preset);
+  graphicsPipeline.applyQuality(performanceManager.preset, performanceManager.reducedEffects);
 
   const sun = new Entity(`${map.name} Key Light`);
   sun.addComponent('light', {
     type: 'directional',
-    color: color(map.lighting.sun),
-    intensity: map.lighting.sunIntensity,
+    color: color(referenceScene.sun),
+    intensity: referenceScene.sunIntensity,
     castShadows: performanceManager.shadowsEnabled,
     shadowResolution: performanceManager.shadowResolution,
-    shadowDistance: coarse ? Math.min(55, map.lod.shadowDistance) : map.lod.shadowDistance,
+    shadowDistance: coarse
+      ? Math.min(34, map.lod.shadowDistance)
+      : Math.min(62, map.lod.shadowDistance),
   });
   sun.setEulerAngles(
-    map.lighting.sunAngles[0],
-    map.lighting.sunAngles[1],
-    map.lighting.sunAngles[2],
+    referenceScene.sunAngles[0],
+    referenceScene.sunAngles[1],
+    referenceScene.sunAngles[2],
   );
   app.root.addChild(sun);
 
   qualitySelect.addEventListener('change', () => {
     performanceManager.setPreset(qualitySelect.value as QualityPreset);
-    graphicsPipeline.applyQuality(performanceManager.preset);
+    graphicsPipeline.applyQuality(performanceManager.preset, performanceManager.reducedEffects);
     if (sun.light) {
       sun.light.castShadows = performanceManager.shadowsEnabled;
       sun.light.shadowResolution = performanceManager.shadowResolution;
@@ -225,14 +228,14 @@ async function boot(): Promise<void> {
   const fill = new Entity(`${map.name} Fill Light`);
   fill.addComponent('light', {
     type: 'directional',
-    color: color(map.lighting.fill),
-    intensity: map.lighting.fillIntensity,
+    color: color(referenceScene.fill),
+    intensity: referenceScene.fillIntensity,
     castShadows: false,
   });
   fill.setEulerAngles(
-    map.lighting.fillAngles[0],
-    map.lighting.fillAngles[1],
-    map.lighting.fillAngles[2],
+    referenceScene.fillAngles[0],
+    referenceScene.fillAngles[1],
+    referenceScene.fillAngles[2],
   );
   app.root.addChild(fill);
 
@@ -278,11 +281,15 @@ async function boot(): Promise<void> {
     { once: true },
   );
 
+  let hudAccumulator = 0;
+  let lastOutcome: 'playing' | 'won' | 'lost' = 'playing';
+
   app.on('update', (deltaSeconds: number) => {
     if (multiplayer.consumeRoundReset()) {
       mode.reset();
       interactions.reset();
       player.reset();
+      lastOutcome = 'playing';
       setRoundResult('playing', '');
     }
 
@@ -318,49 +325,66 @@ async function boot(): Promise<void> {
     if (threat.detected && threat.danger > 0.5) audio.cue('danger');
 
     player.setMovementLocked(interaction.hidden || modeState.outcome !== 'playing');
-    setRoundResult(modeState.outcome, modeState.objective);
 
-    const area = nearestAreaLabel(map, position);
-    zoneValue.textContent = area.toUpperCase();
-
-    const prompt = interaction.prompt ?? modeState.prompt;
-    interactionPrompt.textContent = prompt ?? '';
-    interactionPrompt.classList.toggle(
-      'is-visible',
-      Boolean(prompt) && modeState.outcome === 'playing',
-    );
-
-    hiddenState.textContent = interaction.hidden
-      ? `HIDDEN · ${interaction.hiddenLabel?.toUpperCase() ?? 'COVER'}`
-      : '';
-    hiddenState.classList.toggle('is-visible', interaction.hidden);
-
-    modeObjective.textContent = modeState.objective;
-    modeProgress.textContent = modeState.progress;
-    modeTimer.textContent = formatTimer(modeState.timerSeconds);
-    modeDanger.textContent = `${Math.round(modeState.dangerPercent)}%`;
-    modeOutcome.textContent =
-      modeState.outcome === 'playing' ? modeState.status : modeState.outcome.toUpperCase();
-    modePanel.classList.toggle('is-complete', modeState.outcome === 'won');
-    modePanel.classList.toggle('is-lost', modeState.outcome === 'lost');
-    motionValue.textContent = player.motionState.toUpperCase();
-    staminaValue.textContent = `${Math.round(player.staminaPercent)}%`;
-    viewValue.textContent = player.viewMode === 'first-person' ? 'FPS' : 'TPS';
+    if (modeState.outcome !== lastOutcome) {
+      lastOutcome = modeState.outcome;
+      setRoundResult(modeState.outcome, modeState.objective);
+    }
 
     multiplayer.update(position, player.yaw, player.motionState, deltaSeconds);
-    networkValue.textContent = multiplayer.status;
-    roomValue.textContent = multiplayer.roomCode;
-    roomCodeInput.value = multiplayer.roomCode;
-    peersValue.textContent = multiplayer.peerCount.toString();
 
     const performance = performanceManager.update(deltaSeconds);
-    fpsValue.textContent = performance.fps.toString();
+    if (performance.qualityChanged) {
+      graphicsPipeline.setRuntimeReduction(performance.reducedEffects);
+      if (sun.light) {
+        sun.light.castShadows = performanceManager.shadowsEnabled;
+        sun.light.shadowResolution = performanceManager.shadowResolution;
+      }
+    }
 
-    if (debugEnabled) {
-      debugPosition.textContent = `POSITION ${position.x.toFixed(2)} · ${position.y.toFixed(2)} · ${position.z.toFixed(2)}`;
-      debugZone.textContent = `AREA ${area.toUpperCase()}`;
-      debugRole.textContent = `THREAT ${threat.role.toUpperCase()} · ${threat.distance.toFixed(1)}M`;
-      debugMeta.textContent = `QA ${map.structures.length} ARCH · ${map.objectives.length} OBJ · ${map.navNodes.length} NAV · ${runtime.objectCount} RUNTIME · ${performance.quality.toUpperCase()} @ ${performance.pixelRatio.toFixed(2)}X`;
+    hudAccumulator += Math.min(deltaSeconds, 0.1);
+    if (hudAccumulator >= 0.08) {
+      hudAccumulator = 0;
+
+      const area = nearestAreaLabel(map, position);
+      zoneValue.textContent = area.toUpperCase();
+
+      const prompt = interaction.prompt ?? modeState.prompt;
+      interactionPrompt.textContent = prompt ?? '';
+      interactionPrompt.classList.toggle(
+        'is-visible',
+        Boolean(prompt) && modeState.outcome === 'playing',
+      );
+
+      hiddenState.textContent = interaction.hidden
+        ? `HIDDEN · ${interaction.hiddenLabel?.toUpperCase() ?? 'COVER'}`
+        : '';
+      hiddenState.classList.toggle('is-visible', interaction.hidden);
+
+      modeObjective.textContent = modeState.objective;
+      modeProgress.textContent = modeState.progress;
+      modeTimer.textContent = formatTimer(modeState.timerSeconds);
+      modeDanger.textContent = `${Math.round(modeState.dangerPercent)}%`;
+      modeOutcome.textContent =
+        modeState.outcome === 'playing' ? modeState.status : modeState.outcome.toUpperCase();
+      modePanel.classList.toggle('is-complete', modeState.outcome === 'won');
+      modePanel.classList.toggle('is-lost', modeState.outcome === 'lost');
+      motionValue.textContent = player.motionState.toUpperCase();
+      staminaValue.textContent = `${Math.round(player.staminaPercent)}%`;
+      viewValue.textContent = player.viewMode === 'first-person' ? 'FPS' : 'TPS';
+
+      networkValue.textContent = multiplayer.status;
+      roomValue.textContent = multiplayer.roomCode;
+      roomCodeInput.value = multiplayer.roomCode;
+      peersValue.textContent = multiplayer.peerCount.toString();
+      fpsValue.textContent = performance.fps.toString();
+
+      if (debugEnabled) {
+        debugPosition.textContent = `POSITION ${position.x.toFixed(2)} · ${position.y.toFixed(2)} · ${position.z.toFixed(2)}`;
+        debugZone.textContent = `AREA ${area.toUpperCase()}`;
+        debugRole.textContent = `THREAT ${threat.role.toUpperCase()} · ${threat.distance.toFixed(1)}M`;
+        debugMeta.textContent = `QA ${map.structures.length} ARCH · ${map.objectives.length} OBJ · ${map.navNodes.length} NAV · ${runtime.objectCount} RUNTIME · ${performance.quality.toUpperCase()} @ ${performance.pixelRatio.toFixed(2)}X`;
+      }
     }
   });
 
