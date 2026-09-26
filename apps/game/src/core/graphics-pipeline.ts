@@ -14,7 +14,7 @@ export class GraphicsPipeline {
 
   constructor(
     private readonly app: Application,
-    private readonly camera: Entity,
+    camera: Entity,
     private readonly coarsePointer: boolean,
   ) {
     if (!camera.camera) throw new Error('GraphicsPipeline requires a camera component.');
@@ -26,7 +26,6 @@ export class GraphicsPipeline {
     this.frame.grading.brightness = 1.02;
     this.frame.grading.contrast = 1.06;
     this.frame.grading.saturation = 1.06;
-    this.frame.vignette.enabled = true;
     this.frame.vignette.inner = 0.66;
     this.frame.vignette.outer = 1;
     this.frame.vignette.curvature = 0.65;
@@ -45,10 +44,8 @@ export class GraphicsPipeline {
     const autoHigh = preset === 'auto' && !this.coarsePointer;
 
     this.frame.enabled = !low;
-    this.frame.bloom.enabled = !low;
-    this.frame.bloom.intensity = high || autoHigh ? 0.025 : balanced ? 0.014 : 0.008;
+    this.frame.bloom.intensity = low ? 0 : high || autoHigh ? 0.025 : balanced ? 0.014 : 0.008;
     this.frame.bloom.blurLevel = high || autoHigh ? 10 : 6;
-    this.frame.bloom.threshold = 1.1;
 
     this.frame.grading.enabled = !low;
     this.frame.grading.brightness = high ? 1.04 : 1.02;
@@ -58,8 +55,7 @@ export class GraphicsPipeline {
     this.frame.taa.enabled = high && !this.coarsePointer;
     this.frame.taa.jitter = 0.8;
 
-    this.frame.vignette.enabled = !low;
-    this.frame.vignette.intensity = high || autoHigh ? 0.14 : 0.09;
+    this.frame.vignette.intensity = low ? 0 : high || autoHigh ? 0.14 : 0.09;
 
     this.app.scene.fog.type = low ? FOG_NONE : FOG_EXP;
     this.app.scene.fog.density = this.coarsePointer
