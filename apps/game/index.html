@@ -4,22 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#080b10" />
-    <title>Hideverse.io — Ravenwood Mansion</title>
+    <title>Hideverse.io — Playable Build</title>
   </head>
   <body>
     <main id="app">
-      <canvas id="game-canvas" aria-label="Hideverse Ravenwood Mansion game canvas"></canvas>
+      <canvas id="game-canvas" aria-label="Hideverse playable game canvas"></canvas>
 
       <header class="map-hud">
         <div>
-          <p class="eyebrow">HIDEVERSE.IO · MAP 01</p>
-          <h1>RAVENWOOD MANSION</h1>
-          <p class="status-line"><i></i><span id="map-status">Booting Ravenwood…</span></p>
+          <p id="map-eyebrow" class="eyebrow">HIDEVERSE.IO · MAP 01</p>
+          <h1 id="map-title">RAVENWOOD MANSION</h1>
+          <p class="status-line"><i></i><span id="map-status">Booting Hideverse…</span></p>
+          <label class="map-picker-label" for="map-select">
+            MAP
+            <select id="map-select" aria-label="Choose Hideverse map"></select>
+          </label>
         </div>
         <div class="telemetry">
-          <span>AREA <b id="zone-value">RAVENWOOD ESTATE</b></span>
+          <span>AREA <b id="zone-value">LOADING</b></span>
+          <span>MODE <b id="mode-name">—</b></span>
           <span>FPS <b id="fps-value">—</b></span>
-          <span>BUILD <b>PHASE 03B</b></span>
+          <span>BUILD <b>PHASE 08</b></span>
         </div>
       </header>
 
@@ -28,18 +33,36 @@
       <div id="interaction-prompt" class="interaction-prompt" aria-live="polite"></div>
       <div id="hidden-state" class="hidden-state" aria-live="polite"></div>
 
-      <aside id="debug-panel" class="debug-panel" aria-label="Ravenwood debug telemetry">
-        <b>RAVENWOOD DEBUG</b>
+      <aside id="mode-panel" class="mode-panel" aria-label="Current game mode">
+        <span class="panel-kicker">ACTIVE MODE</span>
+        <b id="mode-title">—</b>
+        <p id="mode-objective">Loading objective…</p>
+        <div class="mode-meta">
+          <span>PROGRESS <b id="mode-progress">0/0</b></span>
+          <span>MOTION <b id="motion-value">IDLE</b></span>
+          <span>STAMINA <b id="stamina-value">100%</b></span>
+        </div>
+      </aside>
+
+      <aside class="network-panel" aria-label="Multiplayer status">
+        <span id="network-value">LOCAL ROOM</span>
+        <b id="room-value">LOCAL</b>
+        <small><span id="peers-value">0</span> PEERS</small>
+      </aside>
+
+      <aside id="debug-panel" class="debug-panel" aria-label="Hideverse debug telemetry">
+        <b>HIDEVERSE DEBUG</b>
         <span id="debug-position">POSITION —</span>
-        <span id="debug-zone">ZONE —</span>
-        <span>SPAWNS 6 HIDER · 2 SEEKER</span>
-        <span>OBJECTIVE SLOTS 5</span>
+        <span id="debug-zone">AREA —</span>
+        <span id="debug-role">NEAREST ROLE —</span>
+        <span id="debug-meta">MAP QA —</span>
       </aside>
 
       <aside class="desktop-help">
         <b>CLICK TO CAPTURE MOUSE</b>
         <span>
-          WASD move · Shift sprint · Space jump · C crouch · E interact/hide · R reset · Esc release
+          WASD move · Shift sprint · Space jump · C crouch · E interact/hide/open · R reset · Esc
+          release
         </span>
       </aside>
 
@@ -57,7 +80,7 @@
 
       <div id="boot-overlay" class="boot-overlay">
         <div class="spinner"></div>
-        <span>INITIALIZING RAVENWOOD</span>
+        <span>INITIALIZING HIDEVERSE</span>
       </div>
     </main>
     <script type="module" src="/src/main.ts"></script>

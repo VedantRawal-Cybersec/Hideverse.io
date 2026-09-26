@@ -1,0 +1,1711 @@
+{
+  "version": 1,
+  "maps": [
+    {
+      "id": "ravenwood",
+      "index": 1,
+      "name": "Ravenwood Mansion",
+      "mode": {
+        "id": "kick-the-box",
+        "name": "Kick the Box",
+        "summary": "Hiders activate scattered boxes while avoiding the seeker and using mansion cover.",
+        "success": "All Ravenwood boxes activated."
+      },
+      "worldBounds": {
+        "min": [-60, -4, -60],
+        "max": [60, 20, 60]
+      },
+      "spawn": [0, 2.2, 38],
+      "lighting": {
+        "ambient": [0.22, 0.24, 0.29],
+        "sun": [0.82, 0.88, 1],
+        "fill": [1, 0.74, 0.52],
+        "clear": [0.035, 0.045, 0.065],
+        "sunIntensity": 1.35,
+        "fillIntensity": 0.28,
+        "sunAngles": [48, 32, 0],
+        "fillAngles": [22, -120, 0]
+      },
+      "structures": [
+        {
+          "id": "victorian-shell",
+          "position": [0, 5, 2],
+          "size": [24, 12, 22]
+        },
+        {
+          "id": "garage-wing",
+          "position": [-10, 2.2, 1],
+          "size": [8, 4.4, 8]
+        },
+        {
+          "id": "front-porch",
+          "position": [0, 1, 13],
+          "size": [12, 2, 5]
+        },
+        {
+          "id": "rear-deck",
+          "position": [-5, 1, 12],
+          "size": [11, 2, 6]
+        },
+        {
+          "id": "upper-floor",
+          "position": [0, 4.2, 2],
+          "size": [20, 0.3, 17]
+        },
+        {
+          "id": "attic",
+          "position": [-1, 7.4, 2],
+          "size": [12, 4, 10]
+        },
+        {
+          "id": "east-garden-wall",
+          "position": [38, 1, 0],
+          "size": [1, 2, 52]
+        },
+        {
+          "id": "west-garden-wall",
+          "position": [-38, 1, 0],
+          "size": [1, 2, 52]
+        }
+      ],
+      "props": [
+        {
+          "id": "dining-set",
+          "position": [4.3, 1.25, 6.7],
+          "size": [4, 1.6, 4]
+        },
+        {
+          "id": "ground-couch",
+          "position": [-5.3, 1.25, 7.5],
+          "size": [3, 1.2, 1.6]
+        },
+        {
+          "id": "upper-bed",
+          "position": [-6.1, 4.2, 6.6],
+          "size": [3.2, 1, 3]
+        },
+        {
+          "id": "garden-bench",
+          "position": [10, 0.6, 33],
+          "size": [2.8, 1.2, 0.8],
+          "decorative": true
+        }
+      ],
+      "doors": [
+        {
+          "id": "front-door",
+          "label": "Front Door",
+          "position": [0, 1.6, 10.8],
+          "size": [2.2, 3.2, 0.22],
+          "radius": 2.6,
+          "blocking": false
+        },
+        {
+          "id": "rear-door",
+          "label": "Rear Door",
+          "position": [-3.8, 1.6, 8.8],
+          "size": [1.8, 3.2, 0.22],
+          "radius": 2.5,
+          "blocking": false
+        },
+        {
+          "id": "garage-door",
+          "label": "Garage Door",
+          "position": [-9.8, 1.6, 3.6],
+          "size": [3.6, 3.2, 0.22],
+          "radius": 3,
+          "blocking": false
+        }
+      ],
+      "hidingSpots": [
+        {
+          "id": "under-main-stairs",
+          "label": "Under the main stairs",
+          "position": [1.55, 2, 3.1],
+          "radius": 1.65
+        },
+        {
+          "id": "garage-alcove",
+          "label": "Garage alcove",
+          "position": [-9.8, 1.35, 0.65],
+          "radius": 1.8
+        },
+        {
+          "id": "upper-shower-nook",
+          "label": "Upper bathroom nook",
+          "position": [-9, 4.15, -1.05],
+          "radius": 1.5
+        },
+        {
+          "id": "attic-corner",
+          "label": "Attic corner",
+          "position": [-0.9, 7.35, 2.2],
+          "radius": 1.8
+        },
+        {
+          "id": "rear-deck-cover",
+          "label": "Rear deck cover",
+          "position": [-5.15, 1, 8.35],
+          "radius": 1.9
+        }
+      ],
+      "objectives": [
+        {
+          "id": "box-front-court",
+          "label": "Front Courtyard Box",
+          "action": "KICK",
+          "position": [0, 1, 29],
+          "radius": 2.2
+        },
+        {
+          "id": "box-rear-deck",
+          "label": "Rear Deck Box",
+          "action": "KICK",
+          "position": [-5, 1, 13],
+          "radius": 2.2
+        },
+        {
+          "id": "box-garage",
+          "label": "Garage Box",
+          "action": "KICK",
+          "position": [-10, 1.3, 1],
+          "radius": 2.2
+        },
+        {
+          "id": "box-upper",
+          "label": "Upper Floor Box",
+          "action": "KICK",
+          "position": [-3, 4.2, 2],
+          "radius": 2.2
+        },
+        {
+          "id": "box-attic",
+          "label": "Attic Box",
+          "action": "KICK",
+          "position": [-1, 7.4, 2],
+          "radius": 2.2
+        }
+      ],
+      "navNodes": [
+        {
+          "id": "front-gate",
+          "label": "Front Gate",
+          "position": [0, 2, 50]
+        },
+        {
+          "id": "front-court",
+          "label": "Front Courtyard",
+          "position": [0, 2, 29]
+        },
+        {
+          "id": "west-yard",
+          "label": "West Yard",
+          "position": [-34, 2, 4]
+        },
+        {
+          "id": "east-yard",
+          "label": "East Yard",
+          "position": [34, 2, -2]
+        },
+        {
+          "id": "rear-garden",
+          "label": "Rear Garden",
+          "position": [-4, 2, -34]
+        },
+        {
+          "id": "garage",
+          "label": "Garage",
+          "position": [-10, 2, 1]
+        },
+        {
+          "id": "ground-hall",
+          "label": "Ground Hall",
+          "position": [0, 2, 3]
+        },
+        {
+          "id": "rear-deck",
+          "label": "Rear Deck",
+          "position": [-5, 2, 13]
+        },
+        {
+          "id": "upper-floor",
+          "label": "Upper Floor",
+          "position": [-3, 4.2, 2]
+        },
+        {
+          "id": "attic",
+          "label": "Attic",
+          "position": [-1, 7.4, 2]
+        }
+      ],
+      "actorSpawns": [
+        {
+          "id": "seeker-a",
+          "role": "seeker",
+          "position": [0, 1.2, 44],
+          "patrol": ["front-gate", "front-court", "east-yard", "rear-garden", "west-yard"]
+        },
+        {
+          "id": "hider-a",
+          "role": "hider",
+          "position": [-18, 1.2, 28],
+          "patrol": ["front-court", "west-yard", "rear-deck"]
+        },
+        {
+          "id": "hider-b",
+          "role": "hider",
+          "position": [18, 1.2, 24],
+          "patrol": ["front-court", "east-yard", "rear-garden"]
+        }
+      ],
+      "lod": {
+        "mobileObjectBudget": 42,
+        "desktopObjectBudget": 90,
+        "shadowDistance": 90
+      }
+    },
+    {
+      "id": "nexus",
+      "index": 2,
+      "name": "Nexus Mega Mall",
+      "mode": {
+        "id": "who-is-real",
+        "name": "Who Is Real?",
+        "summary": "Blend into a crowd, inspect suspicious shoppers and identify the mimic before it escapes.",
+        "success": "Mimic identity confirmed."
+      },
+      "worldBounds": {
+        "min": [-64, -4, -64],
+        "max": [64, 18, 64]
+      },
+      "spawn": [0, 2.2, 52],
+      "lighting": {
+        "ambient": [0.3, 0.31, 0.34],
+        "sun": [0.96, 0.94, 0.86],
+        "fill": [0.38, 0.62, 1],
+        "clear": [0.055, 0.065, 0.085],
+        "sunIntensity": 1.15,
+        "fillIntensity": 0.42,
+        "sunAngles": [62, -25, 0],
+        "fillAngles": [20, 135, 0]
+      },
+      "structures": [
+        {
+          "id": "north-wall",
+          "position": [0, 4, -56],
+          "size": [112, 8, 1]
+        },
+        {
+          "id": "south-wall",
+          "position": [0, 4, 56],
+          "size": [112, 8, 1]
+        },
+        {
+          "id": "east-wall",
+          "position": [56, 4, 0],
+          "size": [1, 8, 112]
+        },
+        {
+          "id": "west-wall",
+          "position": [-56, 4, 0],
+          "size": [1, 8, 112]
+        },
+        {
+          "id": "store-west-a",
+          "position": [-38, 3, 28],
+          "size": [18, 6, 16]
+        },
+        {
+          "id": "store-west-b",
+          "position": [-38, 3, -2],
+          "size": [18, 6, 18]
+        },
+        {
+          "id": "store-west-c",
+          "position": [-38, 3, -32],
+          "size": [18, 6, 16]
+        },
+        {
+          "id": "store-east-a",
+          "position": [38, 3, 28],
+          "size": [18, 6, 16]
+        },
+        {
+          "id": "store-east-b",
+          "position": [38, 3, -2],
+          "size": [18, 6, 18]
+        },
+        {
+          "id": "store-east-c",
+          "position": [38, 3, -32],
+          "size": [18, 6, 16]
+        },
+        {
+          "id": "food-court-block",
+          "position": [0, 2.5, -40],
+          "size": [28, 5, 12]
+        },
+        {
+          "id": "cinema-block",
+          "position": [0, 3, 38],
+          "size": [30, 6, 12]
+        }
+      ],
+      "props": [
+        {
+          "id": "atrium-fountain",
+          "position": [0, 1, 0],
+          "size": [8, 2, 8]
+        },
+        {
+          "id": "info-kiosk",
+          "position": [0, 1.2, 18],
+          "size": [2, 2.4, 2]
+        },
+        {
+          "id": "bench-west",
+          "position": [-14, 0.6, 8],
+          "size": [4, 1.2, 1],
+          "decorative": true
+        },
+        {
+          "id": "bench-east",
+          "position": [14, 0.6, 8],
+          "size": [4, 1.2, 1],
+          "decorative": true
+        },
+        {
+          "id": "sale-island",
+          "position": [0, 1, -18],
+          "size": [8, 2, 4],
+          "decorative": true
+        }
+      ],
+      "doors": [
+        {
+          "id": "main-entry",
+          "label": "Main Entrance",
+          "position": [0, 2, 55.2],
+          "size": [8, 4, 0.4],
+          "radius": 4.5,
+          "blocking": true
+        },
+        {
+          "id": "cinema-door",
+          "label": "Cinema Door",
+          "position": [0, 1.8, 31.8],
+          "size": [4, 3.6, 0.35],
+          "radius": 3,
+          "blocking": true
+        }
+      ],
+      "hidingSpots": [
+        {
+          "id": "fountain-service",
+          "label": "Fountain service recess",
+          "position": [-5, 1.2, -2],
+          "radius": 2
+        },
+        {
+          "id": "west-changing",
+          "label": "West changing rooms",
+          "position": [-29, 1.2, 28],
+          "radius": 2.2
+        },
+        {
+          "id": "east-stockroom",
+          "label": "East stockroom",
+          "position": [28, 1.2, -4],
+          "radius": 2.2
+        },
+        {
+          "id": "food-counter",
+          "label": "Food court counter",
+          "position": [-8, 1.2, -34],
+          "radius": 2.1
+        },
+        {
+          "id": "cinema-arcade",
+          "label": "Cinema arcade",
+          "position": [8, 1.2, 28],
+          "radius": 2.1
+        }
+      ],
+      "objectives": [
+        {
+          "id": "scan-atrium",
+          "label": "Atrium Shopper",
+          "action": "VERIFY",
+          "position": [7, 1.2, 4],
+          "radius": 2.4
+        },
+        {
+          "id": "scan-fashion",
+          "label": "Fashion Wing Shopper",
+          "action": "VERIFY",
+          "position": [-20, 1.2, 22],
+          "radius": 2.4
+        },
+        {
+          "id": "scan-food",
+          "label": "Food Court Shopper",
+          "action": "VERIFY",
+          "position": [12, 1.2, -28],
+          "radius": 2.4
+        },
+        {
+          "id": "scan-cinema",
+          "label": "Cinema Shopper",
+          "action": "VERIFY",
+          "position": [-9, 1.2, 32],
+          "radius": 2.4
+        }
+      ],
+      "navNodes": [
+        {
+          "id": "entry",
+          "label": "Main Entrance",
+          "position": [0, 1.2, 50]
+        },
+        {
+          "id": "atrium",
+          "label": "Central Atrium",
+          "position": [0, 1.2, 0]
+        },
+        {
+          "id": "west-fashion",
+          "label": "West Fashion",
+          "position": [-24, 1.2, 24]
+        },
+        {
+          "id": "east-fashion",
+          "label": "East Fashion",
+          "position": [24, 1.2, 24]
+        },
+        {
+          "id": "west-tech",
+          "label": "West Tech",
+          "position": [-24, 1.2, -8]
+        },
+        {
+          "id": "east-tech",
+          "label": "East Tech",
+          "position": [24, 1.2, -8]
+        },
+        {
+          "id": "food-court",
+          "label": "Food Court",
+          "position": [0, 1.2, -30]
+        },
+        {
+          "id": "cinema",
+          "label": "Cinema",
+          "position": [0, 1.2, 30]
+        },
+        {
+          "id": "service-west",
+          "label": "Service West",
+          "position": [-48, 1.2, 0]
+        },
+        {
+          "id": "service-east",
+          "label": "Service East",
+          "position": [48, 1.2, 0]
+        }
+      ],
+      "actorSpawns": [
+        {
+          "id": "civilian-a",
+          "role": "civilian",
+          "position": [-8, 1.2, 16],
+          "patrol": ["entry", "atrium", "west-fashion", "cinema"]
+        },
+        {
+          "id": "civilian-b",
+          "role": "civilian",
+          "position": [9, 1.2, 9],
+          "patrol": ["atrium", "east-fashion", "food-court"]
+        },
+        {
+          "id": "civilian-c",
+          "role": "civilian",
+          "position": [-12, 1.2, -12],
+          "patrol": ["west-tech", "atrium", "food-court"]
+        },
+        {
+          "id": "civilian-d",
+          "role": "civilian",
+          "position": [16, 1.2, -4],
+          "patrol": ["east-tech", "atrium", "cinema"]
+        },
+        {
+          "id": "mimic-a",
+          "role": "mimic",
+          "position": [6, 1.2, -22],
+          "patrol": ["food-court", "east-tech", "atrium", "cinema"]
+        }
+      ],
+      "lod": {
+        "mobileObjectBudget": 38,
+        "desktopObjectBudget": 96,
+        "shadowDistance": 78
+      }
+    },
+    {
+      "id": "museum",
+      "index": 3,
+      "name": "Grand Museum & Vault",
+      "mode": {
+        "id": "hide-and-heist",
+        "name": "Hide & Heist",
+        "summary": "Steal marked exhibits, evade guards and reach the extraction point with the loot.",
+        "success": "Heist complete. Extraction secured."
+      },
+      "worldBounds": {
+        "min": [-66, -4, -58],
+        "max": [66, 18, 58]
+      },
+      "spawn": [0, 2.2, 48],
+      "lighting": {
+        "ambient": [0.2, 0.19, 0.18],
+        "sun": [1, 0.92, 0.78],
+        "fill": [0.5, 0.58, 0.72],
+        "clear": [0.025, 0.025, 0.03],
+        "sunIntensity": 1.05,
+        "fillIntensity": 0.32,
+        "sunAngles": [52, 12, 0],
+        "fillAngles": [30, -110, 0]
+      },
+      "structures": [
+        {
+          "id": "north-wall",
+          "position": [0, 4, -50],
+          "size": [116, 8, 1]
+        },
+        {
+          "id": "south-wall",
+          "position": [0, 4, 50],
+          "size": [116, 8, 1]
+        },
+        {
+          "id": "east-wall",
+          "position": [58, 4, 0],
+          "size": [1, 8, 100]
+        },
+        {
+          "id": "west-wall",
+          "position": [-58, 4, 0],
+          "size": [1, 8, 100]
+        },
+        {
+          "id": "west-gallery",
+          "position": [-34, 3.2, 4],
+          "size": [18, 6.4, 58]
+        },
+        {
+          "id": "east-gallery",
+          "position": [34, 3.2, 4],
+          "size": [18, 6.4, 58]
+        },
+        {
+          "id": "vault-shell",
+          "position": [0, 3, -38],
+          "size": [24, 6, 16]
+        },
+        {
+          "id": "archive-block",
+          "position": [-18, 2.8, -34],
+          "size": [10, 5.6, 18]
+        },
+        {
+          "id": "security-block",
+          "position": [19, 2.8, -34],
+          "size": [10, 5.6, 18]
+        },
+        {
+          "id": "grand-stairs-base",
+          "position": [0, 1, 16],
+          "size": [20, 2, 10]
+        }
+      ],
+      "props": [
+        {
+          "id": "statue-center",
+          "position": [0, 2.2, 5],
+          "size": [3, 4.4, 3]
+        },
+        {
+          "id": "display-west",
+          "position": [-14, 1, 4],
+          "size": [4, 2, 2]
+        },
+        {
+          "id": "display-east",
+          "position": [14, 1, 4],
+          "size": [4, 2, 2]
+        },
+        {
+          "id": "display-north",
+          "position": [0, 1, -16],
+          "size": [5, 2, 2],
+          "decorative": true
+        },
+        {
+          "id": "ticket-desk",
+          "position": [0, 1, 38],
+          "size": [8, 2, 2],
+          "decorative": true
+        }
+      ],
+      "doors": [
+        {
+          "id": "museum-entry",
+          "label": "Museum Entrance",
+          "position": [0, 2, 49.2],
+          "size": [7, 4, 0.4],
+          "radius": 4.2,
+          "blocking": true
+        },
+        {
+          "id": "vault-door",
+          "label": "Vault Door",
+          "position": [0, 2, -29.8],
+          "size": [5, 4, 0.5],
+          "radius": 3.4,
+          "blocking": true
+        }
+      ],
+      "hidingSpots": [
+        {
+          "id": "statue-shadow",
+          "label": "Statue shadow",
+          "position": [-4, 1.2, 6],
+          "radius": 2
+        },
+        {
+          "id": "west-display",
+          "label": "West display row",
+          "position": [-17, 1.2, 2],
+          "radius": 2.2
+        },
+        {
+          "id": "east-display",
+          "label": "East display row",
+          "position": [17, 1.2, 2],
+          "radius": 2.2
+        },
+        {
+          "id": "archive-stacks",
+          "label": "Archive stacks",
+          "position": [-10, 1.2, -24],
+          "radius": 2.3
+        },
+        {
+          "id": "security-blindspot",
+          "label": "Security blind spot",
+          "position": [10, 1.2, -24],
+          "radius": 2.2
+        }
+      ],
+      "objectives": [
+        {
+          "id": "artifact-west",
+          "label": "Obsidian Idol",
+          "action": "STEAL",
+          "position": [-12, 1.2, 10],
+          "radius": 2.2
+        },
+        {
+          "id": "artifact-east",
+          "label": "Royal Seal",
+          "action": "STEAL",
+          "position": [12, 1.2, -4],
+          "radius": 2.2
+        },
+        {
+          "id": "artifact-vault",
+          "label": "Vault Diamond",
+          "action": "STEAL",
+          "position": [0, 1.2, -27],
+          "radius": 2.3
+        },
+        {
+          "id": "extract",
+          "label": "Extraction Van",
+          "action": "EXTRACT",
+          "position": [0, 1.2, 46],
+          "radius": 3
+        }
+      ],
+      "navNodes": [
+        {
+          "id": "entry",
+          "label": "Grand Entrance",
+          "position": [0, 1.2, 44]
+        },
+        {
+          "id": "main-hall",
+          "label": "Main Hall",
+          "position": [0, 1.2, 22]
+        },
+        {
+          "id": "west-gallery",
+          "label": "West Gallery",
+          "position": [-22, 1.2, 8]
+        },
+        {
+          "id": "east-gallery",
+          "label": "East Gallery",
+          "position": [22, 1.2, 8]
+        },
+        {
+          "id": "north-hall",
+          "label": "North Hall",
+          "position": [0, 1.2, -14]
+        },
+        {
+          "id": "archive",
+          "label": "Archive",
+          "position": [-12, 1.2, -32]
+        },
+        {
+          "id": "security",
+          "label": "Security",
+          "position": [12, 1.2, -32]
+        },
+        {
+          "id": "vault",
+          "label": "Vault",
+          "position": [0, 1.2, -27]
+        },
+        {
+          "id": "west-service",
+          "label": "West Service",
+          "position": [-46, 1.2, -8]
+        },
+        {
+          "id": "east-service",
+          "label": "East Service",
+          "position": [46, 1.2, -8]
+        }
+      ],
+      "actorSpawns": [
+        {
+          "id": "guard-a",
+          "role": "guard",
+          "position": [-12, 1.2, 24],
+          "patrol": ["entry", "main-hall", "west-gallery", "north-hall"]
+        },
+        {
+          "id": "guard-b",
+          "role": "guard",
+          "position": [14, 1.2, 5],
+          "patrol": ["east-gallery", "north-hall", "vault", "security"]
+        },
+        {
+          "id": "guard-c",
+          "role": "guard",
+          "position": [0, 1.2, -24],
+          "patrol": ["north-hall", "archive", "vault", "security"]
+        },
+        {
+          "id": "civilian-a",
+          "role": "civilian",
+          "position": [4, 1.2, 24],
+          "patrol": ["main-hall", "west-gallery", "east-gallery"]
+        }
+      ],
+      "lod": {
+        "mobileObjectBudget": 36,
+        "desktopObjectBudget": 88,
+        "shadowDistance": 82
+      }
+    },
+    {
+      "id": "hospital",
+      "index": 4,
+      "name": "Blackwood Hospital",
+      "mode": {
+        "id": "monster-hunt",
+        "name": "Monster Hunt",
+        "summary": "Restore emergency systems, track the creature and survive Blackwood's dark wards.",
+        "success": "Emergency grid restored. Monster hunt complete."
+      },
+      "worldBounds": {
+        "min": [-58, -4, -62],
+        "max": [58, 16, 62]
+      },
+      "spawn": [0, 2.2, 53],
+      "lighting": {
+        "ambient": [0.13, 0.16, 0.16],
+        "sun": [0.62, 0.78, 0.76],
+        "fill": [0.35, 0.9, 0.72],
+        "clear": [0.015, 0.025, 0.025],
+        "sunIntensity": 0.72,
+        "fillIntensity": 0.24,
+        "sunAngles": [68, 40, 0],
+        "fillAngles": [18, -125, 0]
+      },
+      "structures": [
+        {
+          "id": "north-wall",
+          "position": [0, 3.5, -54],
+          "size": [100, 7, 1]
+        },
+        {
+          "id": "south-wall",
+          "position": [0, 3.5, 54],
+          "size": [100, 7, 1]
+        },
+        {
+          "id": "east-wall",
+          "position": [50, 3.5, 0],
+          "size": [1, 7, 108]
+        },
+        {
+          "id": "west-wall",
+          "position": [-50, 3.5, 0],
+          "size": [1, 7, 108]
+        },
+        {
+          "id": "ward-west",
+          "position": [-31, 2.8, 18],
+          "size": [20, 5.6, 24]
+        },
+        {
+          "id": "ward-east",
+          "position": [31, 2.8, 18],
+          "size": [20, 5.6, 24]
+        },
+        {
+          "id": "ward-west-north",
+          "position": [-31, 2.8, -18],
+          "size": [20, 5.6, 24]
+        },
+        {
+          "id": "ward-east-north",
+          "position": [31, 2.8, -18],
+          "size": [20, 5.6, 24]
+        },
+        {
+          "id": "surgery-block",
+          "position": [0, 3, -40],
+          "size": [24, 6, 16]
+        },
+        {
+          "id": "reception-block",
+          "position": [0, 2.4, 38],
+          "size": [22, 4.8, 10]
+        },
+        {
+          "id": "morgue-block",
+          "position": [-22, 2.6, -42],
+          "size": [14, 5.2, 14]
+        }
+      ],
+      "props": [
+        {
+          "id": "reception-desk",
+          "position": [0, 1, 31],
+          "size": [8, 2, 2]
+        },
+        {
+          "id": "gurney-west",
+          "position": [-12, 0.8, 2],
+          "size": [3.4, 1.6, 1.2]
+        },
+        {
+          "id": "gurney-east",
+          "position": [12, 0.8, -6],
+          "size": [3.4, 1.6, 1.2]
+        },
+        {
+          "id": "supply-cart",
+          "position": [4, 0.9, -24],
+          "size": [2, 1.8, 1],
+          "decorative": true
+        },
+        {
+          "id": "generator",
+          "position": [-38, 1.5, -36],
+          "size": [4, 3, 3]
+        }
+      ],
+      "doors": [
+        {
+          "id": "hospital-entry",
+          "label": "Emergency Entrance",
+          "position": [0, 2, 53.2],
+          "size": [7, 4, 0.4],
+          "radius": 4.2,
+          "blocking": true
+        },
+        {
+          "id": "surgery-door",
+          "label": "Surgery Door",
+          "position": [0, 1.8, -31.8],
+          "size": [4, 3.6, 0.35],
+          "radius": 3,
+          "blocking": true
+        },
+        {
+          "id": "morgue-door",
+          "label": "Morgue Door",
+          "position": [-16, 1.8, -42],
+          "size": [3, 3.6, 0.35],
+          "radius": 2.8,
+          "blocking": true
+        }
+      ],
+      "hidingSpots": [
+        {
+          "id": "reception-counter",
+          "label": "Reception counter",
+          "position": [-4, 1.1, 31],
+          "radius": 2
+        },
+        {
+          "id": "west-ward-curtain",
+          "label": "West ward curtain",
+          "position": [-20, 1.1, 18],
+          "radius": 2.2
+        },
+        {
+          "id": "east-ward-curtain",
+          "label": "East ward curtain",
+          "position": [20, 1.1, 18],
+          "radius": 2.2
+        },
+        {
+          "id": "supply-closet",
+          "label": "Supply closet",
+          "position": [8, 1.1, -22],
+          "radius": 2.1
+        },
+        {
+          "id": "morgue-lockers",
+          "label": "Morgue lockers",
+          "position": [-14, 1.1, -42],
+          "radius": 2.2
+        }
+      ],
+      "objectives": [
+        {
+          "id": "generator-west",
+          "label": "West Generator",
+          "action": "RESTORE",
+          "position": [-38, 1.2, -36],
+          "radius": 2.6
+        },
+        {
+          "id": "breaker-east",
+          "label": "East Breaker",
+          "action": "RESTORE",
+          "position": [39, 1.2, -32],
+          "radius": 2.6
+        },
+        {
+          "id": "surgery-power",
+          "label": "Surgery Grid",
+          "action": "RESTORE",
+          "position": [0, 1.2, -29],
+          "radius": 2.6
+        },
+        {
+          "id": "monster-tracker",
+          "label": "Monster Tracker",
+          "action": "ACTIVATE",
+          "position": [0, 1.2, 8],
+          "radius": 2.4
+        }
+      ],
+      "navNodes": [
+        {
+          "id": "entry",
+          "label": "Emergency Entrance",
+          "position": [0, 1.2, 48]
+        },
+        {
+          "id": "reception",
+          "label": "Reception",
+          "position": [0, 1.2, 28]
+        },
+        {
+          "id": "junction",
+          "label": "Central Junction",
+          "position": [0, 1.2, 0]
+        },
+        {
+          "id": "west-ward",
+          "label": "West Ward",
+          "position": [-20, 1.2, 18]
+        },
+        {
+          "id": "east-ward",
+          "label": "East Ward",
+          "position": [20, 1.2, 18]
+        },
+        {
+          "id": "west-north",
+          "label": "West Isolation",
+          "position": [-20, 1.2, -18]
+        },
+        {
+          "id": "east-north",
+          "label": "East Isolation",
+          "position": [20, 1.2, -18]
+        },
+        {
+          "id": "surgery",
+          "label": "Surgery",
+          "position": [0, 1.2, -29]
+        },
+        {
+          "id": "morgue",
+          "label": "Morgue",
+          "position": [-14, 1.2, -42]
+        },
+        {
+          "id": "generator",
+          "label": "Generator Room",
+          "position": [-38, 1.2, -36]
+        }
+      ],
+      "actorSpawns": [
+        {
+          "id": "monster-a",
+          "role": "monster",
+          "position": [0, 1.2, -26],
+          "patrol": ["surgery", "junction", "west-ward", "reception", "east-ward", "east-north"]
+        },
+        {
+          "id": "survivor-a",
+          "role": "hider",
+          "position": [-10, 1.2, 24],
+          "patrol": ["reception", "west-ward", "junction"]
+        },
+        {
+          "id": "survivor-b",
+          "role": "hider",
+          "position": [12, 1.2, 12],
+          "patrol": ["east-ward", "junction", "reception"]
+        }
+      ],
+      "lod": {
+        "mobileObjectBudget": 34,
+        "desktopObjectBudget": 84,
+        "shadowDistance": 70
+      }
+    },
+    {
+      "id": "hotel",
+      "index": 5,
+      "name": "Vertigo Hotel",
+      "mode": {
+        "id": "floor-by-floor",
+        "name": "Floor by Floor",
+        "summary": "Clear objectives across stacked hotel levels and unlock the roof extraction.",
+        "success": "All hotel floors cleared."
+      },
+      "worldBounds": {
+        "min": [-48, -4, -48],
+        "max": [48, 20, 48]
+      },
+      "spawn": [0, 2.2, 40],
+      "lighting": {
+        "ambient": [0.2, 0.18, 0.22],
+        "sun": [0.84, 0.76, 0.95],
+        "fill": [1, 0.48, 0.36],
+        "clear": [0.035, 0.022, 0.045],
+        "sunIntensity": 0.96,
+        "fillIntensity": 0.36,
+        "sunAngles": [55, -35, 0],
+        "fillAngles": [25, 120, 0]
+      },
+      "structures": [
+        {
+          "id": "north-wall",
+          "position": [0, 6, -40],
+          "size": [80, 12, 1]
+        },
+        {
+          "id": "south-wall",
+          "position": [0, 6, 40],
+          "size": [80, 12, 1]
+        },
+        {
+          "id": "east-wall",
+          "position": [40, 6, 0],
+          "size": [1, 12, 80]
+        },
+        {
+          "id": "west-wall",
+          "position": [-40, 6, 0],
+          "size": [1, 12, 80]
+        },
+        {
+          "id": "floor-2",
+          "position": [0, 4, 0],
+          "size": [70, 0.35, 70]
+        },
+        {
+          "id": "floor-3",
+          "position": [0, 8, 0],
+          "size": [70, 0.35, 70]
+        },
+        {
+          "id": "lobby-core",
+          "position": [0, 2.5, -2],
+          "size": [12, 5, 12]
+        },
+        {
+          "id": "west-room-block",
+          "position": [-26, 2.8, 0],
+          "size": [14, 5.6, 56]
+        },
+        {
+          "id": "east-room-block",
+          "position": [26, 2.8, 0],
+          "size": [14, 5.6, 56]
+        },
+        {
+          "id": "upper-west-block",
+          "position": [-26, 6.2, 0],
+          "size": [14, 3.6, 56]
+        },
+        {
+          "id": "upper-east-block",
+          "position": [26, 6.2, 0],
+          "size": [14, 3.6, 56]
+        },
+        {
+          "id": "stair-1",
+          "position": [-7, 0.5, 18],
+          "size": [4, 1, 4]
+        },
+        {
+          "id": "stair-2",
+          "position": [-7, 1.5, 14],
+          "size": [4, 1, 4]
+        },
+        {
+          "id": "stair-3",
+          "position": [-7, 2.5, 10],
+          "size": [4, 1, 4]
+        },
+        {
+          "id": "stair-4",
+          "position": [-7, 3.5, 6],
+          "size": [4, 1, 4]
+        },
+        {
+          "id": "stair-5",
+          "position": [7, 4.5, 6],
+          "size": [4, 1, 4]
+        },
+        {
+          "id": "stair-6",
+          "position": [7, 5.5, 10],
+          "size": [4, 1, 4]
+        },
+        {
+          "id": "stair-7",
+          "position": [7, 6.5, 14],
+          "size": [4, 1, 4]
+        },
+        {
+          "id": "stair-8",
+          "position": [7, 7.5, 18],
+          "size": [4, 1, 4]
+        }
+      ],
+      "props": [
+        {
+          "id": "lobby-desk",
+          "position": [0, 1, 28],
+          "size": [10, 2, 2]
+        },
+        {
+          "id": "luggage-a",
+          "position": [-8, 0.8, 30],
+          "size": [2, 1.6, 1.4]
+        },
+        {
+          "id": "luggage-b",
+          "position": [8, 0.8, 28],
+          "size": [2, 1.6, 1.4]
+        },
+        {
+          "id": "floor2-cart",
+          "position": [0, 4.8, -16],
+          "size": [3, 1.6, 1.2],
+          "decorative": true
+        },
+        {
+          "id": "floor3-sofa",
+          "position": [0, 8.7, -18],
+          "size": [4, 1.4, 1.5],
+          "decorative": true
+        }
+      ],
+      "doors": [
+        {
+          "id": "hotel-entry",
+          "label": "Hotel Entrance",
+          "position": [0, 2, 39.2],
+          "size": [7, 4, 0.4],
+          "radius": 4.2,
+          "blocking": true
+        },
+        {
+          "id": "floor2-door",
+          "label": "Floor Two Fire Door",
+          "position": [0, 5.5, -8],
+          "size": [3.6, 3, 0.35],
+          "radius": 3,
+          "blocking": false
+        },
+        {
+          "id": "floor3-door",
+          "label": "Floor Three Fire Door",
+          "position": [0, 9.5, -8],
+          "size": [3.6, 3, 0.35],
+          "radius": 3,
+          "blocking": false
+        }
+      ],
+      "hidingSpots": [
+        {
+          "id": "lobby-luggage",
+          "label": "Lobby luggage stack",
+          "position": [-8, 1.1, 30],
+          "radius": 2
+        },
+        {
+          "id": "floor1-laundry",
+          "label": "Floor one laundry",
+          "position": [-14, 1.1, -22],
+          "radius": 2.2
+        },
+        {
+          "id": "floor2-cart",
+          "label": "Floor two service cart",
+          "position": [0, 4.8, -16],
+          "radius": 2.2
+        },
+        {
+          "id": "floor2-suite",
+          "label": "Floor two suite",
+          "position": [15, 4.8, 18],
+          "radius": 2.2
+        },
+        {
+          "id": "floor3-lounge",
+          "label": "Floor three lounge",
+          "position": [0, 8.8, -18],
+          "radius": 2.2
+        }
+      ],
+      "objectives": [
+        {
+          "id": "floor1-panel",
+          "label": "Floor One Panel",
+          "action": "CLEAR",
+          "position": [14, 1.2, 16],
+          "radius": 2.4
+        },
+        {
+          "id": "floor2-panel",
+          "label": "Floor Two Panel",
+          "action": "CLEAR",
+          "position": [-12, 4.8, -12],
+          "radius": 2.4
+        },
+        {
+          "id": "floor3-panel",
+          "label": "Floor Three Panel",
+          "action": "CLEAR",
+          "position": [12, 8.8, 12],
+          "radius": 2.4
+        },
+        {
+          "id": "roof-unlock",
+          "label": "Roof Extraction",
+          "action": "UNLOCK",
+          "position": [0, 8.8, -28],
+          "radius": 2.6
+        }
+      ],
+      "navNodes": [
+        {
+          "id": "entry",
+          "label": "Hotel Entrance",
+          "position": [0, 1.2, 36]
+        },
+        {
+          "id": "lobby",
+          "label": "Lobby",
+          "position": [0, 1.2, 24]
+        },
+        {
+          "id": "floor1-west",
+          "label": "Floor 1 West",
+          "position": [-14, 1.2, 0]
+        },
+        {
+          "id": "floor1-east",
+          "label": "Floor 1 East",
+          "position": [14, 1.2, 0]
+        },
+        {
+          "id": "stair-base",
+          "label": "Main Stair",
+          "position": [-7, 1.2, 18]
+        },
+        {
+          "id": "floor2",
+          "label": "Floor 2",
+          "position": [0, 4.8, 8]
+        },
+        {
+          "id": "floor2-west",
+          "label": "Floor 2 West",
+          "position": [-14, 4.8, 0]
+        },
+        {
+          "id": "floor2-east",
+          "label": "Floor 2 East",
+          "position": [14, 4.8, 0]
+        },
+        {
+          "id": "floor3",
+          "label": "Floor 3",
+          "position": [0, 8.8, 18]
+        },
+        {
+          "id": "floor3-west",
+          "label": "Floor 3 West",
+          "position": [-14, 8.8, 0]
+        },
+        {
+          "id": "floor3-east",
+          "label": "Floor 3 East",
+          "position": [14, 8.8, 0]
+        },
+        {
+          "id": "roof-exit",
+          "label": "Roof Exit",
+          "position": [0, 8.8, -28]
+        }
+      ],
+      "actorSpawns": [
+        {
+          "id": "seeker-a",
+          "role": "seeker",
+          "position": [0, 1.2, -8],
+          "patrol": ["floor1-west", "lobby", "floor1-east", "stair-base"]
+        },
+        {
+          "id": "guard-a",
+          "role": "guard",
+          "position": [-8, 4.8, 4],
+          "patrol": ["floor2-west", "floor2", "floor2-east"]
+        },
+        {
+          "id": "guard-b",
+          "role": "guard",
+          "position": [8, 8.8, 4],
+          "patrol": ["floor3-east", "floor3", "floor3-west", "roof-exit"]
+        }
+      ],
+      "lod": {
+        "mobileObjectBudget": 40,
+        "desktopObjectBudget": 104,
+        "shadowDistance": 72
+      }
+    },
+    {
+      "id": "axiom",
+      "index": 6,
+      "name": "Axiom Research Facility",
+      "mode": {
+        "id": "traitor",
+        "name": "Traitor",
+        "summary": "Complete research tasks, compare evidence and expose the hidden traitor before sabotage finishes.",
+        "success": "Traitor evidence chain complete."
+      },
+      "worldBounds": {
+        "min": [-62, -4, -62],
+        "max": [62, 16, 62]
+      },
+      "spawn": [0, 2.2, 52],
+      "lighting": {
+        "ambient": [0.18, 0.21, 0.26],
+        "sun": [0.62, 0.82, 1],
+        "fill": [0.72, 0.4, 1],
+        "clear": [0.018, 0.028, 0.05],
+        "sunIntensity": 1.08,
+        "fillIntensity": 0.34,
+        "sunAngles": [58, 22, 0],
+        "fillAngles": [18, -135, 0]
+      },
+      "structures": [
+        {
+          "id": "north-wall",
+          "position": [0, 4, -54],
+          "size": [108, 8, 1]
+        },
+        {
+          "id": "south-wall",
+          "position": [0, 4, 54],
+          "size": [108, 8, 1]
+        },
+        {
+          "id": "east-wall",
+          "position": [54, 4, 0],
+          "size": [1, 8, 108]
+        },
+        {
+          "id": "west-wall",
+          "position": [-54, 4, 0],
+          "size": [1, 8, 108]
+        },
+        {
+          "id": "lab-west",
+          "position": [-34, 3, 14],
+          "size": [20, 6, 26]
+        },
+        {
+          "id": "lab-east",
+          "position": [34, 3, 14],
+          "size": [20, 6, 26]
+        },
+        {
+          "id": "lab-west-north",
+          "position": [-34, 3, -20],
+          "size": [20, 6, 24]
+        },
+        {
+          "id": "lab-east-north",
+          "position": [34, 3, -20],
+          "size": [20, 6, 24]
+        },
+        {
+          "id": "reactor-shell",
+          "position": [0, 4, -38],
+          "size": [24, 8, 20]
+        },
+        {
+          "id": "command-shell",
+          "position": [0, 3, 34],
+          "size": [26, 6, 14]
+        },
+        {
+          "id": "cleanroom-core",
+          "position": [0, 2.7, 0],
+          "size": [16, 5.4, 16]
+        }
+      ],
+      "props": [
+        {
+          "id": "reactor-core",
+          "position": [0, 2.6, -38],
+          "size": [6, 5.2, 6]
+        },
+        {
+          "id": "console-west",
+          "position": [-14, 1.1, 10],
+          "size": [4, 2.2, 1.5]
+        },
+        {
+          "id": "console-east",
+          "position": [14, 1.1, 10],
+          "size": [4, 2.2, 1.5]
+        },
+        {
+          "id": "specimen-a",
+          "position": [-18, 1.8, -18],
+          "size": [2.4, 3.6, 2.4],
+          "decorative": true
+        },
+        {
+          "id": "specimen-b",
+          "position": [18, 1.8, -18],
+          "size": [2.4, 3.6, 2.4],
+          "decorative": true
+        }
+      ],
+      "doors": [
+        {
+          "id": "facility-entry",
+          "label": "Facility Airlock",
+          "position": [0, 2, 53.2],
+          "size": [7, 4, 0.5],
+          "radius": 4.2,
+          "blocking": true
+        },
+        {
+          "id": "reactor-airlock",
+          "label": "Reactor Airlock",
+          "position": [0, 2, -27.8],
+          "size": [5, 4, 0.5],
+          "radius": 3.4,
+          "blocking": true
+        },
+        {
+          "id": "cleanroom-door",
+          "label": "Cleanroom Door",
+          "position": [0, 1.8, 8.2],
+          "size": [4, 3.6, 0.4],
+          "radius": 3,
+          "blocking": true
+        }
+      ],
+      "hidingSpots": [
+        {
+          "id": "command-rack",
+          "label": "Command rack",
+          "position": [-14, 1.2, 26],
+          "radius": 2
+        },
+        {
+          "id": "west-lab-cabinet",
+          "label": "West lab cabinet",
+          "position": [-22, 1.2, 14],
+          "radius": 2.2
+        },
+        {
+          "id": "east-lab-cabinet",
+          "label": "East lab cabinet",
+          "position": [22, 1.2, 14],
+          "radius": 2.2
+        },
+        {
+          "id": "specimen-bay",
+          "label": "Specimen bay",
+          "position": [-17, 1.2, -18],
+          "radius": 2.2
+        },
+        {
+          "id": "reactor-maintenance",
+          "label": "Reactor maintenance",
+          "position": [14, 1.2, -38],
+          "radius": 2.3
+        }
+      ],
+      "objectives": [
+        {
+          "id": "task-west",
+          "label": "West Lab Console",
+          "action": "COMPLETE",
+          "position": [-16, 1.2, 10],
+          "radius": 2.4
+        },
+        {
+          "id": "task-east",
+          "label": "East Lab Console",
+          "action": "COMPLETE",
+          "position": [16, 1.2, 10],
+          "radius": 2.4
+        },
+        {
+          "id": "task-reactor",
+          "label": "Reactor Diagnostic",
+          "action": "COMPLETE",
+          "position": [0, 1.2, -25],
+          "radius": 2.5
+        },
+        {
+          "id": "evidence-terminal",
+          "label": "Evidence Terminal",
+          "action": "SCAN",
+          "position": [0, 1.2, 25],
+          "radius": 2.5
+        }
+      ],
+      "navNodes": [
+        {
+          "id": "entry",
+          "label": "Facility Airlock",
+          "position": [0, 1.2, 48]
+        },
+        {
+          "id": "command",
+          "label": "Command",
+          "position": [0, 1.2, 25]
+        },
+        {
+          "id": "junction",
+          "label": "Central Junction",
+          "position": [0, 1.2, 12]
+        },
+        {
+          "id": "west-lab",
+          "label": "West Lab",
+          "position": [-22, 1.2, 14]
+        },
+        {
+          "id": "east-lab",
+          "label": "East Lab",
+          "position": [22, 1.2, 14]
+        },
+        {
+          "id": "cleanroom",
+          "label": "Cleanroom",
+          "position": [0, 1.2, 10]
+        },
+        {
+          "id": "west-specimen",
+          "label": "West Specimen",
+          "position": [-22, 1.2, -18]
+        },
+        {
+          "id": "east-specimen",
+          "label": "East Specimen",
+          "position": [22, 1.2, -18]
+        },
+        {
+          "id": "reactor",
+          "label": "Reactor",
+          "position": [0, 1.2, -25]
+        },
+        {
+          "id": "maintenance",
+          "label": "Maintenance",
+          "position": [0, 1.2, -50]
+        }
+      ],
+      "actorSpawns": [
+        {
+          "id": "scientist-a",
+          "role": "civilian",
+          "position": [-8, 1.2, 24],
+          "patrol": ["command", "junction", "west-lab", "cleanroom"]
+        },
+        {
+          "id": "scientist-b",
+          "role": "civilian",
+          "position": [10, 1.2, 18],
+          "patrol": ["command", "junction", "east-lab", "cleanroom"]
+        },
+        {
+          "id": "security-a",
+          "role": "guard",
+          "position": [0, 1.2, -10],
+          "patrol": ["cleanroom", "west-specimen", "reactor", "east-specimen"]
+        },
+        {
+          "id": "traitor-a",
+          "role": "traitor",
+          "position": [4, 1.2, -24],
+          "patrol": ["east-specimen", "reactor", "junction", "command"]
+        }
+      ],
+      "lod": {
+        "mobileObjectBudget": 36,
+        "desktopObjectBudget": 92,
+        "shadowDistance": 80
+      }
+    }
+  ]
+}

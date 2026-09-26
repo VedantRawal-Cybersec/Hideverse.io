@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.join(here, 'dist');
 const port = Number.parseInt(process.env.PORT ?? '4173', 10);
+const rooms = new Map();
 
 const mime = new Map([
   ['.html', 'text/html; charset=utf-8'],
@@ -31,6 +32,211 @@ function resolveRequest(urlPath) {
   return resolved.startsWith(dist) ? resolved : null;
 }
 
+function apiHeaders() {
+  return {
+    'content-type': 'application/json; charset=utf-8',
+    'cache-control': 'no-store',
+    'access-control-allow-origin': '*',
+    'access-control-allow-methods': 'GET,POST,OPTIONS',
+    'access-control-allow-headers': 'content-type',
+  };
+}
+
+function sendJson(res, status, value) {
+  res.writeHead(status, apiHeaders());
+  res.end(JSON.stringify(value));
+}
+
+function sanitizeToken(value, fallback) {
+  const normalized = String(value ?? fallback)
+    .toUpperCase()
+    .replace(/[^A-Z0-9-]/g, '')
+    .slice(0, 24);
+  return normalized || fallback;
+}
+
+async function readJson(req) {
+  const chunks = [];
+  let bytes = 0;
+  for await (const chunk of req) {
+    bytes += chunk.length;
+    if (bytes > 16_384) throw new Error('payload too large');
+    chunks.push(chunk);
+  }
+  const text = Buffer.concat(chunks).toString('utf8');
+  return text ? JSON.parse(text) : {};
+}
+
+function roomKey(map, room) {
+  return `${map}:${room}`;
+}
+
+function getRoom(map, room) {
+  const key = roomKey(map, room);
+  let current = rooms.get(key);
+  if (!current) {
+    current = { map, room, players: new Map(), createdAt: Date.now() };
+    rooms.set(key, current);
+  }
+  return current;
+}
+
+function pruneRoom(room) {
+  const staleBefore = Date.now() - 30_000;
+  for (const [playerId, state] of room.players) {
+    if (state.serverUpdatedAt < staleBefore) room.players.delete(playerId);
+  }
+}
+
+function resolveMatchRoom(map) {
+  for (let index = 1; index <= 99; index += 1) {
+    const roomCode = `MATCH-${String(index).padStart(2, '0')}`;
+    const room = getRoom(map, roomCode);
+    pruneRoom(room);
+    if (room.players.size < 8) return roomCode;
+  }
+  return `MATCH-${Date.now().toString(36).toUpperCase().slice(-5)}`;
+}
+
+function validPosition(position) {
+  return (
+    Array.isArray(position) &&
+    position.length === 3 &&
+    position.every((value) => Number.isFinite(value) && Math.abs(value) <= 1000)
+  );
+}
+
+function stateDistance(a, b) {
+  return Math.hypot(
+    a.position[0] - b.position[0],
+    a.position[1] - b.position[1],
+    a.position[2] - b.position[2],
+  );
+}
+
+async function handleMultiplayer(req, res, url) {
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, apiHeaders());
+    res.end();
+    return true;
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/multiplayer/health') {
+    sendJson(res, 200, { ok: true, rooms: rooms.size, maxRoomSize: 8 });
+    return true;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/multiplayer/join') {
+    const body = await readJson(req);
+    const map = sanitizeToken(body.map, 'RAVENWOOD').toLowerCase();
+    const requestedRoom = sanitizeToken(body.room, 'LOCAL');
+    const roomCode = requestedRoom === 'MATCH' ? resolveMatchRoom(map) : requestedRoom;
+    const playerId = String(body.playerId ?? '').slice(0, 80);
+    if (!playerId) {
+      sendJson(res, 400, { error: 'playerId required' });
+      return true;
+    }
+
+    const room = getRoom(map, roomCode);
+    pruneRoom(room);
+    if (!room.players.has(playerId) && room.players.size >= 8) {
+      sendJson(res, 409, { error: 'room full' });
+      return true;
+    }
+
+    const now = Date.now();
+    room.players.set(playerId, {
+      playerId,
+      map,
+      room: roomCode,
+      position: [0, 2, 0],
+      yaw: 0,
+      motion: 'idle',
+      serverUpdatedAt: now,
+      updatedAt: now,
+    });
+
+    sendJson(res, 200, {
+      room: roomCode,
+      map,
+      playerId,
+      peers: room.players.size - 1,
+      maxPlayers: 8,
+    });
+    return true;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/multiplayer/state') {
+    const body = await readJson(req);
+    const map = sanitizeToken(body.map, 'RAVENWOOD').toLowerCase();
+    const roomCode = sanitizeToken(body.room, 'LOCAL');
+    const playerId = String(body.playerId ?? '').slice(0, 80);
+    if (!playerId || !validPosition(body.position)) {
+      sendJson(res, 400, { error: 'invalid state' });
+      return true;
+    }
+
+    const room = getRoom(map, roomCode);
+    pruneRoom(room);
+    const previous = room.players.get(playerId);
+    if (!previous) {
+      sendJson(res, 403, { error: 'join room first' });
+      return true;
+    }
+
+    const now = Date.now();
+    const elapsed = Math.max(0.05, (now - previous.serverUpdatedAt) / 1000);
+    const requested = {
+      playerId,
+      map,
+      room: roomCode,
+      position: body.position.map((value) => Number(value)),
+      yaw: Number.isFinite(body.yaw) ? Number(body.yaw) : 0,
+      motion: ['idle', 'walk', 'run', 'sprint', 'jump'].includes(body.motion)
+        ? body.motion
+        : 'idle',
+      serverUpdatedAt: now,
+      updatedAt: now,
+    };
+
+    const maxTravel = 4 + elapsed * 12;
+    if (stateDistance(previous, requested) > maxTravel) {
+      sendJson(res, 422, { error: 'movement rejected', reason: 'speed envelope exceeded' });
+      return true;
+    }
+
+    room.players.set(playerId, requested);
+    sendJson(res, 200, { ok: true, serverUpdatedAt: now });
+    return true;
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/multiplayer/room') {
+    const map = sanitizeToken(url.searchParams.get('map'), 'RAVENWOOD').toLowerCase();
+    const roomCode = sanitizeToken(url.searchParams.get('room'), 'LOCAL');
+    const playerId = String(url.searchParams.get('playerId') ?? '').slice(0, 80);
+    const room = getRoom(map, roomCode);
+    pruneRoom(room);
+
+    const peers = [...room.players.values()]
+      .filter((state) => state.playerId !== playerId)
+      .map(({ serverUpdatedAt, ...state }) => ({
+        ...state,
+        updatedAt: serverUpdatedAt,
+      }));
+
+    sendJson(res, 200, {
+      room: roomCode,
+      map,
+      peers,
+      playerCount: room.players.size,
+      maxPlayers: 8,
+    });
+    return true;
+  }
+
+  return false;
+}
+
 async function send(res, filePath) {
   const data = await readFile(filePath);
   const ext = path.extname(filePath).toLowerCase();
@@ -46,6 +252,13 @@ async function send(res, filePath) {
 
 const server = createServer(async (req, res) => {
   try {
+    const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
+    if (url.pathname.startsWith('/api/multiplayer/')) {
+      const handled = await handleMultiplayer(req, res, url);
+      if (!handled) sendJson(res, 404, { error: 'not found' });
+      return;
+    }
+
     const requested = resolveRequest(req.url ?? '/');
     if (!requested) return res.writeHead(400).end('Bad request');
 
@@ -64,10 +277,14 @@ const server = createServer(async (req, res) => {
     await send(res, file);
   } catch (error) {
     console.error('[Hideverse web server]', error);
-    res.writeHead(500).end('Internal server error');
+    if (!res.headersSent) {
+      sendJson(res, 500, { error: 'internal server error' });
+    } else {
+      res.end();
+    }
   }
 });
 
 server.listen(port, '0.0.0.0', () => {
-  console.log(`[Hideverse web] live site listening on :${port}`);
+  console.log(`[Hideverse web] site + authoritative room API listening on :${port}`);
 });
