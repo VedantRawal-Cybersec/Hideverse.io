@@ -3,6 +3,13 @@ export type MoveAxes = {
   z: number;
 };
 
+const sensitivityKey = 'hideverse-look-sensitivity';
+
+function readSensitivity(): number {
+  const saved = Number.parseFloat(localStorage.getItem(sensitivityKey) ?? '1');
+  return Number.isFinite(saved) ? Math.max(0.55, Math.min(1.7, saved)) : 1;
+}
+
 export class InputController {
   private readonly keys = new Set<string>();
   private joystickX = 0;
@@ -16,16 +23,20 @@ export class InputController {
   private touchLookPointer: number | null = null;
   private touchLookX = 0;
   private touchLookY = 0;
+  private lookSensitivity = readSensitivity();
 
   constructor(private readonly canvas: HTMLCanvasElement) {
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
+    window.addEventListener('blur', this.resetTransientInput);
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
     document.addEventListener('mousemove', this.onMouseMove);
     canvas.addEventListener('click', this.onCanvasClick);
     canvas.addEventListener('pointerdown', this.onCanvasPointerDown);
     canvas.addEventListener('pointermove', this.onCanvasPointerMove);
     canvas.addEventListener('pointerup', this.onCanvasPointerUp);
     canvas.addEventListener('pointercancel', this.onCanvasPointerUp);
+    canvas.addEventListener('contextmenu', (event) => event.preventDefault());
 
     this.bindJoystick();
     this.bindButton('mobile-jump', () => {
@@ -48,6 +59,10 @@ export class InputController {
 
   get pitch(): number {
     return this.pitchValue;
+  }
+
+  get sensitivity(): number {
+    return this.lookSensitivity;
   }
 
   get sprint(): boolean {
@@ -76,6 +91,11 @@ export class InputController {
     return { x, z };
   }
 
+  setLookSensitivity(value: number): void {
+    this.lookSensitivity = Math.max(0.55, Math.min(1.7, value));
+    localStorage.setItem(sensitivityKey, this.lookSensitivity.toFixed(2));
+  }
+
   consumeJump(): boolean {
     const queued = this.jumpQueued;
     this.jumpQueued = false;
@@ -92,6 +112,15 @@ export class InputController {
     if (!this.keys.has('KeyR')) return false;
     this.keys.delete('KeyR');
     return true;
+  }
+
+  dispose(): void {
+    window.removeEventListener('keydown', this.onKeyDown);
+    window.removeEventListener('keyup', this.onKeyUp);
+    window.removeEventListener('blur', this.resetTransientInput);
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    document.removeEventListener('mousemove', this.onMouseMove);
+    this.resetTransientInput();
   }
 
   private onKeyDown = (event: KeyboardEvent): void => {
@@ -127,6 +156,7 @@ export class InputController {
     this.touchLookX = event.clientX;
     this.touchLookY = event.clientY;
     this.canvas.setPointerCapture(event.pointerId);
+    event.preventDefault();
   };
 
   private onCanvasPointerMove = (event: PointerEvent): void => {
@@ -136,6 +166,7 @@ export class InputController {
     this.touchLookX = event.clientX;
     this.touchLookY = event.clientY;
     this.applyLook(dx, dy, 0.16);
+    event.preventDefault();
   };
 
   private onCanvasPointerUp = (event: PointerEvent): void => {
@@ -144,9 +175,23 @@ export class InputController {
     }
   };
 
+  private onVisibilityChange = (): void => {
+    if (document.hidden) this.resetTransientInput();
+  };
+
+  private resetTransientInput = (): void => {
+    this.keys.clear();
+    this.joystickX = 0;
+    this.joystickZ = 0;
+    this.sprintTouch = false;
+    this.crouchTouch = false;
+    this.touchLookPointer = null;
+  };
+
   private applyLook(dx: number, dy: number, sensitivity: number): void {
-    this.yawValue -= dx * sensitivity;
-    this.pitchValue = Math.max(-84, Math.min(84, this.pitchValue - dy * sensitivity));
+    const scaled = sensitivity * this.lookSensitivity;
+    this.yawValue -= dx * scaled;
+    this.pitchValue = Math.max(-84, Math.min(84, this.pitchValue - dy * scaled));
   }
 
   private bindJoystick(): void {
@@ -177,11 +222,13 @@ export class InputController {
       activePointer = event.pointerId;
       base.setPointerCapture(event.pointerId);
       update(event);
+      event.preventDefault();
       event.stopPropagation();
     });
     base.addEventListener('pointermove', (event) => {
       if (event.pointerId !== activePointer) return;
       update(event);
+      event.preventDefault();
       event.stopPropagation();
     });
     const release = (event: PointerEvent): void => {
@@ -190,6 +237,7 @@ export class InputController {
       this.joystickX = 0;
       this.joystickZ = 0;
       knob.style.transform = 'translate(0, 0)';
+      event.preventDefault();
       event.stopPropagation();
     };
     base.addEventListener('pointerup', release);
