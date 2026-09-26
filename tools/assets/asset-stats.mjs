@@ -2,7 +2,9 @@ import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 
-const manifest = JSON.parse(await readFile(new URL('../../assets/manifest.json', import.meta.url), 'utf8'));
+const manifest = JSON.parse(
+  await readFile(new URL('../../assets/manifest.json', import.meta.url), 'utf8'),
+);
 const acquired = manifest.assets.filter((asset) => asset.status === 'acquired');
 const files = [...new Set(acquired.flatMap((asset) => asset.localFiles))];
 let bytes = 0;
@@ -12,7 +14,9 @@ for (const relative of files) {
   const info = await stat(path.resolve(process.cwd(), relative));
   bytes += info.size;
   if (info.size > manifest.policy.maxRuntimeFileBytes) {
-    errors.push(`${relative}: ${info.size} bytes exceeds ${manifest.policy.maxRuntimeFileBytes}`);
+    errors.push(
+      `${relative}: ${info.size} bytes exceeds ${manifest.policy.maxRuntimeFileBytes}`,
+    );
   }
 }
 
