@@ -100,11 +100,18 @@ const palettes: Palette[] = [
   },
 ];
 
-function material(color: Triplet): StandardMaterial {
+function material(
+  color: Triplet,
+  options: { metalness?: number; gloss?: number; emissive?: number } = {},
+): StandardMaterial {
   const result = new StandardMaterial();
   result.diffuse = new Color(color[0], color[1], color[2]);
-  result.metalness = 0.05;
-  result.gloss = 0.35;
+  result.metalness = options.metalness ?? 0.05;
+  result.gloss = options.gloss ?? 0.35;
+  if ((options.emissive ?? 0) > 0) {
+    result.emissive = new Color(color[0], color[1], color[2]);
+    result.emissiveIntensity = options.emissive ?? 0;
+  }
   result.update();
   return result;
 }
@@ -256,10 +263,14 @@ async function buildProceduralMap(
 ): Promise<MapRuntime> {
   const coarse = matchMedia('(pointer: coarse)').matches;
   const palette = palettes[Math.max(0, Math.min(palettes.length - 1, map.index - 1))]!;
-  const architectureMaterial = material(palette.architecture);
-  const propMaterial = material(palette.prop);
-  const accentMaterial = material(palette.accent);
-  const groundMaterial = material(palette.ground);
+  const architectureMaterial = material(palette.architecture, { metalness: 0.02, gloss: 0.26 });
+  const propMaterial = material(palette.prop, { metalness: 0.12, gloss: 0.42 });
+  const accentMaterial = material(palette.accent, {
+    metalness: 0.28,
+    gloss: 0.62,
+    emissive: 0.16,
+  });
+  const groundMaterial = material(palette.ground, { metalness: 0.01, gloss: 0.18 });
   const budget = coarse ? map.lod.mobileObjectBudget : map.lod.desktopObjectBudget;
 
   onStatus(`Building ${map.name} architecture…`);
@@ -295,6 +306,24 @@ async function buildProceduralMap(
     marker.setPosition(objective.position[0], objective.position[1] + 0.7, objective.position[2]);
     if (marker.render) marker.render.material = accentMaterial;
     app.root.addChild(marker);
+
+    if (!coarse && objectCount < budget + 3) {
+      const light = new Entity(`objective-light-${objective.id}`);
+      light.addComponent('light', {
+        type: 'omni',
+        color: new Color(palette.accent[0], palette.accent[1], palette.accent[2]),
+        intensity: 0.55,
+        range: 7,
+        castShadows: false,
+      });
+      light.setPosition(
+        objective.position[0],
+        objective.position[1] + 1.8,
+        objective.position[2],
+      );
+      app.root.addChild(light);
+    }
+
     objectCount += 1;
   }
 
