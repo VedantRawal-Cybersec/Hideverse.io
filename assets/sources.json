@@ -48,6 +48,31 @@
         "Ravenwood base architecture candidate"
       ],
       "officialAssetUrl": "https://opengameart.org/content/3d-tileset-mansion"
+    },
+    {
+      "id": "kaykit-dungeon",
+      "name": "KayKit Dungeon Remastered 1.0",
+      "licensePolicy": "CC0-1.0",
+      "useFor": [
+        "doors",
+        "arches",
+        "stairs",
+        "basement props"
+      ],
+      "selectedRepo": "KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0",
+      "sourceCommit": "b0ca9bd96a8072ab36a3a5464f00ed1e06a16d07"
+    },
+    {
+      "id": "kaykit-city",
+      "name": "KayKit City Builder Bits 1.0",
+      "licensePolicy": "CC0-1.0",
+      "useFor": [
+        "benches",
+        "streetlights",
+        "urban/exterior props"
+      ],
+      "selectedRepo": "KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0",
+      "sourceCommit": "63976910ca04d16f0fc531b9c614244be8128713"
     }
   ]
 }
