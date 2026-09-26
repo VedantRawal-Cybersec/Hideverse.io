@@ -25,7 +25,7 @@ if (!app) throw new Error('Hideverse website root is missing.');
 
 app.innerHTML = `
   <header class="nav shell">
-    <a class="brand" href="/" aria-label="Hideverse home">
+    <a class="brand" href="${siteBase}" aria-label="Hideverse home">
       <span class="brand-mark">H</span>
       <span>HIDEVERSE.IO</span>
     </a>
@@ -57,7 +57,7 @@ app.innerHTML = `
           <div><span>ENGINE</span><strong>PlayCanvas</strong></div>
           <div><span>PHYSICS</span><strong>Rapier 3D</strong></div>
           <div><span>AI BASE</span><strong>Yuka</strong></div>
-          <div><span>DEPLOY</span><strong>Railway</strong></div>
+          <div><span>DEPLOY</span><strong>GitHub Pages</strong></div>
         </div>
         <p>Every verified change merged to <code>main</code> is intended to become visible here.</p>
       </div>

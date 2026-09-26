@@ -24,7 +24,8 @@
     "assets:verify": "npm run assets:validate-manifest && npm run assets:validate-gltf && npm run assets:stats",
     "dev:web": "npm run dev --workspace @hideverse/web",
     "build:live": "npm run build --workspace @hideverse/game && npm run build --workspace @hideverse/web",
-    "stackblitz": "npm run build:live && npm run start --workspace @hideverse/web"
+    "stackblitz": "npm run build:live && npm run start --workspace @hideverse/web",
+    "build:pages": "npm run build:pages --workspace @hideverse/game && npm run build:pages --workspace @hideverse/web"
   },
   "devDependencies": {
     "prettier": "3.9.9",
