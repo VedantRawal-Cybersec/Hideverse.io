@@ -12,14 +12,19 @@ import { FirstPersonController } from './core/player-controller';
 import { buildRavenwood } from './maps/ravenwood/ravenwood';
 import './styles.css';
 
-const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas');
-const mapStatus = document.querySelector<HTMLSpanElement>('#map-status');
-const fpsValue = document.querySelector<HTMLSpanElement>('#fps-value');
-const bootOverlay = document.querySelector<HTMLDivElement>('#boot-overlay');
+const canvasQuery = document.querySelector<HTMLCanvasElement>('#game-canvas');
+const mapStatusQuery = document.querySelector<HTMLSpanElement>('#map-status');
+const fpsValueQuery = document.querySelector<HTMLSpanElement>('#fps-value');
+const bootOverlayQuery = document.querySelector<HTMLDivElement>('#boot-overlay');
 
-if (!canvas || !mapStatus || !fpsValue || !bootOverlay) {
+if (!canvasQuery || !mapStatusQuery || !fpsValueQuery || !bootOverlayQuery) {
   throw new Error('Hideverse Ravenwood DOM is incomplete.');
 }
+
+const canvas = canvasQuery;
+const mapStatus = mapStatusQuery;
+const fpsValue = fpsValueQuery;
+const bootOverlay = bootOverlayQuery;
 
 function setMapStatus(message: string): void {
   mapStatus.textContent = message;
