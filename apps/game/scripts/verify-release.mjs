@@ -2,16 +2,31 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const root = path.resolve(import.meta.dirname, '..');
-const [catalogText, html, main, performanceManager, multiplayer, characters, manifestText] =
-  await Promise.all([
-    readFile(path.join(root, 'src/maps/map-data.json'), 'utf8'),
-    readFile(path.join(root, 'index.html'), 'utf8'),
-    readFile(path.join(root, 'src/main.ts'), 'utf8'),
-    readFile(path.join(root, 'src/core/performance-manager.ts'), 'utf8'),
-    readFile(path.join(root, 'src/core/multiplayer-client.ts'), 'utf8'),
-    readFile(path.join(root, 'src/core/character-system.ts'), 'utf8'),
-    readFile(path.resolve(root, '../../assets/manifest.json'), 'utf8'),
-  ]);
+const [
+  catalogText,
+  html,
+  main,
+  performanceManager,
+  multiplayer,
+  characters,
+  playerController,
+  playerAvatar,
+  graphicsPipeline,
+  proceduralMap,
+  manifestText,
+] = await Promise.all([
+  readFile(path.join(root, 'src/maps/map-data.json'), 'utf8'),
+  readFile(path.join(root, 'index.html'), 'utf8'),
+  readFile(path.join(root, 'src/main.ts'), 'utf8'),
+  readFile(path.join(root, 'src/core/performance-manager.ts'), 'utf8'),
+  readFile(path.join(root, 'src/core/multiplayer-client.ts'), 'utf8'),
+  readFile(path.join(root, 'src/core/character-system.ts'), 'utf8'),
+  readFile(path.join(root, 'src/core/player-controller.ts'), 'utf8'),
+  readFile(path.join(root, 'src/core/player-avatar.ts'), 'utf8'),
+  readFile(path.join(root, 'src/core/graphics-pipeline.ts'), 'utf8'),
+  readFile(path.join(root, 'src/maps/procedural-map.ts'), 'utf8'),
+  readFile(path.resolve(root, '../../assets/manifest.json'), 'utf8'),
+]);
 
 const catalog = JSON.parse(catalogText);
 const manifest = JSON.parse(manifestText);
@@ -34,6 +49,8 @@ for (const marker of [
   'id="mobile-crouch"',
   'id="mobile-interact"',
   'id="mobile-jump"',
+  'id="mobile-pov"',
+  'id="view-value"',
   'id="quality-select"',
   'id="sensitivity-slider"',
   'id="round-result"',
@@ -43,6 +60,8 @@ for (const marker of [
 
 for (const marker of [
   'PerformanceManager',
+  'GraphicsPipeline',
+  'PlayerAvatar',
   'roundElapsedSeconds',
   'consumeRemoteObjectives',
   'setMovementLocked',
@@ -64,22 +83,64 @@ for (const marker of [
   if (!multiplayer.includes(marker)) fail(`multiplayer release runtime missing ${marker}`);
 }
 
-const riggedCharacter = manifest.assets?.find(
-  (asset) => asset.id === 'kaykit-character-rogue-hooded' && asset.status === 'acquired',
-);
-if (!riggedCharacter) fail('rigged CC0 desktop character asset is not registered');
+for (const marker of [
+  'Vec3.FORWARD',
+  'Vec3.RIGHT',
+  'KinematicCharacterController',
+  'togglePerspective',
+  "'third-person'",
+  'segmentAabbHit',
+]) {
+  if (!playerController.includes(marker)) fail(`player controller missing ${marker}`);
+}
 
 for (const marker of [
-  'Rogue_Hooded.glb',
-  "tracks.get('Idle')",
+  'Rogue.glb',
   "tracks.get('Walking_A')",
   "tracks.get('Running_A')",
-  "assignAnimation('idle'",
-  "matchMedia('(pointer: coarse)')",
+  "tracks.get('Jump_Full_Short')",
+  "tracks.get('Cheer')",
 ]) {
-  if (!characters.includes(marker)) fail(`rigged character runtime missing ${marker}`);
+  if (!playerAvatar.includes(marker)) fail(`third-person player avatar missing ${marker}`);
+}
+
+for (const marker of [
+  "toneMapping = 'aces'",
+  "ssao.type = low ? 'none' : 'lighting'",
+  'bloom.enabled = !low',
+  'taa.enabled = high',
+]) {
+  if (!graphicsPipeline.includes(marker)) fail(`graphics pipeline missing ${marker}`);
+}
+
+for (const marker of [
+  'materials/cc0/concrete.png',
+  'materials/cc0/walnut.png',
+  'materials/cc0/tiles.png',
+  'diffuseMapTiling',
+]) {
+  if (!proceduralMap.includes(marker)) fail(`PBR material runtime missing ${marker}`);
+}
+
+for (const marker of ['AStar', 'NavNode', 'NavEdge', 'roleModels']) {
+  if (!characters.includes(marker)) fail(`role navigation/variety missing ${marker}`);
+}
+
+const requiredAssets = [
+  'kaykit-character-rogue-hooded',
+  'kaykit-character-rogue',
+  'kaykit-character-knight',
+  'kaykit-character-mage',
+  'kaykit-character-barbarian',
+  'vrm-seed-san-expression-reference',
+  'cc0-map-surface-textures',
+  'khronos-neutral-environment',
+];
+for (const id of requiredAssets) {
+  const asset = manifest.assets?.find((candidate) => candidate.id === id && candidate.status === 'acquired');
+  if (!asset) fail(`required production asset is not registered: ${id}`);
 }
 
 console.log(
-  `[release-qa] PASS — ${catalog.maps.length} maps, mobile budgets, adaptive rendering, touch controls, shared objectives, replay flow, realtime room sync and rigged desktop locomotion verified.`,
+  `[release-qa] PASS — ${catalog.maps.length} maps, adaptive mobile rendering, FPS/TPS physics, animated player/avatar variety, Yuka navigation, CC0 map materials, CameraFrame graphics, shared multiplayer objectives and replay flow verified.`,
 );
