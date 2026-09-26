@@ -326,12 +326,15 @@ async function streamMansionDetail(
 function buildPlayableMansionShell(
   app: Application,
   world: RAPIER.World,
-  materials: Required<Pick<SurfaceMaterialSet, 'wall' | 'trim' | 'floor'>>,
+  materials: Required<Pick<SurfaceMaterialSet, 'wall' | 'trim' | 'floor' | 'metal' | 'wood'>>,
 ): Entity[] {
   const shell: Entity[] = [];
   const wallMaterial = materials.wall;
   const trimMaterial = materials.trim;
   const floorMaterial = materials.floor;
+  const metalMaterial = materials.metal;
+  const woodMaterial = materials.wood;
+  const glassMaterial = createReferenceMaterial('metal', [0.13, 0.24, 0.29]);
 
   const createPart = (
     name: string,
@@ -369,6 +372,33 @@ function buildPlayableMansionShell(
   createPart('ravenwood-shell-roof', [24.8, 0.34, 22.8], [0, 6.35, 2], trimMaterial);
   createPart('ravenwood-shell-porch', [13, 0.24, 5], [0, 0.12, 15], floorMaterial);
   createPart('ravenwood-shell-foundation', [24.4, 0.35, 22.4], [0, 0.18, 2], trimMaterial);
+
+  // Porch columns, steps, windows and framing make the lightweight/mobile shell read as
+  // an actual mansion instead of a flat collision box.
+  for (const x of [-5.3, -1.8, 1.8, 5.3]) {
+    createPart(`ravenwood-porch-column-${x}`, [0.34, 4.7, 0.34], [x, 2.35, 14.7], trimMaterial);
+  }
+
+  createPart('ravenwood-front-step-1', [8.8, 0.22, 1.2], [0, 0.11, 17.2], floorMaterial);
+  createPart('ravenwood-front-step-2', [7.4, 0.2, 1], [0, 0.28, 16.45], trimMaterial);
+  createPart('ravenwood-front-door-frame-top', [3, 0.28, 0.34], [0, 3.35, 12.62], woodMaterial);
+  createPart('ravenwood-front-door-frame-left', [0.25, 3.6, 0.34], [-1.35, 1.75, 12.62], woodMaterial);
+  createPart('ravenwood-front-door-frame-right', [0.25, 3.6, 0.34], [1.35, 1.75, 12.62], woodMaterial);
+
+  const frontWindows = [-8.5, -4.8, 4.8, 8.5];
+  for (const x of frontWindows) {
+    createPart(`ravenwood-front-window-${x}`, [2.2, 1.8, 0.16], [x, 3.5, 12.61], glassMaterial);
+    createPart(`ravenwood-front-window-top-${x}`, [2.65, 0.18, 0.24], [x, 4.48, 12.58], trimMaterial);
+    createPart(`ravenwood-front-window-bottom-${x}`, [2.65, 0.18, 0.24], [x, 2.52, 12.58], trimMaterial);
+  }
+
+  for (const z of [-4.5, 1.5, 7.5]) {
+    createPart(`ravenwood-west-window-${z}`, [0.16, 1.75, 2.2], [-11.62, 3.45, z], glassMaterial);
+    createPart(`ravenwood-east-window-${z}`, [0.16, 1.75, 2.2], [11.62, 3.45, z], glassMaterial);
+  }
+
+  createPart('ravenwood-porch-rail-left', [4.4, 0.18, 0.18], [-4.2, 1.05, 15.7], metalMaterial);
+  createPart('ravenwood-porch-rail-right', [4.4, 0.18, 0.18], [4.2, 1.05, 15.7], metalMaterial);
 
   createWallCollider(0.35, 3.1, 11, -12, 3.1, 2);
   createWallCollider(0.35, 3.1, 11, 12, 3.1, 2);
@@ -422,6 +452,8 @@ export async function buildRavenwood(
     wall: wallMaterial,
     trim: trimMaterial,
     floor: floorMaterial,
+    metal: metalMaterial,
+    wood: woodMaterial,
   });
 
   window.setTimeout(() => {
