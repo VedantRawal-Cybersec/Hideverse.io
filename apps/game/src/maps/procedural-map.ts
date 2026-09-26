@@ -388,9 +388,12 @@ async function buildProceduralMap(
     `${map.name} ready · ${objectCount} visible runtime objects · ${map.navNodes.length} navigation nodes`,
   );
 
-  window.setTimeout(() => {
-    void loadProgressiveDressing(app, map);
-  }, coarse ? 2600 : 1800);
+  window.setTimeout(
+    () => {
+      void loadProgressiveDressing(app, map);
+    },
+    coarse ? 2600 : 1800,
+  );
   return { doors, objectCount };
 }
 

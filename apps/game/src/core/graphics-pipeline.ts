@@ -1,11 +1,4 @@
-import {
-  Application,
-  CameraFrame,
-  Entity,
-  FOG_EXP,
-  FOG_NONE,
-  TONEMAP_ACES,
-} from 'playcanvas';
+import { Application, CameraFrame, Entity, FOG_EXP, FOG_NONE, TONEMAP_ACES } from 'playcanvas';
 import type { QualityPreset } from './performance-manager';
 import { colorFromTriplet, referenceScene } from './reference-art-direction';
 

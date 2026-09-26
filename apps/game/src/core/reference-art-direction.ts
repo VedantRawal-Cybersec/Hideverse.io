@@ -2,14 +2,7 @@ import { Color, StandardMaterial } from 'playcanvas';
 import type { Triplet } from '../maps/map-catalog';
 
 export type ReferenceMaterialRole =
-  | 'wall'
-  | 'wall-alt'
-  | 'floor'
-  | 'trim'
-  | 'metal'
-  | 'accent'
-  | 'foliage'
-  | 'wood';
+  'wall' | 'wall-alt' | 'floor' | 'trim' | 'metal' | 'accent' | 'foliage' | 'wood';
 
 export const referenceScene = {
   sky: [0.49, 0.68, 0.82] as Triplet,

@@ -2,10 +2,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { Application, Entity, Vec3 } from 'playcanvas';
 import type { RenderComponent } from 'playcanvas';
 import { loadContainer } from '../../core/load-container';
-import {
-  createReferenceMaterial,
-  mapWallTone,
-} from '../../core/reference-art-direction';
+import { createReferenceMaterial, mapWallTone } from '../../core/reference-art-direction';
 import interiorLayout from './interior-layout.json';
 
 export type RavenwoodStatus = (message: string) => void;
@@ -308,7 +305,9 @@ async function streamMansionDetail(
       return;
     }
 
-    onStatus(`Ravenwood visual streamed · scale ${scale.toFixed(3)} · refining high-detail collision…`);
+    onStatus(
+      `Ravenwood visual streamed · scale ${scale.toFixed(3)} · refining high-detail collision…`,
+    );
     await new Promise<void>((resolve) => window.setTimeout(resolve, 1800));
     await buildStaticTrimesh(world, mansion, onStatus);
     onStatus('Ravenwood Mansion fully streamed · high-detail collision active');
