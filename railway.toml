@@ -1,0 +1,10 @@
+[build]
+builder = "RAILPACK"
+buildCommand = "npm install --no-audit --no-fund && npm run build --workspace @hideverse/game"
+
+[deploy]
+startCommand = "npm run start --workspace @hideverse/game"
+healthcheckPath = "/"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
