@@ -346,7 +346,9 @@ export class CharacterSystem {
       const walking = tracks.get('Walking_A');
       const running = tracks.get('Running_A');
       if (!idle || !walking || !running) {
-        console.warn('[Hideverse characters] Rigged character is missing required locomotion clips.');
+        console.warn(
+          '[Hideverse characters] Rigged character is missing required locomotion clips.',
+        );
         return;
       }
 
@@ -396,7 +398,10 @@ export class CharacterSystem {
         }
       }
     } catch (error) {
-      console.warn('[Hideverse characters] Rigged desktop character unavailable; using fallback.', error);
+      console.warn(
+        '[Hideverse characters] Rigged desktop character unavailable; using fallback.',
+        error,
+      );
     }
   }
 
