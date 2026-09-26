@@ -439,7 +439,15 @@ async function send(req, res, filePath) {
   let encoding = '';
 
   if (data.length > 1024 && compressible.has(ext)) {
-    if (/\bbr\b/.test(accepted)) {
+    const largeBundle = data.length > 1_000_000;
+
+    // Large JavaScript bundles are latency-sensitive on the free Render CPU.
+    // Prefer gzip here: it is much faster to produce on a cold process and is cached
+    // after the first response. Smaller text assets still use Brotli when supported.
+    if (largeBundle && /\bgzip\b/.test(accepted)) {
+      encoding = 'gzip';
+      body = await compressedPayload(filePath, data, 'gzip');
+    } else if (/\bbr\b/.test(accepted)) {
       encoding = 'br';
       body = await compressedPayload(filePath, data, 'br');
     } else if (/\bgzip\b/.test(accepted)) {
