@@ -1,0 +1,27 @@
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+
+const here = path.resolve(import.meta.dirname, '..');
+const root = path.resolve(here, '../..');
+const manifest = JSON.parse(await readFile(path.join(root, 'assets/manifest.json'), 'utf8'));
+
+const acquired = manifest.assets.filter((asset) => asset.status === 'acquired');
+const candidates = manifest.assets.filter((asset) => asset.status === 'candidate');
+const runtimeFiles = [...new Set(acquired.flatMap((asset) => asset.localFiles))];
+const sources = acquired.reduce((acc, asset) => {
+  acc[asset.source] = (acc[asset.source] ?? 0) + 1;
+  return acc;
+}, {});
+
+const output = {
+  acquiredAssets: acquired.length,
+  candidateAssets: candidates.length,
+  runtimeFiles: runtimeFiles.length,
+  sources,
+  generatedAt: new Date().toISOString(),
+};
+
+const directory = path.join(here, 'public/data');
+await mkdir(directory, { recursive: true });
+await writeFile(path.join(directory, 'asset-summary.json'), JSON.stringify(output, null, 2) + '\n');
+console.log('[web:prepare] asset summary generated');
