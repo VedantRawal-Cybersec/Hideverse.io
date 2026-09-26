@@ -333,9 +333,12 @@ export class CharacterSystem {
         app,
         `${import.meta.env.BASE_URL}characters/kaykit/Rogue_Hooded.glb`,
       );
+      const resource = asset.resource as typeof asset.resource & {
+        animations: Array<{ resource: AnimTrack }>;
+      };
       const tracks = new Map<string, AnimTrack>();
-      for (const animation of asset.resource.animations) {
-        const track = animation.resource as AnimTrack;
+      for (const animation of resource.animations) {
+        const track = animation.resource;
         tracks.set(track.name, track);
       }
 
@@ -365,7 +368,12 @@ export class CharacterSystem {
         rigged.anim.assignAnimation('idle', idle);
         rigged.anim.assignAnimation('walk', walking);
         rigged.anim.assignAnimation('run', running);
-        rigged.anim.baseLayer.transition('idle', 0);
+        const baseLayer = rigged.anim.baseLayer;
+        if (!baseLayer) {
+          rigged.destroy();
+          continue;
+        }
+        baseLayer.transition('idle', 0);
 
         const marker = new Entity(`role-marker-${actor.id}`);
         marker.addComponent('render', { type: 'cylinder' });
@@ -507,8 +515,9 @@ export class CharacterSystem {
       if (actor.rigged?.anim) {
         const nextState = animationStateForMotion(actor.state);
         actor.rigged.anim.speed = actor.state === 'sprint' ? 1.25 : 1;
-        if (actor.riggedState !== nextState) {
-          actor.rigged.anim.baseLayer.transition(nextState, 0.16);
+        const baseLayer = actor.rigged.anim.baseLayer;
+        if (baseLayer && actor.riggedState !== nextState) {
+          baseLayer.transition(nextState, 0.16);
           actor.riggedState = nextState;
         }
       }
