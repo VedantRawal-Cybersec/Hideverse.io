@@ -1,0 +1,17 @@
+{
+  "name": "@hideverse/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/prepare-site.mjs && vite --host 0.0.0.0",
+    "build": "node scripts/prepare-site.mjs && vite build && node scripts/embed-game.mjs",
+    "start": "node server.mjs",
+    "smoke": "node scripts/verify-build.mjs",
+    "verify": "npm run build && npm run smoke"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "vite": "8.3.1"
+  }
+}
