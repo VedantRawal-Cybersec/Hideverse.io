@@ -3,6 +3,7 @@ import { Application, Entity, Vec3 } from 'playcanvas';
 import type { RenderComponent } from 'playcanvas';
 import { loadContainer } from '../../core/load-container';
 import { createReferenceMaterial, mapWallTone } from '../../core/reference-art-direction';
+import { applyRealSurfaceTextures, type SurfaceMaterialSet } from '../../core/surface-textures';
 import interiorLayout from './interior-layout.json';
 
 export type RavenwoodStatus = (message: string) => void;
@@ -243,7 +244,7 @@ async function loadExteriorDressing(app: Application): Promise<void> {
   await Promise.allSettled(tasks);
 }
 
-function applyReferenceMansionMaterials(root: Entity): void {
+function applyReferenceMansionMaterials(root: Entity): SurfaceMaterialSet {
   const wall = createReferenceMaterial('wall', mapWallTone(1));
   const trim = createReferenceMaterial('trim');
   const metal = createReferenceMaterial('metal');
@@ -264,6 +265,8 @@ function applyReferenceMansionMaterials(root: Entity): void {
       }
     }
   }
+
+  return { wall, trim, metal, wood };
 }
 
 async function streamMansionDetail(
@@ -293,7 +296,10 @@ async function streamMansionDetail(
     });
     mansion.name = 'Ravenwood Victorian Mansion';
     app.root.addChild(mansion);
-    applyReferenceMansionMaterials(mansion);
+    const mansionMaterials = applyReferenceMansionMaterials(mansion);
+    void applyRealSurfaceTextures(app, mansionMaterials, 1, coarse).catch((error) => {
+      console.warn('[Ravenwood] Detailed surface textures unavailable.', error);
+    });
 
     const scale = fitMansion(mansion);
     for (const entity of fallbackShell) entity.destroy();
@@ -317,11 +323,15 @@ async function streamMansionDetail(
   }
 }
 
-function buildPlayableMansionShell(app: Application, world: RAPIER.World): Entity[] {
+function buildPlayableMansionShell(
+  app: Application,
+  world: RAPIER.World,
+  materials: Required<Pick<SurfaceMaterialSet, 'wall' | 'trim' | 'floor'>>,
+): Entity[] {
   const shell: Entity[] = [];
-  const wallMaterial = createReferenceMaterial('wall', mapWallTone(1));
-  const trimMaterial = createReferenceMaterial('trim');
-  const floorMaterial = createReferenceMaterial('floor');
+  const wallMaterial = materials.wall;
+  const trimMaterial = materials.trim;
+  const floorMaterial = materials.floor;
 
   const createPart = (
     name: string,
@@ -376,11 +386,17 @@ export async function buildRavenwood(
 ): Promise<void> {
   onStatus('Preparing Ravenwood playable shell…');
 
+  const wallMaterial = createReferenceMaterial('wall', mapWallTone(1));
+  const trimMaterial = createReferenceMaterial('trim');
+  const floorMaterial = createReferenceMaterial('floor');
+  const metalMaterial = createReferenceMaterial('metal');
+  const woodMaterial = createReferenceMaterial('wood');
+
   const ground = new Entity('Ravenwood Ground');
   ground.addComponent('render', { type: 'box' });
   ground.setLocalScale(120, 0.2, 120);
   ground.setPosition(0, -0.1, 0);
-  if (ground.render) ground.render.material = createReferenceMaterial('floor');
+  if (ground.render) ground.render.material = floorMaterial;
   app.root.addChild(ground);
 
   world.createCollider(
@@ -402,7 +418,29 @@ export async function buildRavenwood(
     RAPIER.ColliderDesc.cuboid(wallThickness, wallHeight, 60).setTranslation(60, wallHeight, 0),
   );
 
-  const fallbackShell = buildPlayableMansionShell(app, world);
+  const fallbackShell = buildPlayableMansionShell(app, world, {
+    wall: wallMaterial,
+    trim: trimMaterial,
+    floor: floorMaterial,
+  });
+
+  window.setTimeout(() => {
+    void applyRealSurfaceTextures(
+      app,
+      {
+        wall: wallMaterial,
+        wallAlt: wallMaterial,
+        floor: floorMaterial,
+        trim: trimMaterial,
+        metal: metalMaterial,
+        wood: woodMaterial,
+      },
+      1,
+      matchMedia('(pointer: coarse)').matches,
+    ).catch((error) => {
+      console.warn('[Ravenwood] Shell surface textures unavailable.', error);
+    });
+  }, 500);
 
   // None of the decorative/detail work below blocks entering the game.
   window.setTimeout(() => {

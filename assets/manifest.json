@@ -554,6 +554,101 @@
       ],
       "notes": "CC0 clothed low-poly rigged human with embedded locomotion/action animation clips; used for role-specific desktop NPC variety.",
       "maxRuntimeFileBytes": 4000000
+    },
+    {
+      "id": "cc0-surface-concrete",
+      "name": "Concrete034 — lightweight concrete surface",
+      "category": "surface-texture",
+      "source": "CC0 Public Domain Textures / AmbientCG",
+      "sourceRepo": "Papyszoo/CC0-Public-Domain-Textures",
+      "sourceCommit": "fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2",
+      "sourcePath": "packs/ambientcg-textures/textures/Concrete034/Concrete034_1K-PNG_Color_preview.png",
+      "sourceUrl": "https://github.com/Papyszoo/CC0-Public-Domain-Textures/blob/fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2/packs/ambientcg-textures/textures/Concrete034/Concrete034_1K-PNG_Color_preview.png",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/materials/reference/concrete.png",
+        "assets/runtime/materials/reference/LICENSE",
+        "assets/runtime/materials/reference/SOURCE.md"
+      ],
+      "notes": "Lightweight tiled CC0 color texture used to replace flat blockout materials while preserving browser/mobile performance.",
+      "maxRuntimeFileBytes": 150000
+    },
+    {
+      "id": "cc0-surface-brick",
+      "name": "Bricks004 — lightweight brick surface",
+      "category": "surface-texture",
+      "source": "CC0 Public Domain Textures / AmbientCG",
+      "sourceRepo": "Papyszoo/CC0-Public-Domain-Textures",
+      "sourceCommit": "fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2",
+      "sourcePath": "packs/ambientcg-textures/textures/Bricks004/Bricks004_1K-PNG_Color_preview.png",
+      "sourceUrl": "https://github.com/Papyszoo/CC0-Public-Domain-Textures/blob/fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2/packs/ambientcg-textures/textures/Bricks004/Bricks004_1K-PNG_Color_preview.png",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/materials/reference/brick.png",
+        "assets/runtime/materials/reference/LICENSE",
+        "assets/runtime/materials/reference/SOURCE.md"
+      ],
+      "notes": "Lightweight tiled CC0 color texture used to replace flat blockout materials while preserving browser/mobile performance.",
+      "maxRuntimeFileBytes": 150000
+    },
+    {
+      "id": "cc0-surface-asphalt",
+      "name": "Asphalt007 — lightweight asphalt surface",
+      "category": "surface-texture",
+      "source": "CC0 Public Domain Textures / AmbientCG",
+      "sourceRepo": "Papyszoo/CC0-Public-Domain-Textures",
+      "sourceCommit": "fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2",
+      "sourcePath": "packs/ambientcg-textures/textures/Asphalt007/Asphalt007_1K-PNG_Color_preview.png",
+      "sourceUrl": "https://github.com/Papyszoo/CC0-Public-Domain-Textures/blob/fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2/packs/ambientcg-textures/textures/Asphalt007/Asphalt007_1K-PNG_Color_preview.png",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/materials/reference/asphalt.png",
+        "assets/runtime/materials/reference/LICENSE",
+        "assets/runtime/materials/reference/SOURCE.md"
+      ],
+      "notes": "Lightweight tiled CC0 color texture used to replace flat blockout materials while preserving browser/mobile performance.",
+      "maxRuntimeFileBytes": 150000
+    },
+    {
+      "id": "cc0-surface-metal",
+      "name": "Metal004 — lightweight metal surface",
+      "category": "surface-texture",
+      "source": "CC0 Public Domain Textures / AmbientCG",
+      "sourceRepo": "Papyszoo/CC0-Public-Domain-Textures",
+      "sourceCommit": "fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2",
+      "sourcePath": "packs/ambientcg-textures/textures/Metal004/Metal004_1K-PNG_Color_preview.png",
+      "sourceUrl": "https://github.com/Papyszoo/CC0-Public-Domain-Textures/blob/fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2/packs/ambientcg-textures/textures/Metal004/Metal004_1K-PNG_Color_preview.png",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/materials/reference/metal.png",
+        "assets/runtime/materials/reference/LICENSE",
+        "assets/runtime/materials/reference/SOURCE.md"
+      ],
+      "notes": "Lightweight tiled CC0 color texture used to replace flat blockout materials while preserving browser/mobile performance.",
+      "maxRuntimeFileBytes": 150000
+    },
+    {
+      "id": "cc0-surface-wood",
+      "name": "WoodSiding004 — lightweight wood surface",
+      "category": "surface-texture",
+      "source": "CC0 Public Domain Textures / AmbientCG",
+      "sourceRepo": "Papyszoo/CC0-Public-Domain-Textures",
+      "sourceCommit": "fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2",
+      "sourcePath": "packs/ambientcg-textures/textures/WoodSiding004/WoodSiding004_1K-PNG_Color_preview.png",
+      "sourceUrl": "https://github.com/Papyszoo/CC0-Public-Domain-Textures/blob/fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2/packs/ambientcg-textures/textures/WoodSiding004/WoodSiding004_1K-PNG_Color_preview.png",
+      "license": "CC0-1.0",
+      "status": "acquired",
+      "localFiles": [
+        "assets/runtime/materials/reference/wood.png",
+        "assets/runtime/materials/reference/LICENSE",
+        "assets/runtime/materials/reference/SOURCE.md"
+      ],
+      "notes": "Lightweight tiled CC0 color texture used to replace flat blockout materials while preserving browser/mobile performance.",
+      "maxRuntimeFileBytes": 150000
     }
   ]
 }
