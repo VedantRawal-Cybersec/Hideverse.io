@@ -330,7 +330,7 @@ async function boot(): Promise<void> {
     motionValue.textContent = player.motionState.toUpperCase();
     staminaValue.textContent = `${Math.round(player.staminaPercent)}%`;
 
-    multiplayer.update(position, player.yaw, player.motionState);
+    multiplayer.update(position, player.yaw, player.motionState, deltaSeconds);
     networkValue.textContent = multiplayer.status;
     roomValue.textContent = multiplayer.roomCode;
     roomCodeInput.value = multiplayer.roomCode;
