@@ -123,6 +123,54 @@ h1 {
   pointer-events: none;
 }
 
+.interaction-prompt {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  top: calc(50% + 28px);
+  transform: translateX(-50%) translateY(6px);
+  padding: 8px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 9px;
+  background: rgba(8, 11, 16, 0.78);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.interaction-prompt.is-visible {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.hidden-state {
+  position: absolute;
+  z-index: 7;
+  left: 50%;
+  top: max(18px, env(safe-area-inset-top));
+  transform: translateX(-50%);
+  padding: 8px 12px;
+  border: 1px solid rgba(141, 240, 168, 0.35);
+  border-radius: 999px;
+  background: rgba(10, 35, 20, 0.78);
+  color: #aef5bf;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.hidden-state.is-visible {
+  opacity: 1;
+}
+
 .desktop-help {
   position: absolute;
   z-index: 5;
@@ -239,7 +287,7 @@ h1 {
     right: max(20px, env(safe-area-inset-right));
     bottom: max(24px, env(safe-area-inset-bottom));
     display: grid;
-    grid-template-columns: repeat(2, 70px);
+    grid-template-columns: repeat(2, 76px);
     gap: 9px;
     pointer-events: auto;
   }
@@ -262,6 +310,22 @@ h1 {
     border-color: rgba(255, 255, 255, 0.5);
     background: rgba(255, 255, 255, 0.16);
     color: #fff;
+  }
+
+  #mobile-interact {
+    border-color: rgba(141, 240, 168, 0.38);
+    color: #bdf6ca;
+  }
+
+  .interaction-prompt {
+    top: auto;
+    bottom: max(178px, calc(env(safe-area-inset-bottom) + 178px));
+    max-width: min(300px, calc(100% - 40px));
+    text-align: center;
+  }
+
+  .hidden-state {
+    top: max(72px, calc(env(safe-area-inset-top) + 54px));
   }
 
   h1 {
