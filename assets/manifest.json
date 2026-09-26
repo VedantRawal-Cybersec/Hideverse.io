@@ -10,6 +10,29 @@
   },
   "assets": [
     {
+      "id": "ravenwood-victorian-house-source",
+      "name": "Victorian Style House — Ravenwood architectural base",
+      "category": "map-architecture",
+      "source": "glTF Research Scenes / Victorian Style House",
+      "sourceRepo": "ErfanMo77/gltf-research-scenes",
+      "sourceCommit": "50cbe72d462cfbbf11244d0df6a5501a74050d34",
+      "sourcePath": "scenes/house/gltf/house_core.gltf",
+      "sourceUrl": "https://github.com/ErfanMo77/gltf-research-scenes/blob/50cbe72d462cfbbf11244d0df6a5501a74050d34/scenes/house/gltf/house_core.gltf",
+      "license": "CC0-1.0",
+      "status": "candidate",
+      "localFiles": [],
+      "notes": "Selected Ravenwood base architecture. Upstream: 272 meshes, 1,818,777 triangles, 31 materials, one embedded texture. Must be simplified and validated before promotion to acquired.",
+      "sourceStats": {
+        "triangles": 1818777,
+        "meshes": 272,
+        "materials": 31,
+        "bufferBytes": 44974338
+      },
+      "intendedRuntimePath": "assets/runtime/ravenwood/map/ravenwood_mansion_victorian.glb",
+      "targetTriangleBudget": 400000,
+      "targetRuntimeBytes": 20000000
+    },
+    {
       "id": "ravenwood-base-mansion-candidate",
       "name": "3D Tileset - Mansion",
       "category": "architecture",
