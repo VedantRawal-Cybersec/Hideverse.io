@@ -14,7 +14,8 @@
     "isolatedModules": true,
     "moduleDetection": "force",
     "allowImportingTsExtensions": false,
-    "noEmit": true
+    "noEmit": true,
+    "resolveJsonModule": true
   },
   "include": ["src"]
 }
