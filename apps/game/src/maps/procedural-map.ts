@@ -391,7 +391,10 @@ async function buildProceduralMap(
 
   const doors = map.doors.map((door) => {
     objectCount += 1;
-    return createDoor(app, world, door, accentMaterial);
+    const doorMaterial = /mansion|library|suite|hotel|office/i.test(door.id)
+      ? woodMaterial
+      : propMaterial;
+    return createDoor(app, world, door, doorMaterial);
   });
 
   for (const objective of map.objectives) {
@@ -461,7 +464,17 @@ export async function buildSelectedMap(
 ): Promise<MapRuntime> {
   if (map.id === 'ravenwood') {
     await buildRavenwood(app, world, onStatus);
-    const doorMaterial = createReferenceMaterial('accent');
+    const doorMaterial = createReferenceMaterial('wood');
+    window.setTimeout(() => {
+      void applyRealSurfaceTextures(
+        app,
+        { wood: doorMaterial },
+        map.index,
+        matchMedia('(pointer: coarse)').matches,
+      ).catch((error) => {
+        console.warn('[Ravenwood doors] Surface texture unavailable.', error);
+      });
+    }, 700);
     const doors = map.doors.map((door) => createDoor(app, world, door, doorMaterial));
     return {
       doors,
