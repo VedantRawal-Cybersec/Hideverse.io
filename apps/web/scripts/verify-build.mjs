@@ -8,6 +8,11 @@ for (const relative of required) {
   await access(path.join(root, relative));
 }
 
+const gameIndex = await readFile(path.join(root, 'dist/game/index.html'), 'utf8');
+if (!gameIndex.includes('/game/assets/')) {
+  throw new Error('Embedded game build is not using the /game/ asset base.');
+}
+
 const summary = JSON.parse(await readFile(path.join(root, 'dist/data/asset-summary.json'), 'utf8'));
 if (!Number.isInteger(summary.acquiredAssets) || summary.acquiredAssets < 1) {
   throw new Error('Live site asset summary is invalid.');
