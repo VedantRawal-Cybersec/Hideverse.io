@@ -260,11 +260,19 @@ async function streamMansionDetail(
     app.root.addChild(mansion);
 
     const scale = fitMansion(mansion);
-    onStatus(`Ravenwood visual streamed · scale ${scale.toFixed(3)} · refining collision…`);
+    const quality = localStorage.getItem('hideverse-quality') ?? 'auto';
 
-    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    if (quality !== 'high') {
+      onStatus(
+        `Ravenwood visual streamed · scale ${scale.toFixed(3)} · optimized collision shell active`,
+      );
+      return;
+    }
+
+    onStatus(`Ravenwood visual streamed · scale ${scale.toFixed(3)} · refining high-detail collision…`);
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 1800));
     await buildStaticTrimesh(world, mansion, onStatus);
-    onStatus('Ravenwood Mansion fully streamed · detailed collision active');
+    onStatus('Ravenwood Mansion fully streamed · high-detail collision active');
   } catch (error) {
     console.warn('[Ravenwood] Mansion detail unavailable, keeping playable fallback shell.', error);
     onStatus('Ravenwood playable fallback active · mansion detail unavailable');
