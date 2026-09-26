@@ -1,3 +1,11 @@
 node_modules
 dist
 package-lock.json
+
+# Preserve vendored third-party assets byte-for-byte.
+assets/runtime
+
+# Machine-generated / provenance metadata is validated separately by asset CI.
+assets/manifest.json
+assets/sources.json
+docs/PHASE_2_ASSETS.md

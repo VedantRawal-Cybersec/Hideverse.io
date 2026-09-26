@@ -23,4 +23,17 @@ for (const file of jsFiles) {
   jsBytes += (await stat(path.join(assetDir, file))).size;
 }
 
-console.log(`[verify-build] PASS — ${jsFiles.length} JS bundle(s), ${jsBytes} bytes total.`);
+const requiredRuntimeAssets = [
+  path.join(dist, 'ravenwood/nature/kenney/tree_oak.glb'),
+  path.join(dist, 'ravenwood/furniture/kaykit/chair_A.gltf'),
+  path.join(dist, 'ravenwood/architecture/kaykit-dungeon/wall_doorway.glb'),
+  path.join(dist, 'ravenwood/exterior/kaykit-city/streetlight.gltf'),
+];
+
+for (const required of requiredRuntimeAssets) {
+  await access(required);
+}
+
+console.log(
+  `[verify-build] PASS — ${jsFiles.length} JS bundle(s), ${jsBytes} JS bytes, ${requiredRuntimeAssets.length} representative runtime assets present.`,
+);
