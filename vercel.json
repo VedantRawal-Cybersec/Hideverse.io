@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "npm install --no-audit --no-fund",
+  "buildCommand": "npm run build:live",
+  "outputDirectory": "apps/web/dist",
+  "framework": null,
+  "redirects": [
+    {
+      "source": "/game",
+      "destination": "/game/",
+      "permanent": false
+    }
+  ]
+}
