@@ -1,0 +1,74 @@
+name: Temporary Vendor PBR Surface Maps
+
+on:
+  push:
+    branches:
+      - graphics/real-materials-priority
+
+permissions:
+  contents: write
+
+jobs:
+  vendor:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: graphics/real-materials-priority
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download pinned CC0 PBR maps
+        run: |
+          set -euo pipefail
+          COMMIT="fcc4ff97a5a843dc2e242ec9e195389bc46ed7d2"
+          BASE="https://raw.githubusercontent.com/Papyszoo/CC0-Public-Domain-Textures/$COMMIT/packs/ambientcg-textures/textures"
+          DEST="assets/runtime/materials/pbr"
+          mkdir -p "$DEST"
+
+          fetch_set() {
+            local src="$1"
+            local out="$2"
+            curl -L --fail --retry 3 "$BASE/$src/${src}_1K-PNG_Color.ktx2" -o "$DEST/${out}-color.ktx2"
+            curl -L --fail --retry 3 "$BASE/$src/${src}_1K-PNG_NormalGL.ktx2" -o "$DEST/${out}-normal.ktx2"
+            curl -L --fail --retry 3 "$BASE/$src/${src}_1K-PNG_Roughness.ktx2" -o "$DEST/${out}-roughness.ktx2"
+          }
+
+          fetch_set "Concrete034" "concrete"
+          fetch_set "Bricks004" "brick"
+          fetch_set "Asphalt007" "asphalt"
+          fetch_set "Metal004" "metal"
+          fetch_set "WoodSiding004" "wood"
+
+          cp assets/runtime/materials/reference/LICENSE "$DEST/LICENSE"
+          cat > "$DEST/SOURCE.md" <<EOF
+          # PBR surface provenance
+
+          Upstream: https://github.com/Papyszoo/CC0-Public-Domain-Textures
+          Pinned commit: $COMMIT
+          License: CC0-1.0
+
+          Sets:
+          - concrete: AmbientCG Concrete034
+          - brick: AmbientCG Bricks004
+          - asphalt: AmbientCG Asphalt007
+          - metal: AmbientCG Metal004
+          - wood: AmbientCG WoodSiding004
+
+          Runtime policy:
+          - Color maps may stream on all devices.
+          - Normal + roughness maps are enabled only where the quality/performance profile allows.
+          - KTX2/Basis compression with mipmaps keeps GPU memory and bandwidth lower than raw PNG PBR sets.
+          EOF
+
+          ls -lh "$DEST"
+
+      - name: Commit PBR assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/runtime/materials/pbr/
+          if ! git diff --cached --quiet; then
+            git commit -m "Vendor compressed CC0 PBR surface maps"
+            git push
+          fi
