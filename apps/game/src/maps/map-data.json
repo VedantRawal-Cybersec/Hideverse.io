@@ -1419,7 +1419,7 @@
         }
       ],
       "lod": {
-        "mobileObjectBudget": 40,
+        "mobileObjectBudget": 28,
         "desktopObjectBudget": 104,
         "shadowDistance": 72
       }

@@ -531,7 +531,7 @@ function buildHotelDetails(app: Application, materials: DetailMaterials, coarse:
     });
   }
 
-  const roomZ = [-22, -10, 2, 14, 26];
+  const roomZ = coarse ? [-22, 2, 26] : [-22, -10, 2, 14, 26];
   for (const z of roomZ) {
     for (const side of [-1, 1] as const) {
       const x = side * 18.95;
