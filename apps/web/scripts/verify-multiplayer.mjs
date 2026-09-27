@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import WebSocket from 'ws';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const port = 43991;
@@ -31,6 +32,53 @@ async function waitForHealth() {
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   throw new Error(`multiplayer server did not start\n${serverOutput}`);
+}
+
+async function waitForWsMessage(ws, predicate, timeoutMs = 2500) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error('timed out waiting for WebSocket message'));
+    }, timeoutMs);
+
+    const onMessage = (raw) => {
+      let payload;
+      try {
+        payload = JSON.parse(raw.toString());
+      } catch {
+        return;
+      }
+      if (!predicate(payload)) return;
+      cleanup();
+      resolve(payload);
+    };
+
+    const onError = (error) => {
+      cleanup();
+      reject(error);
+    };
+
+    const cleanup = () => {
+      clearTimeout(timer);
+      ws.off('message', onMessage);
+      ws.off('error', onError);
+    };
+
+    ws.on('message', onMessage);
+    ws.on('error', onError);
+  });
+}
+
+async function openV2Client(room, name) {
+  const ws = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+  await new Promise((resolve, reject) => {
+    ws.once('open', resolve);
+    ws.once('error', reject);
+  });
+  const hello = await waitForWsMessage(ws, (msg) => msg.t === 'hello');
+  ws.send(JSON.stringify({ t: 'join', room, name, map: 'wilmot' }));
+  const welcome = await waitForWsMessage(ws, (msg) => msg.t === 'welcome');
+  return { ws, hello, welcome };
 }
 
 async function json(pathname, init) {
@@ -175,8 +223,30 @@ try {
     body: JSON.stringify({ map: 'ravenwood', room: 'QA-ROOM', playerId: 'qa-player-1' }),
   });
 
+  const v2a = await openV2Client('v2-qa-room', 'Alpha');
+  if (!Number.isFinite(v2a.hello.id) || v2a.welcome.room !== 'v2-qa-room') {
+    throw new Error(`unexpected Game V2 welcome: ${JSON.stringify(v2a.welcome)}`);
+  }
+
+  const peerJoin = waitForWsMessage(v2a.ws, (msg) => msg.t === 'peer_join');
+  const v2b = await openV2Client('v2-qa-room', 'Bravo');
+  const joined = await peerJoin;
+  if (joined.name !== 'Bravo' || v2b.welcome.peers?.length !== 1) {
+    throw new Error(
+      `Game V2 room sync failed: ${JSON.stringify({ joined, welcome: v2b.welcome })}`,
+    );
+  }
+
+  const pongPromise = waitForWsMessage(v2a.ws, (msg) => msg.t === 'pong');
+  v2a.ws.send(JSON.stringify({ t: 'ping', ts: 12345 }));
+  const pong = await pongPromise;
+  if (pong.ts !== 12345) throw new Error('Game V2 WebSocket ping/pong failed');
+
+  v2a.ws.close();
+  v2b.ws.close();
+
   console.log(
-    '[multiplayer-qa] PASS — compressed delivery burst, health, join, authoritative state, shared objectives, SSE, reset, and leave verified.',
+    '[multiplayer-qa] PASS — compressed delivery burst, legacy HTTP/SSE multiplayer, and Game V2 WebSocket room relay verified.',
   );
 } finally {
   server.kill('SIGTERM');
