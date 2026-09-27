@@ -105,6 +105,10 @@ function createReferenceStructureDetails(
   wallAltMaterial: StandardMaterial,
   coarse: boolean,
 ): number {
+  // Mobile keeps every gameplay-critical structure mesh visible, but drops the
+  // duplicate roof-cap/base/pillar dressing layer to reduce draw calls.
+  if (coarse) return 0;
+
   const [width, height, depth] = item.size;
   if (height < 1.8 || width < 1.2 || depth < 1.2) return 0;
 
