@@ -37,6 +37,7 @@ jobs:
 
           cp -a "$TMP/src/src" "$DEST/"
           cp -a "$TMP/src/public" "$DEST/"
+          if [ -d "$TMP/src/debug" ]; then cp -a "$TMP/src/debug" "$DEST/"; fi
           cp "$TMP/src/index.html" "$DEST/index.html"
           cp "$TMP/src/vite.config.js" "$DEST/vite.config.js"
           cp "$TMP/src/package.json" "$DEST/package.json"
