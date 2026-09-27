@@ -522,7 +522,8 @@ function buildHotelDetails(app: Application, materials: DetailMaterials, coarse:
     },
   ];
 
-  for (const y of [2.2, 5.4, 8.8]) {
+  const floorBands = coarse ? [5.4] : [2.2, 5.4, 8.8];
+  for (const y of floorBands) {
     details.push({
       id: `hotel-floor-band-${y}`,
       position: [0, y, -39.35],
@@ -531,17 +532,17 @@ function buildHotelDetails(app: Application, materials: DetailMaterials, coarse:
     });
   }
 
-  const roomZ = coarse ? [-22, 2, 26] : [-22, -10, 2, 14, 26];
-  for (const z of roomZ) {
-    for (const side of [-1, 1] as const) {
-      const x = side * 18.95;
-      details.push({
-        id: `hotel-room-door-frame-${side}-${z}`,
-        position: [x, 1.9, z],
-        size: [0.18, 3.2, 2.15],
-        material: materials.trim,
-      });
-      if (!coarse) {
+  if (!coarse) {
+    const roomZ = [-22, -10, 2, 14, 26];
+    for (const z of roomZ) {
+      for (const side of [-1, 1] as const) {
+        const x = side * 18.95;
+        details.push({
+          id: `hotel-room-door-frame-${side}-${z}`,
+          position: [x, 1.9, z],
+          size: [0.18, 3.2, 2.15],
+          material: materials.trim,
+        });
         details.push({
           id: `hotel-room-sconce-${side}-${z}`,
           position: [x - side * 0.12, 3.15, z + 2.1],
@@ -561,11 +562,6 @@ function buildHotelDetails(app: Application, materials: DetailMaterials, coarse:
           position: [-6, 0, 27],
           scale: 0.95,
           yaw: 90,
-        },
-        {
-          asset: 'ravenwood/furniture/kaykit/lamp_standing.gltf',
-          position: [7, 0, 27],
-          scale: 0.95,
         },
       ]
     : [
@@ -599,7 +595,7 @@ function buildHotelDetails(app: Application, materials: DetailMaterials, coarse:
         },
       ];
 
-  window.setTimeout(() => void loadPlacedAssets(app, props, coarse), coarse ? 2700 : 1800);
+  window.setTimeout(() => void loadPlacedAssets(app, props, coarse), coarse ? 3200 : 1800);
   return details.length + props.length;
 }
 
