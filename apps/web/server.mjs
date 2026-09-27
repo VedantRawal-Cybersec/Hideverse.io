@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { brotliCompress, gzip } from 'node:zlib';
+import { attachV2Relay } from './v2-relay.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.join(here, 'dist');
@@ -525,6 +526,8 @@ const server = createServer(async (req, res) => {
   }
 });
 
+const v2Relay = attachV2Relay(server);
+
 server.listen(port, '0.0.0.0', () => {
-  console.log(`[Hideverse web] site + authoritative room API listening on :${port}`);
+  console.log(`[Hideverse web] site + legacy API + Game V2 WebSocket relay listening on :${port}`);
 });
