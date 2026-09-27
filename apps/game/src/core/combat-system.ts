@@ -137,10 +137,7 @@ function accentMaterial(): StandardMaterial {
   return material;
 }
 
-function emissiveMaterial(
-  color: [number, number, number],
-  intensity: number,
-): StandardMaterial {
+function emissiveMaterial(color: [number, number, number], intensity: number): StandardMaterial {
   const material = new StandardMaterial();
   material.diffuse = new Color(color[0], color[1], color[2]);
   material.emissive = new Color(color[0], color[1], color[2]);
@@ -290,10 +287,7 @@ export class CombatSystem {
     const bobFrequency = this.input.sprint ? 12.5 : 8.5;
     const bobX = Math.sin(this.weaponTime * bobFrequency) * 0.009 * moveMagnitude * bobStrength;
     const bobY =
-      Math.abs(Math.cos(this.weaponTime * bobFrequency)) *
-      0.007 *
-      moveMagnitude *
-      bobStrength;
+      Math.abs(Math.cos(this.weaponTime * bobFrequency)) * 0.007 * moveMagnitude * bobStrength;
 
     const reloadProgress =
       this.reloadRemaining > 0
@@ -308,10 +302,8 @@ export class CombatSystem {
     const viewBlend = 1 - Math.exp(-18 * dt);
 
     this.viewKick += (0 - this.viewKick) * (1 - Math.exp(-22 * dt));
-    this.recoilPitchVisual +=
-      (0 - this.recoilPitchVisual) * (1 - Math.exp(-17 * dt));
-    this.recoilYawVisual +=
-      (0 - this.recoilYawVisual) * (1 - Math.exp(-20 * dt));
+    this.recoilPitchVisual += (0 - this.recoilPitchVisual) * (1 - Math.exp(-17 * dt));
+    this.recoilYawVisual += (0 - this.recoilYawVisual) * (1 - Math.exp(-20 * dt));
 
     this.root.setLocalPosition(
       position.x + (targetX - position.x) * viewBlend,
@@ -334,8 +326,7 @@ export class CombatSystem {
       }
     }
 
-    const wantsFire =
-      firstPerson && this.enabled && this.input.fire && this.reloadRemaining <= 0;
+    const wantsFire = firstPerson && this.enabled && this.input.fire && this.reloadRemaining <= 0;
     const canTrigger = this.weapon.automatic ? wantsFire : wantsFire && !this.triggerLatched;
     if (canTrigger && this.fireCooldown <= 0) this.fire(aiming);
 
@@ -452,11 +443,7 @@ export class CombatSystem {
 
   private startReload(): void {
     const state = this.weaponState;
-    if (
-      this.reloadRemaining > 0 ||
-      state.ammo >= this.weapon.magazine ||
-      state.reserve <= 0
-    ) {
+    if (this.reloadRemaining > 0 || state.ammo >= this.weapon.magazine || state.reserve <= 0) {
       return;
     }
     this.reloadRemaining = this.weapon.reloadSeconds;
@@ -563,13 +550,7 @@ export class CombatSystem {
       definition.color[2] * 0.52,
     ]);
 
-    part(
-      weaponRoot,
-      `${definition.id}-receiver`,
-      definition.bodyScale,
-      [0, 0, -0.05],
-      primary,
-    );
+    part(weaponRoot, `${definition.id}-receiver`, definition.bodyScale, [0, 0, -0.05], primary);
     part(
       weaponRoot,
       `${definition.id}-barrel`,
@@ -581,14 +562,7 @@ export class CombatSystem {
     if (definition.id === 'assault') {
       part(weaponRoot, 'assault-stock', [0.12, 0.105, 0.25], [0, -0.005, 0.3], dark);
       part(weaponRoot, 'assault-handguard', [0.145, 0.1, 0.28], [0, 0, -0.34], primary);
-      part(
-        weaponRoot,
-        'assault-magazine',
-        [0.085, 0.2, 0.12],
-        [0, -0.15, 0.06],
-        dark,
-        [-13, 0, 0],
-      );
+      part(weaponRoot, 'assault-magazine', [0.085, 0.2, 0.12], [0, -0.15, 0.06], dark, [-13, 0, 0]);
       part(weaponRoot, 'assault-rail', [0.075, 0.025, 0.31], [0, 0.09, -0.14], accent);
       part(weaponRoot, 'assault-optic', [0.07, 0.065, 0.105], [0, 0.135, -0.05], dark);
       part(weaponRoot, 'assault-muzzle', [0.07, 0.07, 0.11], [0, 0.018, -0.7], dark);
@@ -711,10 +685,7 @@ export class CombatSystem {
     return fallback;
   }
 
-  private spawnTracer(
-    from: [number, number, number],
-    to: [number, number, number],
-  ): void {
+  private spawnTracer(from: [number, number, number], to: [number, number, number]): void {
     const effect = this.nextFx('tracer');
     const dx = to[0] - from[0];
     const dy = to[1] - from[1];
@@ -722,11 +693,7 @@ export class CombatSystem {
     const length = Math.max(0.1, Math.hypot(dx, dy, dz));
     effect.life = effect.maxLife;
     effect.entity.enabled = true;
-    effect.entity.setPosition(
-      from[0] + dx * 0.5,
-      from[1] + dy * 0.5,
-      from[2] + dz * 0.5,
-    );
+    effect.entity.setPosition(from[0] + dx * 0.5, from[1] + dy * 0.5, from[2] + dz * 0.5);
     effect.entity.setLocalScale(0.014, 0.014, length);
     effect.entity.lookAt(to[0], to[1], to[2]);
   }
