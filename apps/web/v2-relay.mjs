@@ -24,11 +24,11 @@ export function attachV2Relay(server, options = {}) {
   /* ────────────────────────────────────────────────────────────────────────
    * Room + relay layer.
    * ──────────────────────────────────────────────────────────────────────── */
-  
+
   /** roomCode -> Room */
   const rooms = new Map();
   let nextId = 1;
-  
+
   function getRoom(code) {
     let r = rooms.get(code);
     if (!r) {
@@ -49,7 +49,7 @@ export function attachV2Relay(server, options = {}) {
     }
     return r;
   }
-  
+
   function roster(room) {
     const out = [];
     for (const p of room.peers.values()) {
@@ -64,7 +64,7 @@ export function attachV2Relay(server, options = {}) {
     }
     return out;
   }
-  
+
   /**
    * The lowest colour slot nobody in this room is wearing.
    *
@@ -85,7 +85,7 @@ export function attachV2Relay(server, options = {}) {
     while (used.has(s)) s++;
     return s;
   }
-  
+
   /* ── lobby / match start ──────────────────────────────────────────────────
    * The relay owns exactly one piece of match state: who has readied up, and
    * whether anyone is in the match. It stays a relay — it does not simulate — but
@@ -113,7 +113,7 @@ export function attachV2Relay(server, options = {}) {
    * start signal, so a player who arrives during the 3-2-1 is swept into the same
    * countdown rather than dropped into a match that is one second old.
    */
-  
+
   function lobby(room) {
     const players = [];
     for (const p of room.peers.values()) {
@@ -127,27 +127,27 @@ export function attachV2Relay(server, options = {}) {
     }
     return players;
   }
-  
+
   /** In the room's match — as opposed to a private warm-up against bots. */
   function inMatch(p) {
     return !!p.deployed && !p.warm;
   }
-  
+
   /** ms left on the in-flight start signal, 0 when there is none. */
   function startRemaining(room) {
     return Math.max(0, room.startAt - Date.now());
   }
-  
+
   function isLive(room) {
     if (startRemaining(room) > 0) return true;
     for (const p of room.peers.values()) if (inMatch(p)) return true;
     return false;
   }
-  
+
   function sendLobby(room) {
     broadcast(room, { t: 'lobby', live: isLive(room), players: lobby(room), map: room.map });
   }
-  
+
   /**
    * The room's map.
    *
@@ -160,10 +160,12 @@ export function attachV2Relay(server, options = {}) {
    * request, and only while the match has not started.
    */
   function sanitiseMap(v) {
-    const s = String(v ?? '').slice(0, 24).toLowerCase();
+    const s = String(v ?? '')
+      .slice(0, 24)
+      .toLowerCase();
     return /^[a-z0-9][a-z0-9_-]*$/.test(s) ? s : null;
   }
-  
+
   /**
    * Start the match if the room is ready for one.
    *
@@ -193,7 +195,7 @@ export function attachV2Relay(server, options = {}) {
     if (cohort.length < 2) return;
     startMatch(room, cohort);
   }
-  
+
   /**
    * Fire one start signal.
    *
@@ -226,7 +228,7 @@ export function attachV2Relay(server, options = {}) {
     broadcast(room, { t: 'score', roster: roster(room) });
     sendLobby(room);
   }
-  
+
   /**
    * The match's final order: kills decide, fewer deaths breaks a tie, and the
    * relay id (join order) keeps the sort stable. Time-expiry declares the top
@@ -239,7 +241,7 @@ export function attachV2Relay(server, options = {}) {
       .sort((a, b) => b.kills - a.kills || a.deaths - b.deaths || a.id - b.id)
       .map((p) => ({ id: p.id, name: p.name, kills: p.kills, deaths: p.deaths, skin: p.skin }));
   }
-  
+
   /**
    * End the room's match: one authoritative signal, like the start.
    *
@@ -272,14 +274,14 @@ export function attachV2Relay(server, options = {}) {
     // and pressed "ready up for the next match") — the end is what unblocks it.
     maybeStart(room);
   }
-  
+
   /** Kill-target check, called on every confirmed kill. */
   function maybeEndOnScore(room, killer) {
     if (killer && inMatch(killer) && killer.kills >= SCORE_LIMIT) {
       endMatch(room, 'score', killer.id);
     }
   }
-  
+
   /** Time check, called from the tick. The leader wins; a dead heat is a draw. */
   function maybeEndOnTime(room) {
     if (!room.matchUntil || Date.now() < room.matchUntil) return;
@@ -290,10 +292,11 @@ export function attachV2Relay(server, options = {}) {
       return;
     }
     const [a, b] = rows;
-    const winner = !b || a.kills > b.kills || (a.kills === b.kills && a.deaths < b.deaths) ? a.id : null;
+    const winner =
+      !b || a.kills > b.kills || (a.kills === b.kills && a.deaths < b.deaths) ? a.id : null;
     endMatch(room, 'time', winner);
   }
-  
+
   /**
    * Somebody arrived mid-countdown. Sweep them in and give the room a full
    * countdown again so the party lands together — bounded by `startCap`, so this
@@ -304,13 +307,13 @@ export function attachV2Relay(server, options = {}) {
     room.startAt = Math.max(room.startAt, Math.min(now + COUNTDOWN_MS, room.startCap));
     return startRemaining(room);
   }
-  
+
   function send(peer, obj) {
     if (peer.ws.readyState === peer.ws.OPEN) {
       peer.ws.send(JSON.stringify(obj));
     }
   }
-  
+
   function broadcast(room, obj, exceptId = null) {
     const msg = JSON.stringify(obj);
     for (const p of room.peers.values()) {
@@ -318,7 +321,7 @@ export function attachV2Relay(server, options = {}) {
       if (p.ws.readyState === p.ws.OPEN) p.ws.send(msg);
     }
   }
-  
+
   /**
    * Broadcast to the room's MATCH — everyone except the players warming up.
    *
@@ -335,9 +338,9 @@ export function attachV2Relay(server, options = {}) {
       if (p.ws.readyState === p.ws.OPEN) p.ws.send(msg);
     }
   }
-  
+
   const wss = new WebSocketServer({ server, path: '/ws' });
-  
+
   wss.on('connection', (ws) => {
     const peer = {
       id: nextId++,
@@ -362,7 +365,7 @@ export function attachV2Relay(server, options = {}) {
       warm: false,
       lastSeen: Date.now(),
     };
-  
+
     ws.on('message', (raw) => {
       let msg;
       try {
@@ -373,18 +376,20 @@ export function attachV2Relay(server, options = {}) {
       peer.lastSeen = Date.now();
       handle(peer, msg);
     });
-  
+
     ws.on('close', () => leave(peer));
     ws.on('error', () => leave(peer));
-  
+
     // Nudge the client to identify itself.
     send(peer, { t: 'hello', id: peer.id });
   });
-  
+
   function handle(peer, msg) {
     switch (msg.t) {
       case 'join': {
-        const code = String(msg.room ?? 'lobby').slice(0, 24).toLowerCase();
+        const code = String(msg.room ?? 'lobby')
+          .slice(0, 24)
+          .toLowerCase();
         peer.name = String(msg.name ?? 'Operator').slice(0, 20) || 'Operator';
         const room = getRoom(code);
         if (room.peers.size >= MAX_ROOM) {
@@ -427,7 +432,7 @@ export function attachV2Relay(server, options = {}) {
         sendLobby(room);
         break;
       }
-  
+
       case 'map': {
         // Change the room's level. Refused once the room is live — swapping the
         // map under a match would teleport everyone into a level that no longer
@@ -446,7 +451,7 @@ export function attachV2Relay(server, options = {}) {
         sendLobby(room);
         break;
       }
-  
+
       case 'ready': {
         const room = peer.room && rooms.get(peer.room);
         if (!room) return;
@@ -455,7 +460,7 @@ export function attachV2Relay(server, options = {}) {
         maybeStart(room, !!msg.force && peer.ready);
         break;
       }
-  
+
       case 'deploy': {
         // "I am in the match now" — a client's pre-match countdown reached zero,
         // or it pressed deploy-now on a live room. `solo` marks the other case:
@@ -485,7 +490,7 @@ export function attachV2Relay(server, options = {}) {
         maybeStart(room);
         break;
       }
-  
+
       case 'undeploy': {
         // "I went back to the lobby" — the pause menu's Leave match. Without it a
         // room stays LIVE forever after the first person plays, and everyone who
@@ -505,7 +510,7 @@ export function attachV2Relay(server, options = {}) {
         maybeStart(room);
         break;
       }
-  
+
       case 'state': {
         // Latest-wins transform snapshot; broadcast happens on the server tick.
         if (!peer.room) return;
@@ -513,14 +518,18 @@ export function attachV2Relay(server, options = {}) {
         if (peer.state && typeof peer.state.hp === 'number') peer.alive = peer.state.hp > 0;
         break;
       }
-  
+
       case 'fire': {
         const room = peer.room && rooms.get(peer.room);
         if (!room || peer.warm) return;
-        broadcastMatch(room, { t: 'fire', id: peer.id, o: msg.o, d: msg.d, w: msg.w, seed: msg.seed }, peer.id);
+        broadcastMatch(
+          room,
+          { t: 'fire', id: peer.id, o: msg.o, d: msg.d, w: msg.w, seed: msg.seed },
+          peer.id,
+        );
         break;
       }
-  
+
       case 'hit': {
         // Trust-the-shooter: forward the claim to the victim, who applies it.
         const room = peer.room && rooms.get(peer.room);
@@ -541,7 +550,7 @@ export function attachV2Relay(server, options = {}) {
         });
         break;
       }
-  
+
       case 'kill': {
         // Victim confirms its own death and names the killer -> authoritative score.
         // A warm-up death is a bot's work in a game nobody else is in; it must not
@@ -563,12 +572,12 @@ export function attachV2Relay(server, options = {}) {
         maybeEndOnScore(room, killer);
         break;
       }
-  
+
       case 'respawn': {
         peer.alive = true;
         break;
       }
-  
+
       case 'spawn': {
         // "I am coming in here." Clients pick their own spawn points (the relay
         // has no map), so the announcement is what stops two respawns that land
@@ -581,7 +590,7 @@ export function attachV2Relay(server, options = {}) {
         broadcastMatch(room, { t: 'spawn', id: peer.id, p }, peer.id);
         break;
       }
-  
+
       case 'chat': {
         const room = peer.room && rooms.get(peer.room);
         if (!room) return;
@@ -589,20 +598,20 @@ export function attachV2Relay(server, options = {}) {
         if (text) broadcast(room, { t: 'chat', id: peer.id, name: peer.name, text });
         break;
       }
-  
+
       case 'name': {
         peer.name = String(msg.name ?? peer.name).slice(0, 20) || peer.name;
         const room = peer.room && rooms.get(peer.room);
         if (room) broadcast(room, { t: 'score', roster: roster(room) });
         break;
       }
-  
+
       case 'ping':
         send(peer, { t: 'pong', ts: msg.ts });
         break;
     }
   }
-  
+
   function leave(peer) {
     if (!peer.room) return;
     const room = rooms.get(peer.room);
@@ -622,11 +631,11 @@ export function attachV2Relay(server, options = {}) {
     sendLobby(room);
     maybeStart(room);
   }
-  
+
   /* ────────────────────────────────────────────────────────────────────────
    * Server tick: fan out each room's latest transforms as one snapshot.
    * ──────────────────────────────────────────────────────────────────────── */
-  
+
   const snapshotTimer = setInterval(() => {
     for (const room of rooms.values()) {
       maybeEndOnTime(room);
@@ -640,7 +649,7 @@ export function attachV2Relay(server, options = {}) {
       if (states.length) broadcastMatch(room, { t: 'snapshot', states });
     }
   }, 1000 / TICK_HZ);
-  
+
   // Drop peers that have gone silent (dead sockets that never fired close).
   const staleTimer = setInterval(() => {
     const now = Date.now();
