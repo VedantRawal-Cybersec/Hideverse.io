@@ -35,10 +35,7 @@ const [
   readFile(path.join(root, 'src/maps/map-detail-pass.ts'), 'utf8'),
   readFile(path.join(root, 'src/maps/ravenwood/ravenwood.ts'), 'utf8'),
   readFile(path.resolve(root, '../../assets/manifest.json'), 'utf8'),
-  readFile(
-    path.resolve(root, '../../vendor/fps-template/bulletstorm-arena/SOURCE.md'),
-    'utf8',
-  ),
+  readFile(path.resolve(root, '../../vendor/fps-template/bulletstorm-arena/SOURCE.md'), 'utf8'),
 ]);
 
 const catalog = JSON.parse(catalogText);

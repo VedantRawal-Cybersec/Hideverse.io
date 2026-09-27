@@ -186,7 +186,8 @@ export class CombatSystem {
 
     const directSlot = this.input.consumeWeaponSwitch();
     if (directSlot !== null) this.switchWeapon(Math.max(0, Math.min(2, directSlot - 1)));
-    if (this.input.consumeWeaponCycle()) this.switchWeapon((this.currentIndex + 1) % weapons.length);
+    if (this.input.consumeWeaponCycle())
+      this.switchWeapon((this.currentIndex + 1) % weapons.length);
 
     if (this.input.consumeReload()) this.startReload();
 
@@ -281,7 +282,8 @@ export class CombatSystem {
 
   private startReload(): void {
     const state = this.weaponState;
-    if (this.reloadRemaining > 0 || state.ammo >= this.weapon.magazine || state.reserve <= 0) return;
+    if (this.reloadRemaining > 0 || state.ammo >= this.weapon.magazine || state.reserve <= 0)
+      return;
     this.reloadRemaining = this.weapon.reloadSeconds;
     this.fireCooldown = Math.max(this.fireCooldown, 0.16);
     this.audio.cue('reload');
@@ -360,11 +362,7 @@ export class CombatSystem {
 
     const body = new Entity(`${definition.id}-body`);
     body.addComponent('render', { type: 'box' });
-    body.setLocalScale(
-      definition.bodyScale[0],
-      definition.bodyScale[1],
-      definition.bodyScale[2],
-    );
+    body.setLocalScale(definition.bodyScale[0], definition.bodyScale[1], definition.bodyScale[2]);
     body.setLocalPosition(0, 0, -0.05);
     if (body.render) body.render.material = primary;
     weaponRoot.addChild(body);

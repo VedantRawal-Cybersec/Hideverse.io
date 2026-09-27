@@ -915,7 +915,6 @@ h1 {
   }
 }
 
-
 /* Template-derived competitive FPS HUD. Lightweight DOM/CSS only. */
 .combat-hud {
   position: absolute;
@@ -1031,10 +1030,18 @@ h1 {
   box-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
 }
 
-.hit-marker i:nth-child(1) { transform: translate(-15px, -9px) rotate(45deg); }
-.hit-marker i:nth-child(2) { transform: translate(5px, -9px) rotate(-45deg); }
-.hit-marker i:nth-child(3) { transform: translate(-15px, 7px) rotate(-45deg); }
-.hit-marker i:nth-child(4) { transform: translate(5px, 7px) rotate(45deg); }
+.hit-marker i:nth-child(1) {
+  transform: translate(-15px, -9px) rotate(45deg);
+}
+.hit-marker i:nth-child(2) {
+  transform: translate(5px, -9px) rotate(-45deg);
+}
+.hit-marker i:nth-child(3) {
+  transform: translate(-15px, 7px) rotate(-45deg);
+}
+.hit-marker i:nth-child(4) {
+  transform: translate(5px, 7px) rotate(45deg);
+}
 
 .hit-marker.is-headshot i {
   background: #ffd86e;

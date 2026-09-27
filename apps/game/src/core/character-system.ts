@@ -710,11 +710,7 @@ export class CharacterSystem {
     baseDamage: number,
     range = 120,
   ): CombatHit | null {
-    const directionLength = Math.hypot(
-      directionValue.x,
-      directionValue.y,
-      directionValue.z,
-    );
+    const directionLength = Math.hypot(directionValue.x, directionValue.y, directionValue.z);
     if (directionLength <= 0.0001) return null;
 
     const origin: Triplet = [originValue.x, originValue.y, originValue.z];
@@ -724,14 +720,12 @@ export class CharacterSystem {
       directionValue.z / directionLength,
     ];
 
-    let best:
-      | {
-          actor: ActorRuntime;
-          distance: number;
-          headshot: boolean;
-          point: Triplet;
-        }
-      | null = null;
+    let best: {
+      actor: ActorRuntime;
+      distance: number;
+      headshot: boolean;
+      point: Triplet;
+    } | null = null;
 
     for (const actor of this.actors) {
       if (!actor.alive) continue;
@@ -786,10 +780,7 @@ export class CharacterSystem {
 
     if (!best) return null;
 
-    const appliedDamage = Math.max(
-      1,
-      Math.round(baseDamage * (best.headshot ? 1.65 : 1)),
-    );
+    const appliedDamage = Math.max(1, Math.round(baseDamage * (best.headshot ? 1.65 : 1)));
     best.actor.health = Math.max(0, best.actor.health - appliedDamage);
     const eliminated = best.actor.health <= 0;
 
