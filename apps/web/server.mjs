@@ -11,6 +11,7 @@ const port = Number.parseInt(process.env.PORT ?? '4173', 10);
 const rooms = new Map();
 const streams = new Map();
 const compressionCache = new Map();
+const immutableFileCache = new Map();
 const brotli = promisify(brotliCompress);
 const gzipAsync = promisify(gzip);
 
@@ -425,14 +426,32 @@ async function compressedPayload(filePath, data, encoding) {
   const cached = compressionCache.get(key);
   if (cached) return cached;
 
-  const compressed = encoding === 'br' ? await brotli(data) : await gzipAsync(data);
-  compressionCache.set(key, compressed);
-  return compressed;
+  const pending = (encoding === 'br' ? brotli(data) : gzipAsync(data)).catch((error) => {
+    compressionCache.delete(key);
+    throw error;
+  });
+  compressionCache.set(key, pending);
+  return pending;
+}
+
+async function readStaticFile(filePath, ext) {
+  const immutable = ['.js', '.css', '.svg'].includes(ext);
+  if (!immutable) return readFile(filePath);
+
+  const cached = immutableFileCache.get(filePath);
+  if (cached) return cached;
+
+  const pending = readFile(filePath).catch((error) => {
+    immutableFileCache.delete(filePath);
+    throw error;
+  });
+  immutableFileCache.set(filePath, pending);
+  return pending;
 }
 
 async function send(req, res, filePath) {
-  const data = await readFile(filePath);
   const ext = path.extname(filePath).toLowerCase();
+  const data = await readStaticFile(filePath, ext);
   const compressible = new Set(['.html', '.js', '.css', '.json', '.svg']);
   const accepted = String(req.headers['accept-encoding'] ?? '');
   let body = data;

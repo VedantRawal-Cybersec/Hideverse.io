@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -57,6 +58,32 @@ try {
   if (!compressed.ok || compressed.headers.get('content-encoding') !== 'br') {
     throw new Error('Brotli delivery is not active for compressible game assets');
   }
+
+  const assetsDir = path.join(root, 'dist', 'game', 'assets');
+  const assetNames = await readdir(assetsDir);
+  const javascriptAssets = [];
+  for (const name of assetNames) {
+    if (!name.endsWith('.js')) continue;
+    const info = await stat(path.join(assetsDir, name));
+    javascriptAssets.push({ name, size: info.size });
+  }
+  javascriptAssets.sort((a, b) => b.size - a.size);
+  const largestBundle = javascriptAssets[0];
+  if (!largestBundle) throw new Error('game JavaScript bundle was not found');
+
+  const burst = await Promise.all(
+    Array.from({ length: 12 }, () =>
+      fetch(`${base}/game/assets/${largestBundle.name}`, {
+        headers: { 'accept-encoding': 'gzip' },
+      }),
+    ),
+  );
+  if (
+    burst.some((response) => !response.ok || response.headers.get('content-encoding') !== 'gzip')
+  ) {
+    throw new Error('concurrent compressed bundle delivery failed');
+  }
+  await Promise.all(burst.map((response) => response.arrayBuffer()));
 
   const headers = { 'content-type': 'application/json' };
   const first = await json('/api/multiplayer/join', {
@@ -149,7 +176,7 @@ try {
   });
 
   console.log(
-    '[multiplayer-qa] PASS — compressed delivery, health, join, authoritative state, shared objectives, SSE, reset, and leave verified.',
+    '[multiplayer-qa] PASS — compressed delivery burst, health, join, authoritative state, shared objectives, SSE, reset, and leave verified.',
   );
 } finally {
   server.kill('SIGTERM');
