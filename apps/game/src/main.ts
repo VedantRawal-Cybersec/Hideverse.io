@@ -283,6 +283,7 @@ async function boot(): Promise<void> {
       multiplayer.dispose();
       input.dispose();
       environmentPolish.destroy();
+      environmentPolish.destroy();
       graphicsPipeline.destroy();
     },
     { once: true },
@@ -303,6 +304,7 @@ async function boot(): Promise<void> {
     mode.completeObjectives(multiplayer.consumeRemoteObjectives());
 
     player.update(deltaSeconds);
+    environmentPolish.update(deltaSeconds);
 
     const position = player.position;
     if (!pointInsideMap(map, position)) {
