@@ -1,4 +1,14 @@
-export type AudioCue = 'interact' | 'objective' | 'danger' | 'win' | 'lose';
+export type AudioCue =
+  | 'interact'
+  | 'objective'
+  | 'danger'
+  | 'win'
+  | 'lose'
+  | 'shoot'
+  | 'hit'
+  | 'reload'
+  | 'eliminate'
+  | 'empty';
 
 export class AudioFeedback {
   private context: AudioContext | null = null;
@@ -33,14 +43,20 @@ export class AudioFeedback {
       danger: [180, 0.05, 0.1],
       win: [880, 0.065, 0.22],
       lose: [120, 0.065, 0.28],
+      shoot: [145, 0.055, 0.08],
+      hit: [920, 0.035, 0.055],
+      reload: [360, 0.03, 0.12],
+      eliminate: [1180, 0.05, 0.16],
+      empty: [210, 0.025, 0.045],
     };
     const [frequency, gainValue, duration] = settings[type];
 
     const oscillator = context.createOscillator();
     const gain = context.createGain();
-    oscillator.type = type === 'danger' || type === 'lose' ? 'sawtooth' : 'sine';
+    oscillator.type =
+      type === 'danger' || type === 'lose' || type === 'shoot' ? 'sawtooth' : 'sine';
     oscillator.frequency.setValueAtTime(frequency, context.currentTime);
-    if (type === 'win') {
+    if (type === 'win' || type === 'eliminate') {
       oscillator.frequency.exponentialRampToValueAtTime(
         frequency * 1.5,
         context.currentTime + duration,
