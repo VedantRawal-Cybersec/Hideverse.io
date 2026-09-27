@@ -8,6 +8,7 @@ export type ModeRuntimeState = {
   prompt: string | null;
   objective: string;
   progress: string;
+  mechanic: string;
   complete: boolean;
   outcome: ModeOutcome;
   timerSeconds: number;
@@ -116,12 +117,37 @@ function objectiveGuidance(modeId: string): string {
   return 'Complete the active objectives.';
 }
 
+function mechanicText(
+  modeId: string,
+  completed: number,
+  total: number,
+  danger: number,
+  scannerCharge: number,
+): string {
+  if (modeId === 'kick-the-box') return `CHAIN ${completed}/${total}`;
+  if (modeId === 'who-is-real') return `SCANNER ${Math.round(scannerCharge)}%`;
+  if (modeId === 'hide-and-heist') {
+    const loot = Math.min(completed, Math.max(0, total - 1));
+    return `LOOT ${loot}/${Math.max(0, total - 1)} · HEAT ${Math.round(danger)}%`;
+  }
+  if (modeId === 'monster-hunt') return `SYSTEMS ${completed}/${total}`;
+  if (modeId === 'floor-by-floor') {
+    return completed >= total ? 'ROOF SECURED' : `FLOOR ${Math.min(total, completed + 1)}/${total}`;
+  }
+  if (modeId === 'traitor') {
+    const confidence = total > 0 ? Math.round((completed / total) * 100) : 0;
+    return `EVIDENCE ${confidence}%`;
+  }
+  return `${completed}/${total}`;
+}
+
 export class ModeEngine {
   private readonly completed = new Set<string>();
   private readonly validObjectiveIds: Set<string>;
   private readonly totalSeconds: number;
   private timerSeconds: number;
   private danger = 0;
+  private scannerCharge = 100;
   private outcome: ModeOutcome = 'playing';
 
   constructor(private readonly map: MapDefinition) {
@@ -140,6 +166,7 @@ export class ModeEngine {
     this.completed.clear();
     this.timerSeconds = this.totalSeconds;
     this.danger = 0;
+    this.scannerCharge = 100;
     this.outcome = 'playing';
   }
 
@@ -154,6 +181,10 @@ export class ModeEngine {
 
     if (this.outcome === 'playing') {
       const dt = Math.min(Math.max(context.deltaSeconds, 0), 0.1);
+      if (this.map.mode.id === 'who-is-real') {
+        this.scannerCharge = Math.min(100, this.scannerCharge + 11 * dt);
+      }
+
       if (
         context.roundElapsedSeconds !== undefined &&
         Number.isFinite(context.roundElapsedSeconds)
@@ -166,7 +197,20 @@ export class ModeEngine {
         this.timerSeconds = Math.max(0, this.timerSeconds - dt);
       }
 
-      const gain = riskRate(this.map.mode.id, context.threat) * dt;
+      const completedBefore = this.completed.size;
+      let gain = riskRate(this.map.mode.id, context.threat) * dt;
+
+      if (this.map.mode.id === 'hide-and-heist') {
+        const lootHeld = Math.min(completedBefore, Math.max(0, this.map.objectives.length - 1));
+        gain *= 1 + lootHeld * 0.1;
+      } else if (this.map.mode.id === 'monster-hunt') {
+        gain *= Math.max(0.68, 1 - completedBefore * 0.08);
+      } else if (this.map.mode.id === 'floor-by-floor') {
+        gain *= Math.max(0.76, 1 - completedBefore * 0.05);
+      } else if (this.map.mode.id === 'traitor') {
+        gain *= Math.max(0.72, 1 - completedBefore * 0.07);
+      }
+
       const recovery = context.hidden ? 17 * dt : context.threat.detected ? 0 : 5 * dt;
       this.danger = Math.min(100, Math.max(0, this.danger + gain - recovery));
 
@@ -195,11 +239,23 @@ export class ModeEngine {
         }
       }
 
-      if (nearest && interactPressed) {
+      const scannerReady = this.map.mode.id !== 'who-is-real' || this.scannerCharge >= 25;
+      if (nearest && interactPressed && scannerReady) {
         this.completed.add(nearest.id);
         completedObjectiveId = nearest.id;
         event = 'objective';
-        this.danger = Math.max(0, this.danger - 12);
+
+        if (this.map.mode.id === 'who-is-real') {
+          this.scannerCharge = Math.max(0, this.scannerCharge - 25);
+        }
+
+        const finalObjectiveId = this.map.objectives.at(-1)?.id;
+        if (this.map.mode.id === 'hide-and-heist' && nearest.id !== finalObjectiveId) {
+          this.danger = Math.min(100, this.danger + 8);
+        } else {
+          const relief = this.map.mode.id === 'kick-the-box' ? 18 : 12;
+          this.danger = Math.max(0, this.danger - relief);
+        }
       }
     }
 
@@ -229,10 +285,19 @@ export class ModeEngine {
     return {
       prompt:
         nearest && !this.completed.has(nearest.id) && this.outcome === 'playing'
-          ? `E · ${nearest.action} · ${nearest.label.toUpperCase()}`
+          ? this.map.mode.id === 'who-is-real' && this.scannerCharge < 25
+            ? `SCANNER RECHARGING · ${Math.round(this.scannerCharge)}%`
+            : `E · ${nearest.action} · ${nearest.label.toUpperCase()}`
           : null,
       objective,
       progress: progressText(this.map.mode.id, completedCount, this.map.objectives.length),
+      mechanic: mechanicText(
+        this.map.mode.id,
+        completedCount,
+        this.map.objectives.length,
+        this.danger,
+        this.scannerCharge,
+      ),
       complete,
       outcome: this.outcome,
       timerSeconds: this.timerSeconds,
