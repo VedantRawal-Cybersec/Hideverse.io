@@ -1,0 +1,78 @@
+name: Vendor VALID Human Avatars
+
+on:
+  push:
+    branches:
+      - rebuild/template-fps-core
+
+permissions:
+  contents: write
+
+jobs:
+  avatars:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: rebuild/template-fps-core
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.23.2
+
+      - name: Download pinned MIT VALID humans
+        run: |
+          set -euo pipefail
+          VALID_COMMIT="c76d2547b5b464415283169d18dffb16bb584eee"
+          BASE="https://raw.githubusercontent.com/google/valid-avatar-library/$VALID_COMMIT"
+          mkdir -p /tmp/valid apps/game-next/public/assets/humans
+
+          curl -L --fail --retry 3 "$BASE/Avatars/Asian/Asian_M_1_Casual.fbx" -o /tmp/valid/operator_a.fbx
+          curl -L --fail --retry 3 "$BASE/Avatars/Black/Black_F_1_Casual.fbx" -o /tmp/valid/operator_b.fbx
+          curl -L --fail --retry 3 "$BASE/LICENSE" -o apps/game-next/public/assets/humans/VALID_LICENSE
+
+      - name: Install FBX converter
+        run: npm install --no-save --no-audit --no-fund fbx2gltf@0.9.7-p1
+
+      - name: Convert humans to browser GLB
+        run: |
+          set -euo pipefail
+          BIN="node_modules/fbx2gltf/bin/Linux/FBX2glTF"
+          chmod +x "$BIN"
+          "$BIN" -b -i /tmp/valid/operator_a.fbx -o apps/game-next/public/assets/humans/operator_a.glb
+          "$BIN" -b -i /tmp/valid/operator_b.fbx -o apps/game-next/public/assets/humans/operator_b.glb
+          ls -lh apps/game-next/public/assets/humans
+
+      - name: Add provenance
+        run: |
+          cat > apps/game-next/public/assets/humans/SOURCE.md <<'EOF'
+          # Human avatar provenance
+
+          Source library: google/valid-avatar-library
+          Pinned commit: c76d2547b5b464415283169d18dffb16bb584eee
+          License: MIT
+
+          Converted for Hideverse browser runtime using fbx2gltf 0.9.7-p1.
+
+          operator_a.glb
+          - Upstream: Avatars/Asian/Asian_M_1_Casual.fbx
+          - Fully rigged clothed human avatar.
+
+          operator_b.glb
+          - Upstream: Avatars/Black/Black_F_1_Casual.fbx
+          - Fully rigged clothed human avatar.
+
+          The neutral operator_a/operator_b filenames are runtime aliases only; this file preserves the exact upstream provenance.
+          EOF
+
+      - name: Commit converted avatars
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/game-next/public/assets/humans/
+          if ! git diff --cached --quiet; then
+            git commit -m "Add MIT rigged human avatars for template rebuild"
+            git push
+          fi
