@@ -259,6 +259,7 @@ export class CharacterSystem {
     app: Application,
     private readonly map: MapDefinition,
   ) {
+    const coarse = matchMedia('(pointer: coarse)').matches;
     this.navById = new Map(map.navNodes.map((node) => [node.id, node.position] as const));
     this.graph = buildNavigationGraph(map);
 
@@ -287,7 +288,7 @@ export class CharacterSystem {
       root.addChild(head);
 
       let limbs: ActorRuntime['limbs'] = null;
-      if (!matchMedia('(pointer: coarse)').matches) {
+      if (!coarse) {
         const makeLimb = (name: string, x: number, y: number): Entity => {
           const limb = new Entity(`${spawn.id}-${name}`);
           limb.addComponent('render', { type: 'box' });
@@ -337,14 +338,15 @@ export class CharacterSystem {
       });
     }
 
-    if (!matchMedia('(pointer: coarse)').matches) {
-      window.setTimeout(() => {
-        void this.loadRiggedActors(app);
-      }, 2200);
-    }
+    window.setTimeout(
+      () => {
+        void this.loadRiggedActors(app, coarse);
+      },
+      coarse ? 6200 : 2200,
+    );
   }
 
-  private async loadRiggedActors(app: Application): Promise<void> {
+  private async loadRiggedActors(app: Application, mobileOnly = false): Promise<void> {
     type LoadedCharacter = {
       asset: Awaited<ReturnType<typeof loadContainer>>;
       tracks: Map<string, AnimTrack>;
@@ -375,7 +377,13 @@ export class CharacterSystem {
       return loading;
     };
 
-    for (const actor of this.actors) {
+    const actorsToUpgrade = mobileOnly
+      ? this.actors
+          .filter((actor) => isHostile(actor.role) && Boolean(roleCharacterAsset[actor.role]))
+          .slice(0, 1)
+      : this.actors;
+
+    for (const actor of actorsToUpgrade) {
       const file = roleCharacterAsset[actor.role];
       if (!file || actor.role === 'monster') continue;
 
@@ -390,12 +398,13 @@ export class CharacterSystem {
         }
 
         const rigged = asset.resource.instantiateRenderEntity({
-          castShadows: true,
+          castShadows: !mobileOnly,
           receiveShadows: true,
         });
         rigged.name = `rigged-${actor.id}`;
         rigged.setLocalPosition(0, -1.2, 0);
-        rigged.setLocalScale(0.88, 0.88, 0.88);
+        const rigScale = mobileOnly ? 0.82 : 0.88;
+        rigged.setLocalScale(rigScale, rigScale, rigScale);
         rigged.setLocalEulerAngles(0, 180, 0);
         rigged.addComponent('anim', { activate: true, speed: 1 });
         if (!rigged.anim) {
@@ -441,7 +450,7 @@ export class CharacterSystem {
       }
 
       await new Promise<void>((resolve) => {
-        window.setTimeout(resolve, 120);
+        window.setTimeout(resolve, mobileOnly ? 240 : 120);
       });
     }
   }
