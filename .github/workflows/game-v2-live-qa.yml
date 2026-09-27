@@ -1,0 +1,129 @@
+name: Game V2 Live Browser QA
+
+on:
+  push:
+    branches:
+      - qa/game-v2-live
+
+permissions:
+  contents: read
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [desktop, mobile]
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.23.2
+
+      - name: Install Playwright
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Diagnose live V2
+        env:
+          PROFILE: ${{ matrix.profile }}
+          TARGET: https://hideverse-io.onrender.com/game-v2/
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+
+          const mobile = process.env.PROFILE === 'mobile';
+          const browser = await chromium.launch({ headless: true });
+          const context = await browser.newContext(
+            mobile
+              ? {
+                  viewport: { width: 390, height: 844 },
+                  hasTouch: true,
+                  isMobile: true,
+                  deviceScaleFactor: 2,
+                }
+              : {
+                  viewport: { width: 1440, height: 900 },
+                  deviceScaleFactor: 1,
+                },
+          );
+          const page = await context.newPage();
+          const pageErrors = [];
+          const consoleErrors = [];
+          const failedRequests = [];
+          const badResponses = [];
+
+          page.on('pageerror', (error) => pageErrors.push(String(error)));
+          page.on('console', (message) => {
+            if (message.type() === 'error') consoleErrors.push(message.text());
+          });
+          page.on('requestfailed', (request) => {
+            const url = request.url();
+            if (/googleapis|gstatic/.test(url)) return;
+            failedRequests.push({ url, error: request.failure()?.errorText ?? 'unknown' });
+          });
+          page.on('response', (response) => {
+            if (response.status() >= 400) {
+              const url = response.url();
+              if (/googleapis|gstatic/.test(url)) return;
+              badResponses.push({ url, status: response.status() });
+            }
+          });
+
+          try {
+            const started = Date.now();
+            await page.goto(process.env.TARGET, {
+              waitUntil: 'domcontentloaded',
+              timeout: 120000,
+            });
+            await page.waitForSelector('canvas#game', { timeout: 30000 });
+            await page.waitForTimeout(12000);
+
+            const snapshot = await page.evaluate(() => {
+              const canvas = document.querySelector('#game');
+              const rect = canvas?.getBoundingClientRect();
+              const buttons = [...document.querySelectorAll('button')]
+                .map((button) => button.textContent?.trim())
+                .filter(Boolean)
+                .slice(0, 30);
+              const text = document.body.innerText.replace(/\s+/g, ' ').trim().slice(0, 3000);
+              const gl =
+                canvas instanceof HTMLCanvasElement
+                  ? canvas.getContext('webgl2') || canvas.getContext('webgl')
+                  : null;
+              return {
+                title: document.title,
+                canvas: rect ? { width: rect.width, height: rect.height } : null,
+                webgl: Boolean(gl),
+                buttons,
+                text,
+                pointerLocked: Boolean(document.pointerLockElement),
+                resources: performance.getEntriesByType('resource').length,
+              };
+            });
+
+            const summary = {
+              profile: process.env.PROFILE,
+              elapsedMs: Date.now() - started,
+              snapshot,
+              pageErrors,
+              consoleErrors,
+              failedRequests,
+              badResponses,
+            };
+            console.log('[game-v2-live-qa]', JSON.stringify(summary));
+
+            if (!snapshot.canvas || snapshot.canvas.width < 300 || snapshot.canvas.height < 300) {
+              throw new Error('V2 canvas did not render at playable size');
+            }
+            if (!snapshot.webgl) throw new Error('V2 WebGL context is unavailable');
+            if (pageErrors.length) throw new Error('V2 page errors detected');
+          } finally {
+            await context.close();
+            await browser.close();
+          }
+          NODE
