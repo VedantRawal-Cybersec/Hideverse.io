@@ -79,9 +79,7 @@ try {
     ),
   );
   if (
-    burst.some(
-      (response) => !response.ok || response.headers.get('content-encoding') !== 'gzip',
-    )
+    burst.some((response) => !response.ok || response.headers.get('content-encoding') !== 'gzip')
   ) {
     throw new Error('concurrent compressed bundle delivery failed');
   }
