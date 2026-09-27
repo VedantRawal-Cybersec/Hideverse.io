@@ -84,8 +84,20 @@ jobs:
                   await page.waitForSelector('#boot-overlay.is-hidden', { timeout: 90000 });
                   const bootMs = Date.now() - started;
 
-                  // Mobile intentionally streams its first rigged role later than desktop.
-                  await page.waitForTimeout(mobile ? 7800 : 5200);
+                  // Character meshes are intentionally deferred until the playable map is ready.
+                  // Wait for that progressive stream instead of assuming a fixed device-specific delay.
+                  try {
+                    await page.waitForFunction(
+                      () =>
+                        performance
+                          .getEntriesByType('resource')
+                          .some((entry) => entry.name.includes('/characters/kaykit/')),
+                      { timeout: mobile ? 16000 : 10000 },
+                    );
+                  } catch {
+                    // The explicit resource assertion below provides the actionable failure.
+                  }
+                  await page.waitForTimeout(900);
 
                   const state = await page.evaluate(() => {
                     const resources = performance.getEntriesByType('resource').map((entry) => entry.name);
