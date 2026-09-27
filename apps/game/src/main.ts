@@ -183,7 +183,8 @@ async function boot(): Promise<void> {
   app.setCanvasResolution(RESOLUTION_AUTO);
   app.scene.ambientLight = color(referenceScene.ambient);
 
-  const performanceManager = new PerformanceManager(app, coarse);
+  const autoPixelScale = coarse && map.id === 'hotel' ? 0.78 : 1;
+  const performanceManager = new PerformanceManager(app, coarse, autoPixelScale);
   qualitySelect.value = performanceManager.preset;
 
   const camera = new Entity('Player Camera');
