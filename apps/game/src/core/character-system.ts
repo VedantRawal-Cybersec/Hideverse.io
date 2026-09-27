@@ -57,12 +57,13 @@ const roleColors: Record<ActorRole, Triplet> = {
   traitor: [0.95, 0.42, 0.68],
 };
 
-const roleCharacterAsset: Partial<Record<ActorRole, string>> = {
+const roleCharacterAsset: Record<ActorRole, string> = {
   hider: 'Rogue_Hooded.glb',
   seeker: 'Knight.glb',
   guard: 'Knight.glb',
   civilian: 'Rogue.glb',
   mimic: 'Mage.glb',
+  monster: 'Barbarian.glb',
   traitor: 'Barbarian.glb',
 };
 
@@ -107,6 +108,16 @@ function detectionRadius(role: ActorRole): number {
 
 function isHostile(role: ActorRole): boolean {
   return role === 'monster' || role === 'seeker' || role === 'guard' || role === 'traitor';
+}
+
+function mobileVisualPriority(role: ActorRole): number {
+  if (role === 'monster') return 7;
+  if (role === 'seeker') return 6;
+  if (role === 'traitor') return 5;
+  if (role === 'guard') return 4;
+  if (role === 'mimic') return 3;
+  if (role === 'hider') return 2;
+  return 1;
 }
 
 function distance(a: Triplet, b: Triplet): number {
@@ -378,14 +389,15 @@ export class CharacterSystem {
     };
 
     const actorsToUpgrade = mobileOnly
-      ? this.actors
-          .filter((actor) => isHostile(actor.role) && Boolean(roleCharacterAsset[actor.role]))
+      ? [...this.actors]
+          .sort(
+            (a, b) => mobileVisualPriority(b.role) - mobileVisualPriority(a.role),
+          )
           .slice(0, 1)
       : this.actors;
 
     for (const actor of actorsToUpgrade) {
       const file = roleCharacterAsset[actor.role];
-      if (!file || actor.role === 'monster') continue;
 
       try {
         const { asset, tracks } = await loadCharacter(file);
@@ -403,7 +415,8 @@ export class CharacterSystem {
         });
         rigged.name = `rigged-${actor.id}`;
         rigged.setLocalPosition(0, -1.2, 0);
-        const rigScale = mobileOnly ? 0.82 : 0.88;
+        const rigScale =
+          actor.role === 'monster' ? (mobileOnly ? 1.02 : 1.1) : mobileOnly ? 0.82 : 0.88;
         rigged.setLocalScale(rigScale, rigScale, rigScale);
         rigged.setLocalEulerAngles(0, 180, 0);
         rigged.addComponent('anim', { activate: true, speed: 1 });
