@@ -110,10 +110,13 @@ function flashScreen(kind: 'objective' | 'win' | 'lose'): void {
   void eventFlash.offsetWidth;
   eventFlash.classList.add(`is-${kind}`);
 
-  eventFlashTimer = window.setTimeout(() => {
-    eventFlash.classList.remove('is-objective', 'is-win', 'is-lose');
-    eventFlashTimer = 0;
-  }, kind === 'objective' ? 380 : 660);
+  eventFlashTimer = window.setTimeout(
+    () => {
+      eventFlash.classList.remove('is-objective', 'is-win', 'is-lose');
+      eventFlashTimer = 0;
+    },
+    kind === 'objective' ? 380 : 660,
+  );
 }
 
 function setRoundResult(outcome: 'playing' | 'won' | 'lost', message: string): void {
