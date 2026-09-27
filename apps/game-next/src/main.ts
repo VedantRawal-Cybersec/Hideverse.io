@@ -1,0 +1,394 @@
+import { Renderer } from './Renderer'
+import { Scene } from './Scene'
+import { PhysicsSystem } from './PhysicsSystem'
+import { InputManager } from './InputManager'
+import { CameraRig } from './Camera'
+import { Player } from './Player'
+import { ThirdPersonCharacter } from './character/ThirdPersonCharacter'
+import { FPSMesh } from './animation/FPSMesh'
+import { WeaponRenderer } from './weapon/WeaponRenderer'
+import { WEAPONS, type WeaponId } from './weapon/WeaponData'
+import { WeaponShooter } from './weapon/WeaponShooter'
+import { WeaponLogicSystem } from './weapon/WeaponLogicSystem'
+import { HUD } from './HUD'
+import { Vector3 } from 'three'
+import { WeaponTransformDebugger } from './debug/WeaponTransformDebugger'
+import PlayerDebugger from './debug/PlayerDebugger'
+import { MapMenu } from './MapMenu'
+import { DamageSystem } from './ai/DamageSystem'
+import { CharacterPool } from './ai/CharacterPool'
+import { preloadEnemyWeapon } from './ai/EnemyWeapon'
+import { Enemy } from './ai/Enemy'
+import { NavGrid } from './ai/NavGrid'
+import {
+  getCharacterDefinitionForSelection,
+  normalizeCharacterSelection,
+  type CharacterSelection,
+} from './character/characterRegistry'
+import { dlog, isDebug } from './debug/log'
+import { createParticles } from './setup/particles'
+import { createSpriteFx } from './setup/spriteFx'
+import { createAudio } from './setup/audio'
+import { createWeaponHitHandlers } from './setup/weaponHitHandlers'
+import { createEnemyCombatHelpers } from './setup/enemyCombat'
+import { createMatchController } from './setup/matchController'
+import { setupDevBots } from './setup/devBots'
+import { createMapLoader, createMapMenuReopener, pickInitialMap, startRequestedMatch } from './setup/mapFlow'
+import { drawHudFrame } from './setup/hudState'
+import { LightingDebugger } from './debug/LightingDebugger'
+import { loadLayout } from './maps/layoutLoader'
+import { spawnEntitiesFromLayout } from './maps/entitySpawner'
+import type { MapLayout } from './maps/layoutTypes'
+
+const FIXED_DT = 1 / 60
+const _eyeTmp = new Vector3()
+
+async function main() {
+  const loadingEl = document.getElementById('loading')
+  const loadingText = document.getElementById('loading-text')
+  function setLoading(t: string) {
+    if (loadingText) loadingText.textContent = t
+  }
+  function hideLoading() {
+    if (!loadingEl) return
+    // Fade out (CSS transition), then remove from layout so it can't block clicks.
+    loadingEl.classList.add('fade-out')
+    setTimeout(() => { loadingEl.style.display = 'none' }, 500)
+  }
+  const loadingUi = {
+    show(text: string) {
+      setLoading(text)
+      if (loadingEl) {
+        loadingEl.classList.remove('fade-out')
+        loadingEl.style.display = ''
+      }
+    },
+    hide: hideLoading,
+  }
+
+  setLoading('Initializing physics...')
+  const physics = await PhysicsSystem.init()
+  setLoading('Initializing renderer...')
+  const renderer = new Renderer()
+  setLoading('Building scene...')
+  const scene = new Scene()
+  setLoading('Setting up camera...')
+  const cam = new CameraRig()
+  const input = new InputManager(renderer.domElement, document.getElementById('lock-hint'))
+
+  renderer.attachCamera(cam.three)
+  window.addEventListener('resize', () => {
+    cam.three.aspect = window.innerWidth / window.innerHeight
+    cam.three.updateProjectionMatrix()
+  })
+
+  const mapMenu = new MapMenu()
+  let currentMapId = 'shootRange'
+  const loadMap = createMapLoader(scene, physics, loadingUi, (id) => {
+    currentMapId = id
+  })
+
+  const params = new URLSearchParams(location.search)
+
+  hideLoading()
+
+  // Check if launched from Studio (query params)
+  const launchMap = params.get('map')
+  const launchMode = params.get('mode')
+  let initialSelection: Awaited<ReturnType<typeof pickInitialMap>>
+
+  if (launchMap) {
+    // Skip menu — launched from Studio's Run button
+    await loadMap(launchMap)
+    initialSelection = {
+      currentMapId: launchMap,
+      pendingMatch: null,
+      characterSelection: normalizeCharacterSelection({}),
+    }
+  } else {
+    initialSelection = await pickInitialMap(mapMenu, loadMap)
+  }
+
+  let selectedCharacters = initialSelection.characterSelection
+
+  const player = new Player(physics)
+  scene.add(player.debugMesh)
+  player.debugMesh.visible = false
+
+  const damage = new DamageSystem()
+  damage.register(player)
+  damage.registerCollider(player.colliderHandle, player)
+
+  if (isDebug()) new PlayerDebugger(player)
+
+  const character = new ThirdPersonCharacter()
+  scene.add(character.object)
+  const enemyPool = new CharacterPool()
+  let activePlayerCharacterId: string | null = null
+  let activeEnemyCharacterId: string | null = null
+  let rebindCurrentWeapon: (() => Promise<void>) | null = null
+  let syncCharacterView: (() => void) | null = null
+
+  async function applyCharacterSelection(
+    nextSelection: CharacterSelection,
+    loadingText = 'Loading characters...',
+  ) {
+    const normalized = normalizeCharacterSelection(nextSelection)
+    selectedCharacters = normalized
+
+    const playerDefinition = getCharacterDefinitionForSelection(normalized, 'player')
+    const enemyDefinition = getCharacterDefinitionForSelection(normalized, 'enemy')
+    const needsPlayerReload = activePlayerCharacterId !== playerDefinition.id
+    const needsEnemyReload = activeEnemyCharacterId !== enemyDefinition.id
+    if (!needsPlayerReload && !needsEnemyReload) return
+
+    loadingUi.show(loadingText)
+    try {
+      if (needsPlayerReload) {
+        try {
+          await character.load(playerDefinition)
+          activePlayerCharacterId = playerDefinition.id
+          dlog('[character] loaded player character', playerDefinition.id)
+          const climbClip = character.animator.getClip('ledge_climb_up')
+          if (climbClip) player.setClimbDuration(climbClip.duration)
+        } catch (error) {
+          console.warn('[character] using placeholder humanoid for player', playerDefinition.id, error)
+        }
+      }
+
+      if (needsEnemyReload) {
+        await enemyPool.init(enemyDefinition)
+        activeEnemyCharacterId = enemyDefinition.id
+        dlog('[character] loaded enemy character', enemyDefinition.id)
+      }
+
+      if (rebindCurrentWeapon) await rebindCurrentWeapon()
+      syncCharacterView?.()
+    } finally {
+      loadingUi.hide()
+    }
+  }
+
+  await applyCharacterSelection(selectedCharacters, 'Loading character roster...')
+  await preloadEnemyWeapon()
+
+  let navDebug: import('three').Object3D | null = null
+  let navDbgEnabled = params.has('nav')
+  function buildNav(): NavGrid {
+    if (navDebug) { scene.remove(navDebug); navDebug = null }
+    const grid = new NavGrid(physics, { halfExtent: 60, cell: 0.9 })
+    if (navDbgEnabled) { navDebug = grid.buildDebugObject(); scene.add(navDebug) }
+    return grid
+  }
+  let nav: NavGrid = buildNav()
+  // Rapier's query pipeline (used by isSpawnSafe's raycast/overlap) is only
+  // synchronized during world.step(). Step once now so the first round's bot
+  // spawns validate against the just-loaded map colliders instead of an empty
+  // world — otherwise every spawn check fails and all bots stack on one fallback.
+  physics.step(0)
+
+  // Lighting debugger — toggled from mod menu (N key)
+  let lightingDbg: LightingDebugger | null = null
+
+  // Register mod menu callbacks (called by index.html onclick handlers)
+  ;(window as any)._modCallbacks = {
+    light: () => {
+      if (lightingDbg) {
+        lightingDbg.destroy()
+        lightingDbg = null
+      } else {
+        lightingDbg = new LightingDebugger(scene, cam)
+      }
+      return !!lightingDbg
+    },
+  }
+
+  // Try loading a layout for this map
+  let layout: MapLayout | null = null
+  try { layout = await loadLayout(currentMapId) } catch {}
+  const enemies: Enemy[] = []
+  if (layout && layout.enemies && layout.enemies.length > 0) {
+    // Spawn enemies from layout
+    const spawned = spawnEntitiesFromLayout(
+      { physics, scene, pool: enemyPool, damage, nav },
+      layout,
+    )
+    enemies.push(...spawned.enemies)
+    // Override player spawn if layout provides one
+    if (spawned.playerSpawn) {
+      player.teleport(spawned.playerSpawn.x, spawned.playerSpawn.y, spawned.playerSpawn.z)
+    }
+    dlog(`[layout] spawned ${spawned.enemies.length} enemies from layout`)
+  } else {
+    // Legacy: free-roam bots via query param
+    const bots = setupDevBots({ physics, scene, enemyPool, damage, nav, params })
+    enemies.push(...bots)
+  }
+
+  const fpsMesh = new FPSMesh()
+  fpsMesh.object.visible = false
+  cam.three.add(fpsMesh.object)
+
+  const weapons = new WeaponRenderer()
+  if (isDebug()) new WeaponTransformDebugger(weapons)
+
+  setLoading('Loading textures...')
+  const { smokeSprites, flashSprites } = await createSpriteFx(scene)
+  const particles = createParticles(scene)
+  const { muzzleFx, smokeFx, impactFx, decals, shells } = particles
+  const { audio } = await createAudio()
+
+  let hud!: HUD
+  const weaponHitHandlers = createWeaponHitHandlers({
+    damage, player, scene, smokeSprites, flashSprites, smokeFx, impactFx,
+    getHud: () => hud, audio,
+  })
+  const shooter = new WeaponShooter(physics, weapons, muzzleFx, impactFx, decals, shells, weaponHitHandlers.onHit, weaponHitHandlers.onMuzzle)
+
+  let currentWeaponId: WeaponId = 'ak47'
+  async function equip(id: WeaponId) {
+    currentWeaponId = id
+    const stats = WEAPONS[id]
+    await weapons.attachTo(id, character.rightHand, stats.tppOffset)
+    character.useAnimationSet(id === 'pistol' ? 'pistol' : id === 'knife' ? 'knife' : 'rifle')
+  }
+  rebindCurrentWeapon = () => equip(currentWeaponId)
+
+  const applyMode = () => {
+    character.object.visible = true
+    character.setHeadVisible(cam.mode === 'TPP')
+  }
+  syncCharacterView = applyMode
+  cam.onModeChange = applyMode
+  await equip('ak47')
+  applyMode()
+
+  const logic = new WeaponLogicSystem(input, cam, weapons, shooter, fpsMesh, character, player.body, equip, () => player.crouching)
+  hud = new HUD(renderer.hudCtx, renderer.hudCanvas)
+
+  player.onDamaged = () => hud.flashDamage()
+
+  const { losClear, enemyFireFx } = createEnemyCombatHelpers({
+    physics, audio, muzzleFx, getFlashSprites: () => flashSprites, playerBody: player.body,
+  })
+  const matchController = createMatchController({
+    physics, scene, mapMenu, player, enemyPool, damage, layout,
+    getNav: () => nav, setNav: (nextNav) => { nav = nextNav },
+    onEnemyFire: enemyFireFx, getCurrentMapId: () => currentMapId, loadMap, buildNav,
+    onMenuSelection: (selection) => applyCharacterSelection(selection.characters),
+  })
+  const { startMatch, endMatch, getMatch } = matchController
+  startRequestedMatch(initialSelection.pendingMatch, params, startMatch)
+
+  let last = performance.now()
+  let prevGrounded = player.grounded
+  let acc = 0
+  let frames = 0
+  let fpsTimer = 0
+  let fps = 0
+  const reopenMapMenu = createMapMenuReopener({
+    mapMenu, getCurrentMapId: () => currentMapId, loadMap, player,
+    rebuildNav: buildNav, setNav: (nextNav) => { nav = nextNav },
+    hasActiveMatch: () => !!getMatch(), endMatch, startMatch,
+    onSelection: (selection) => applyCharacterSelection(selection.characters),
+  })
+
+  function handleFrameInput() {
+    if (input.wasPressed('KeyV')) cam.toggleMode()
+    if (input.wasPressed('Digit1')) logic.requestSwitch('ak47')
+    if (input.wasPressed('Digit2')) logic.requestSwitch('pistol')
+    if (input.wasPressed('Digit3')) logic.requestSwitch('knife')
+    if (input.wasPressed('KeyM') && !mapMenu.isOpen()) {
+      void reopenMapMenu()
+    }
+  }
+
+  function stepFixedUpdate(dt: number) {
+    acc += dt
+    while (acc >= FIXED_DT) {
+      const match = getMatch()
+      if (player.alive) player.update(FIXED_DT, input, cam)
+      if (match) {
+        match.update(FIXED_DT)
+      } else if (enemies.length) {
+        for (const e of enemies) {
+          if (e.alive) {
+            e.think({
+              nav, target: player, targetPos: player.position,
+              dealDamage: (dmg) => damage.applyDamage(player, dmg, e.team),
+              onFire: (muzzle, dir) => enemyFireFx(muzzle, dir),
+            }, FIXED_DT)
+          }
+          e.update(FIXED_DT)
+        }
+      }
+      physics.step(FIXED_DT)
+      acc -= FIXED_DT
+    }
+  }
+
+  function handleLanding() {
+    if (!prevGrounded && player.grounded) {
+      const impactSpeed = player.velocity.y
+      if (impactSpeed < -7.0) {
+        if (character.animator.hasClip('falling_to_landing')) {
+          character.animator.playOverlay('falling_to_landing', false)
+        }
+        try {
+          audio.play('landing', { position: { x: player.position.x, y: player.position.y, z: player.position.z }, volume: 1.0 })
+        } catch (e) {
+          console.warn('[audio] landing play failed', e)
+        }
+      }
+    }
+    prevGrounded = player.grounded
+  }
+
+  function updateAnimationAndFx(dt: number) {
+    if (player.alive && player.mode !== 'hanging' && player.mode !== 'climbing') logic.update(dt)
+    scene.update(dt)
+    if (player.climbJustStarted && character.animator.hasClip('ledge_climb_up')) {
+      character.animator.playOverlay('ledge_climb_up', false)
+    }
+    const ledgeInfo = player.mode === 'hanging' || player.mode === 'climbing'
+      ? { mode: player.mode, yaw: player.ledgeYaw, shimmy: player.ledgeShimmyDir } : undefined
+    character.update(player.position, player.velocity, player.grounded, cam.yaw, dt, ledgeInfo, player.capsuleBottomOffset, player.crouching)
+    if (!ledgeInfo) character.applySpineAim(cam.pitch)
+    fpsMesh.update(dt)
+    particles.update(dt)
+    smokeSprites?.update(dt)
+    flashSprites?.update(dt)
+  }
+
+  function syncCamera(dt: number) {
+    cam.eyeOffset.y = player.eyeOffsetY
+    const eyeAnchor = cam.mode === 'FPP' ? character.getHeadWorldPosition(_eyeTmp) ?? undefined : undefined
+    cam.update(input, player.position, dt, physics, player.body, eyeAnchor)
+    renderer.render(scene.three, cam.three)
+  }
+
+  function drawHud(dt: number) {
+    frames++
+    fpsTimer += dt
+    if (fpsTimer >= 0.5) { fps = Math.round(frames / fpsTimer); frames = 0; fpsTimer = 0 }
+    drawHudFrame({ hud, cam, logic, player }, fps, getMatch(), dt)
+  }
+
+  function frame(now: number) {
+    const dt = Math.min(0.1, (now - last) / 1000)
+    last = now
+    handleFrameInput()
+    stepFixedUpdate(dt)
+    handleLanding()
+    updateAnimationAndFx(dt)
+    syncCamera(dt)
+    drawHud(dt)
+    input.endFrame()
+    requestAnimationFrame(frame)
+  }
+  requestAnimationFrame(frame)
+}
+
+main().catch((e) => {
+  console.error('[fppandtpp] fatal', e)
+})
