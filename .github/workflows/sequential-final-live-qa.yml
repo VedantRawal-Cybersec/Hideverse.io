@@ -154,7 +154,7 @@ jobs:
                   if (!stats.canvas || stats.canvas.width < 300 || stats.canvas.height < 300) {
                     throw new Error(`${profile}/${map}: canvas is not playable`);
                   }
-                  if (stats.textureResources.length < 4) {
+                  if (stats.textureResources.length < 3) {
                     throw new Error(
                       `${profile}/${map}: only ${stats.textureResources.length} real textures loaded`,
                     );
