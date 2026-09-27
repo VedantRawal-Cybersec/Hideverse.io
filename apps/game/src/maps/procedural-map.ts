@@ -298,7 +298,12 @@ async function loadProgressiveDressing(app: Application, map: MapDefinition): Pr
   if (specs.length === 0 || map.navNodes.length === 0) return;
 
   const coarse = matchMedia('(pointer: coarse)').matches;
-  const instanceLimit = coarse ? Math.min(3, specs.length) : Math.min(8, specs.length * 2);
+  const instanceLimit =
+    coarse && map.id === 'hotel'
+      ? 1
+      : coarse
+        ? Math.min(3, specs.length)
+        : Math.min(8, specs.length * 2);
   const assets = new Map<string, ReturnType<typeof loadContainer>>();
 
   const getAsset = (asset: string): ReturnType<typeof loadContainer> => {
