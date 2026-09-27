@@ -812,3 +812,105 @@ h1 {
     min-height: 48px;
   }
 }
+
+/* Lightweight full-screen gameplay feedback. These overlays are composited by CSS
+   and avoid adding scene geometry, lights, particles or post-process passes. */
+.danger-vignette,
+.event-flash {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  pointer-events: none;
+}
+
+.danger-vignette {
+  opacity: 0;
+  background: radial-gradient(
+    circle at center,
+    transparent 42%,
+    rgba(112, 5, 13, 0.16) 72%,
+    rgba(126, 0, 12, 0.88) 100%
+  );
+  mix-blend-mode: screen;
+  transition: opacity 110ms linear;
+}
+
+.danger-vignette.is-detected {
+  animation: danger-breathe 0.8s ease-in-out infinite alternate;
+}
+
+.event-flash {
+  opacity: 0;
+  background: radial-gradient(
+    circle at center,
+    rgba(var(--map-accent-rgb, 174 245 191), 0.18),
+    rgba(var(--map-accent-rgb, 174 245 191), 0.06) 48%,
+    transparent 78%
+  );
+}
+
+.event-flash.is-objective {
+  animation: objective-flash 360ms ease-out;
+}
+
+.event-flash.is-win {
+  background: radial-gradient(
+    circle at center,
+    rgba(141, 240, 168, 0.2),
+    rgba(141, 240, 168, 0.05) 52%,
+    transparent 80%
+  );
+  animation: result-flash 560ms ease-out;
+}
+
+.event-flash.is-lose {
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 75, 88, 0.25),
+    rgba(130, 0, 13, 0.08) 54%,
+    transparent 82%
+  );
+  animation: result-flash 620ms ease-out;
+}
+
+@keyframes danger-breathe {
+  from {
+    filter: saturate(0.92);
+  }
+  to {
+    filter: saturate(1.22);
+  }
+}
+
+@keyframes objective-flash {
+  0% {
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes result-flash {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .danger-vignette.is-detected,
+  .event-flash.is-objective,
+  .event-flash.is-win,
+  .event-flash.is-lose {
+    animation: none;
+  }
+}

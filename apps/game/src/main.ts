@@ -73,9 +73,15 @@ const roundResultKicker = must<HTMLElement>('#round-result-kicker');
 const roundResultTitle = must<HTMLElement>('#round-result-title');
 const roundResultCopy = must<HTMLParagraphElement>('#round-result-copy');
 const restartRoundButton = must<HTMLButtonElement>('#restart-round');
+const dangerVignette = must<HTMLDivElement>('#danger-vignette');
+const eventFlash = must<HTMLDivElement>('#event-flash');
 
 const map = selectedMapFromLocation();
 const visualProfile = mapVisualProfile(map);
+document.documentElement.style.setProperty(
+  '--map-accent-rgb',
+  visualProfile.accent.map((value) => Math.round(value * 255)).join(' '),
+);
 const query = new URLSearchParams(window.location.search);
 const debugEnabled = query.get('debug') === '1';
 
@@ -92,6 +98,25 @@ function goToRoom(roomCode: string): void {
   const next = new URL(window.location.href);
   next.searchParams.set('room', normalizeRoomCode(roomCode));
   window.location.assign(next.toString());
+}
+
+let eventFlashTimer = 0;
+
+function flashScreen(kind: 'objective' | 'win' | 'lose'): void {
+  if (eventFlashTimer) window.clearTimeout(eventFlashTimer);
+  eventFlash.classList.remove('is-objective', 'is-win', 'is-lose');
+
+  // Force the short CSS animation to restart even when objectives are completed quickly.
+  void eventFlash.offsetWidth;
+  eventFlash.classList.add(`is-${kind}`);
+
+  eventFlashTimer = window.setTimeout(
+    () => {
+      eventFlash.classList.remove('is-objective', 'is-win', 'is-lose');
+      eventFlashTimer = 0;
+    },
+    kind === 'objective' ? 380 : 660,
+  );
 }
 
 function setRoundResult(outcome: 'playing' | 'won' | 'lost', message: string): void {
@@ -332,9 +357,18 @@ async function boot(): Promise<void> {
       environmentPolish.completeObjectives([modeState.completedObjectiveId]);
     }
 
-    if (modeState.event === 'objective') audio.cue('objective');
-    if (modeState.event === 'won') audio.cue('win');
-    if (modeState.event === 'lost') audio.cue('lose');
+    if (modeState.event === 'objective') {
+      audio.cue('objective');
+      flashScreen('objective');
+    }
+    if (modeState.event === 'won') {
+      audio.cue('win');
+      flashScreen('win');
+    }
+    if (modeState.event === 'lost') {
+      audio.cue('lose');
+      flashScreen('lose');
+    }
     if (threat.detected && threat.danger > 0.5) audio.cue('danger');
 
     player.setMovementLocked(interaction.hidden || modeState.outcome !== 'playing');
@@ -379,6 +413,15 @@ async function boot(): Promise<void> {
       modeProgress.textContent = modeState.progress;
       modeTimer.textContent = formatTimer(modeState.timerSeconds);
       modeDanger.textContent = `${Math.round(modeState.dangerPercent)}%`;
+      const dangerOpacity = Math.min(
+        0.72,
+        (modeState.dangerPercent / 100) * 0.68 + (threat.detected ? 0.1 : 0),
+      );
+      dangerVignette.style.opacity = dangerOpacity.toFixed(3);
+      dangerVignette.classList.toggle(
+        'is-detected',
+        threat.detected && modeState.outcome === 'playing',
+      );
       modeOutcome.textContent =
         modeState.outcome === 'playing' ? modeState.status : modeState.outcome.toUpperCase();
       modePanel.classList.toggle('is-complete', modeState.outcome === 'won');
