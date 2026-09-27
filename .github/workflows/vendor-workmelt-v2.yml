@@ -1,0 +1,174 @@
+name: Vendor Workmelt Game V2
+
+on:
+  push:
+    branches:
+      - migration/workmelt-game-v2
+
+permissions:
+  contents: write
+
+jobs:
+  vendor:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: migration/workmelt-game-v2
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.23.2
+
+      - name: Vendor pinned MIT browser FPS template
+        run: |
+          set -euo pipefail
+          COMMIT="672b4e905abae3652780a26f82c8691bc190c1e4"
+          TMP="$(mktemp -d)"
+          curl -L --fail --retry 3             "https://codeload.github.com/eriknomitch/workmelt/tar.gz/$COMMIT"             -o "$TMP/workmelt.tar.gz"
+          mkdir -p "$TMP/src"
+          tar -xzf "$TMP/workmelt.tar.gz" --strip-components=1 -C "$TMP/src"
+
+          DEST="apps/game-v2"
+          rm -rf "$DEST"
+          mkdir -p "$DEST"
+
+          cp -a "$TMP/src/src" "$DEST/"
+          cp -a "$TMP/src/public" "$DEST/"
+          cp "$TMP/src/index.html" "$DEST/index.html"
+          cp "$TMP/src/vite.config.js" "$DEST/vite.config.js"
+          cp "$TMP/src/package.json" "$DEST/package.json"
+          cp "$TMP/src/LICENSE" "$DEST/LICENSE"
+          cp "$TMP/src/README.md" "$DEST/UPSTREAM_README.md"
+          cp "$TMP/src/ARCHITECTURE.md" "$DEST/UPSTREAM_ARCHITECTURE.md"
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          dest = Path("apps/game-v2")
+          package = json.loads((dest / "package.json").read_text())
+          package["name"] = "@hideverse/game-v2"
+          package["description"] = "Hideverse Game V2 based on the pinned MIT Workmelt browser FPS foundation"
+          package["private"] = True
+          package["scripts"] = {
+              "dev": "vite",
+              "build": "vite build --base=/game-v2/",
+              "build:static": "vite build --base=/game-v2/",
+              "verify": "npm run build"
+          }
+          # V2 is embedded by the existing Hideverse web service. Its upstream relay
+          # remains vendored as design reference but is not required for the first QA gate.
+          package["dependencies"] = {"three": "^0.180.0"}
+          package["devDependencies"] = {"vite": "^7.3.6"}
+          (dest / "package.json").write_text(json.dumps(package, indent=2) + "\n")
+
+          index = (dest / "index.html").read_text()
+          index = index.replace("<title>WORKMELT — Tactical Shooter</title>",
+                                "<title>HIDEVERSE V2 — Tactical FPS</title>")
+          index = index.replace(
+              'content="WORKMELT — a browser-first tactical arena built out of the floor you already work on."',
+              'content="Hideverse V2 — browser-first tactical FPS staging build."'
+          )
+          index = index.replace('<link rel="preconnect" href="https://fonts.googleapis.com" />\n', '')
+          index = index.replace('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />\n', '')
+          (dest / "index.html").write_text(index)
+
+          vite = (dest / "vite.config.js").read_text()
+          vite = vite.replace("export default defineConfig({", "export default defineConfig({\n  base: '/game-v2/',")
+          (dest / "vite.config.js").write_text(vite)
+
+          (dest / "SOURCE.md").write_text(
+              "# Hideverse Game V2 foundation\n\n"
+              "Upstream: https://github.com/eriknomitch/workmelt\n"
+              "Pinned commit: 672b4e905abae3652780a26f82c8691bc190c1e4\n"
+              "License: MIT (see LICENSE)\n\n"
+              "This is a legally reusable browser-FPS foundation used to replace the earlier "
+              "from-scratch prototype systems. Hideverse-specific branding, maps, game modes "
+              "and networking are layered separately. No Deadshot.io proprietary assets, maps, "
+              "models or source code are included.\n"
+          )
+          PY
+
+          # Preserve the pinned upstream tree from global formatting.
+          if ! grep -qxF "apps/game-v2" .prettierignore; then
+            printf '\n# Pinned MIT FPS foundation; keep upstream formatting stable.\napps/game-v2\n' >> .prettierignore
+          fi
+
+          # Make the web build publish V2 beside the current game.
+          python - <<'PY'
+          from pathlib import Path
+          p = Path("apps/web/scripts/embed-game.mjs")
+          s = p.read_text()
+          if "gameV2Dist" not in s:
+              s = s.replace(
+                  "const gameDist = path.resolve(here, '../game/dist');",
+                  "const gameDist = path.resolve(here, '../game/dist');\n"
+                  "const gameV2Dist = path.resolve(here, '../game-v2/dist');"
+              )
+              s = s.replace(
+                  "const destination = path.join(here, 'dist/game');",
+                  "const destination = path.join(here, 'dist/game');\n"
+                  "const v2Destination = path.join(here, 'dist/game-v2');"
+              )
+              s += "\ntry {\n"
+              s += "  const info = await stat(gameV2Dist);\n"
+              s += "  if (!info.isDirectory()) throw new Error('not a directory');\n"
+              s += "} catch {\n"
+              s += "  throw new Error('Game V2 production build is missing. Build @hideverse/game-v2 before @hideverse/web.');\n"
+              s += "}\n"
+              s += "await rm(v2Destination, { recursive: true, force: true });\n"
+              s += "await mkdir(v2Destination, { recursive: true });\n"
+              s += "await cp(gameV2Dist, v2Destination, { recursive: true });\n"
+              s += "console.log('[web:embed] Hideverse Game V2 copied to /game-v2/');\n"
+              p.write_text(s)
+          PY
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("package.json")
+          package = json.loads(p.read_text())
+          package["scripts"]["dev:game-v2"] = "npm run dev --workspace @hideverse/game-v2"
+          package["scripts"]["build:live"] = (
+              "npm run build --workspace @hideverse/game && "
+              "npm run build --workspace @hideverse/game-v2 && "
+              "npm run build --workspace @hideverse/web"
+          )
+          package["scripts"]["build:pages"] = (
+              "npm run build:pages --workspace @hideverse/game && "
+              "npm run build --workspace @hideverse/game-v2 && "
+              "npm run build:pages --workspace @hideverse/web"
+          )
+          package["scripts"]["build:static"] = (
+              "npm run build:static --workspace @hideverse/game && "
+              "npm run build --workspace @hideverse/game-v2 && "
+              "npm run build:static --workspace @hideverse/web"
+          )
+          package["scripts"]["verify"] = (
+              "npm run verify --workspace @hideverse/game && "
+              "npm run verify --workspace @hideverse/game-v2 && "
+              "npm run verify --workspace @hideverse/web"
+          )
+          p.write_text(json.dumps(package, indent=2) + "\n")
+          PY
+
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Verify Game V2 build
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build --workspace @hideverse/game-v2
+          test -f apps/game-v2/dist/index.html
+
+      - name: Commit Game V2 foundation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/game-v2 apps/web/scripts/embed-game.mjs package.json package-lock.json .prettierignore
+          if ! git diff --cached --quiet; then
+            git commit -m "Stage MIT browser FPS foundation as Hideverse Game V2"
+            git push
+          fi
