@@ -33,6 +33,7 @@ export class PerformanceManager {
   constructor(
     private readonly app: Application,
     private readonly coarsePointer: boolean,
+    private readonly autoPixelScale = 1,
   ) {
     this.reduced = this.presetValue === 'auto';
     this.applyPixelRatio();
@@ -117,7 +118,7 @@ export class PerformanceManager {
     if (this.presetValue === 'low') return this.coarsePointer ? 0.72 : 0.9;
     if (this.presetValue === 'balanced') return this.coarsePointer ? 0.9 : 1.15;
     if (this.presetValue === 'high') return this.coarsePointer ? 1.1 : 1.45;
-    return this.coarsePointer ? 0.82 : 1.2;
+    return (this.coarsePointer ? 0.82 : 1.2) * this.autoPixelScale;
   }
 
   private applyPixelRatio(): void {
