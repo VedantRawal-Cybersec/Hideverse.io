@@ -13,6 +13,16 @@ export type ThreatSnapshot = {
   label: string;
 };
 
+export type CombatHit = {
+  actorId: string;
+  role: ActorRole;
+  damage: number;
+  headshot: boolean;
+  eliminated: boolean;
+  distance: number;
+  point: Triplet;
+};
+
 type GraphEdge = {
   id: string;
   cost: number;
@@ -45,6 +55,11 @@ type ActorRuntime = {
   senseTimer: number;
   cachedDirectSight: boolean;
   cachedDetected: boolean;
+  spawn: Triplet;
+  health: number;
+  maxHealth: number;
+  alive: boolean;
+  respawnSeconds: number;
 };
 
 const roleColors: Record<ActorRole, Triplet> = {
@@ -73,6 +88,14 @@ function makeMaterial(color: Triplet): StandardMaterial {
   result.gloss = 0.25;
   result.update();
   return result;
+}
+
+function healthForRole(role: ActorRole): number {
+  if (role === 'monster') return 180;
+  if (role === 'seeker') return 125;
+  if (role === 'guard') return 110;
+  if (role === 'traitor') return 115;
+  return 100;
 }
 
 function speedForRole(role: ActorRole): number {
@@ -122,6 +145,28 @@ function mobileVisualPriority(role: ActorRole): number {
 
 function distance(a: Triplet, b: Triplet): number {
   return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+}
+
+function raySphereDistance(
+  origin: Triplet,
+  direction: Triplet,
+  center: Triplet,
+  radius: number,
+): number | null {
+  const ox = origin[0] - center[0];
+  const oy = origin[1] - center[1];
+  const oz = origin[2] - center[2];
+  const b = ox * direction[0] + oy * direction[1] + oz * direction[2];
+  const c = ox * ox + oy * oy + oz * oz - radius * radius;
+  const discriminant = b * b - c;
+  if (discriminant < 0) return null;
+
+  const root = Math.sqrt(discriminant);
+  const near = -b - root;
+  const far = -b + root;
+  if (near >= 0) return near;
+  if (far >= 0) return far;
+  return null;
 }
 
 function pointInsideStructure(map: MapDefinition, point: Triplet, margin = 0.65): boolean {
@@ -346,6 +391,11 @@ export class CharacterSystem {
         senseTimer: Math.random() * 0.12,
         cachedDirectSight: false,
         cachedDetected: false,
+        spawn: [...spawn.position],
+        health: healthForRole(spawn.role),
+        maxHealth: healthForRole(spawn.role),
+        alive: true,
+        respawnSeconds: 0,
       });
     }
 
@@ -486,6 +536,20 @@ export class CharacterSystem {
     };
 
     for (const actor of this.actors) {
+      if (!actor.alive) {
+        actor.respawnSeconds = Math.max(0, actor.respawnSeconds - dt);
+        if (actor.respawnSeconds <= 0) {
+          actor.alive = true;
+          actor.health = actor.maxHealth;
+          actor.root.enabled = true;
+          actor.root.setPosition(actor.spawn[0], actor.spawn[1], actor.spawn[2]);
+          actor.alertSeconds = 0;
+          actor.chasePath = [];
+          actor.chasePathIndex = 0;
+        }
+        continue;
+      }
+
       const actorPosition = actor.root.getPosition();
       const current: Triplet = [actorPosition.x, actorPosition.y, actorPosition.z];
       const currentDistance = distance(current, player);
@@ -640,11 +704,136 @@ export class CharacterSystem {
     return strongest;
   }
 
+  fireHitscan(
+    originValue: { x: number; y: number; z: number },
+    directionValue: { x: number; y: number; z: number },
+    baseDamage: number,
+    range = 120,
+  ): CombatHit | null {
+    const directionLength = Math.hypot(
+      directionValue.x,
+      directionValue.y,
+      directionValue.z,
+    );
+    if (directionLength <= 0.0001) return null;
+
+    const origin: Triplet = [originValue.x, originValue.y, originValue.z];
+    const direction: Triplet = [
+      directionValue.x / directionLength,
+      directionValue.y / directionLength,
+      directionValue.z / directionLength,
+    ];
+
+    let best:
+      | {
+          actor: ActorRuntime;
+          distance: number;
+          headshot: boolean;
+          point: Triplet;
+        }
+      | null = null;
+
+    for (const actor of this.actors) {
+      if (!actor.alive) continue;
+
+      const position = actor.root.getPosition();
+      const bodyCenter: Triplet = [position.x, position.y + 0.55, position.z];
+      const headCenter: Triplet = [
+        position.x,
+        position.y + (actor.role === 'monster' ? 1.65 : 1.42),
+        position.z,
+      ];
+
+      const headDistance = raySphereDistance(origin, direction, headCenter, 0.34);
+      const bodyDistance = raySphereDistance(
+        origin,
+        direction,
+        bodyCenter,
+        actor.role === 'monster' ? 0.88 : 0.72,
+      );
+
+      let hitDistance: number | null = null;
+      let headshot = false;
+      if (headDistance !== null && headDistance <= range) {
+        hitDistance = headDistance;
+        headshot = true;
+      }
+      if (
+        bodyDistance !== null &&
+        bodyDistance <= range &&
+        (hitDistance === null || bodyDistance < hitDistance)
+      ) {
+        hitDistance = bodyDistance;
+        headshot = false;
+      }
+      if (hitDistance === null) continue;
+      if (best && hitDistance >= best.distance) continue;
+
+      const point: Triplet = [
+        origin[0] + direction[0] * hitDistance,
+        origin[1] + direction[1] * hitDistance,
+        origin[2] + direction[2] * hitDistance,
+      ];
+      if (!lineClear(this.map, origin, point)) continue;
+
+      best = {
+        actor,
+        distance: hitDistance,
+        headshot,
+        point,
+      };
+    }
+
+    if (!best) return null;
+
+    const appliedDamage = Math.max(
+      1,
+      Math.round(baseDamage * (best.headshot ? 1.65 : 1)),
+    );
+    best.actor.health = Math.max(0, best.actor.health - appliedDamage);
+    const eliminated = best.actor.health <= 0;
+
+    if (eliminated) {
+      best.actor.alive = false;
+      best.actor.respawnSeconds = 6;
+      best.actor.root.enabled = false;
+      best.actor.alertSeconds = 0;
+      best.actor.chasePath = [];
+      best.actor.chasePathIndex = 0;
+    } else if (isHostile(best.actor.role)) {
+      best.actor.alertSeconds = Math.max(best.actor.alertSeconds, 4);
+    }
+
+    return {
+      actorId: best.actor.id,
+      role: best.actor.role,
+      damage: appliedDamage,
+      headshot: best.headshot,
+      eliminated,
+      distance: best.distance,
+      point: best.point,
+    };
+  }
+
+  resetCombat(): void {
+    for (const actor of this.actors) {
+      actor.health = actor.maxHealth;
+      actor.alive = true;
+      actor.respawnSeconds = 0;
+      actor.alertSeconds = 0;
+      actor.chasePath = [];
+      actor.chasePathIndex = 0;
+      actor.root.enabled = true;
+      actor.root.setPosition(actor.spawn[0], actor.spawn[1], actor.spawn[2]);
+    }
+  }
+
   nearestRole(position: { x: number; y: number; z: number }): string {
     let result = 'NONE';
     let best = Number.POSITIVE_INFINITY;
 
     for (const actor of this.actors) {
+      if (!actor.alive) continue;
       const actorPosition = actor.root.getPosition();
       const current: Triplet = [actorPosition.x, actorPosition.y, actorPosition.z];
       const player: Triplet = [position.x, position.y, position.z];
