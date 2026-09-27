@@ -1,0 +1,218 @@
+name: FPS Template Live QA
+
+on:
+  push:
+    branches:
+      - qa/fps-template-live
+
+permissions:
+  contents: read
+
+jobs:
+  fps-live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [desktop, mobile]
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.23.2
+
+      - name: Install Playwright
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Verify live FPS controls
+        env:
+          PROFILE: ${{ matrix.profile }}
+          LIVE_URL: https://hideverse-io.onrender.com
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+
+          const mobile = process.env.PROFILE === 'mobile';
+          const browser = await chromium.launch({ headless: true });
+          const context = await browser.newContext(
+            mobile
+              ? {
+                  viewport: { width: 390, height: 844 },
+                  hasTouch: true,
+                  isMobile: true,
+                  deviceScaleFactor: 2,
+                }
+              : {
+                  viewport: { width: 1366, height: 768 },
+                  deviceScaleFactor: 1,
+                },
+          );
+          const page = await context.newPage();
+          const pageErrors = [];
+          const consoleErrors = [];
+          const failedRequests = [];
+          const badResponses = [];
+
+          page.on('pageerror', (error) => pageErrors.push(String(error)));
+          page.on('console', (message) => {
+            if (message.type() === 'error') consoleErrors.push(message.text());
+          });
+          page.on('requestfailed', (request) => {
+            if (request.url().includes('/api/multiplayer/events')) return;
+            failedRequests.push({
+              url: request.url(),
+              error: request.failure()?.errorText ?? 'unknown',
+            });
+          });
+          page.on('response', (response) => {
+            if (response.status() >= 500) {
+              badResponses.push({ url: response.url(), status: response.status() });
+            }
+          });
+
+          try {
+            const started = Date.now();
+            await page.goto(
+              `${process.env.LIVE_URL}/game/?map=axiom&room=FPS-LIVE-QA`,
+              { waitUntil: 'domcontentloaded', timeout: 90000 },
+            );
+            await page.waitForSelector('#boot-overlay.is-hidden', { timeout: 90000 });
+            const bootMs = Date.now() - started;
+            await page.waitForTimeout(1500);
+
+            const initial = await page.evaluate(() => ({
+              weapon: document.querySelector('#combat-weapon')?.textContent ?? '',
+              ammo: document.querySelector('#combat-ammo')?.textContent ?? '',
+              reserve: document.querySelector('#combat-reserve')?.textContent ?? '',
+              state: document.querySelector('#combat-state')?.textContent ?? '',
+              fps: document.querySelector('#fps-value')?.textContent ?? '',
+              network: document.querySelector('#network-value')?.textContent ?? '',
+            }));
+
+            if (mobile) {
+              const fire = page.locator('#mobile-fire');
+              const aim = page.locator('#mobile-aim');
+              const reload = page.locator('#mobile-reload');
+              const weapon = page.locator('#mobile-weapon');
+              const slide = page.locator('#mobile-slide');
+
+              await fire.dispatchEvent('pointerdown', { pointerId: 51, pointerType: 'touch' });
+              await page.waitForTimeout(260);
+              await fire.dispatchEvent('pointerup', { pointerId: 51, pointerType: 'touch' });
+              await page.waitForTimeout(120);
+
+              const firedAmmo = await page.locator('#combat-ammo').textContent();
+
+              await aim.dispatchEvent('pointerdown', { pointerId: 52, pointerType: 'touch' });
+              await page.waitForTimeout(180);
+              const adsState = await page.locator('#combat-state').textContent();
+              await aim.dispatchEvent('pointerup', { pointerId: 52, pointerType: 'touch' });
+
+              await weapon.dispatchEvent('pointerdown', { pointerId: 53, pointerType: 'touch' });
+              await page.waitForTimeout(120);
+              const switchedWeapon = await page.locator('#combat-weapon').textContent();
+
+              await reload.dispatchEvent('pointerdown', { pointerId: 54, pointerType: 'touch' });
+              await page.waitForTimeout(100);
+              const reloadState = await page.locator('#combat-state').textContent();
+
+              await slide.dispatchEvent('pointerdown', { pointerId: 55, pointerType: 'touch' });
+              await page.waitForTimeout(80);
+
+              if (Number(firedAmmo) >= Number(initial.ammo)) {
+                throw new Error(`mobile fire did not consume ammo: ${initial.ammo} -> ${firedAmmo}`);
+              }
+              if (adsState !== 'ADS') throw new Error(`mobile ADS state was ${adsState}`);
+              if (switchedWeapon === initial.weapon) {
+                throw new Error('mobile weapon cycle did not switch weapon');
+              }
+              if (reloadState !== 'RELOADING') {
+                throw new Error(`mobile reload state was ${reloadState}`);
+              }
+            } else {
+              const canvas = page.locator('#game-canvas');
+              await canvas.click({ position: { x: 680, y: 380 } });
+              await page.waitForFunction(
+                () => document.pointerLockElement === document.querySelector('#game-canvas'),
+                undefined,
+                { timeout: 5000 },
+              );
+
+              await page.mouse.down({ button: 'left' });
+              await page.waitForTimeout(240);
+              await page.mouse.up({ button: 'left' });
+              await page.waitForTimeout(100);
+              const firedAmmo = await page.locator('#combat-ammo').textContent();
+
+              await page.mouse.down({ button: 'right' });
+              await page.waitForTimeout(180);
+              const adsState = await page.locator('#combat-state').textContent();
+              await page.mouse.up({ button: 'right' });
+
+              await page.keyboard.press('Digit2');
+              await page.waitForTimeout(120);
+              const switchedWeapon = await page.locator('#combat-weapon').textContent();
+
+              await page.keyboard.press('KeyR');
+              await page.waitForTimeout(100);
+              const reloadState = await page.locator('#combat-state').textContent();
+
+              await page.keyboard.down('KeyW');
+              await page.keyboard.down('ShiftLeft');
+              await page.waitForTimeout(180);
+              await page.keyboard.press('KeyC');
+              await page.waitForTimeout(100);
+              const motion = await page.locator('#motion-value').textContent();
+              await page.keyboard.up('ShiftLeft');
+              await page.keyboard.up('KeyW');
+
+              if (Number(firedAmmo) >= Number(initial.ammo)) {
+                throw new Error(`desktop fire did not consume ammo: ${initial.ammo} -> ${firedAmmo}`);
+              }
+              if (adsState !== 'ADS') throw new Error(`desktop ADS state was ${adsState}`);
+              if (switchedWeapon === initial.weapon) {
+                throw new Error('desktop weapon switch did not change weapon');
+              }
+              if (reloadState !== 'RELOADING') {
+                throw new Error(`desktop reload state was ${reloadState}`);
+              }
+              if (!['SPRINT', 'RUN'].includes(motion ?? '')) {
+                throw new Error(`desktop slide/movement state was ${motion}`);
+              }
+            }
+
+            const final = await page.evaluate(() => ({
+              weapon: document.querySelector('#combat-weapon')?.textContent ?? '',
+              ammo: document.querySelector('#combat-ammo')?.textContent ?? '',
+              reserve: document.querySelector('#combat-reserve')?.textContent ?? '',
+              state: document.querySelector('#combat-state')?.textContent ?? '',
+              fps: document.querySelector('#fps-value')?.textContent ?? '',
+              network: document.querySelector('#network-value')?.textContent ?? '',
+              mobileFire: Boolean(document.querySelector('#mobile-fire')),
+              mobileAim: Boolean(document.querySelector('#mobile-aim')),
+            }));
+
+            const summary = {
+              profile: process.env.PROFILE,
+              bootMs,
+              initial,
+              final,
+              pageErrors,
+              consoleErrors,
+              failedRequests,
+              badResponses,
+            };
+            console.log('[fps-template-live-qa]', JSON.stringify(summary));
+
+            if (pageErrors.length || consoleErrors.length || failedRequests.length || badResponses.length) {
+              throw new Error('live FPS runtime/network errors detected');
+            }
+          } finally {
+            await context.close();
+            await browser.close();
+          }
+          NODE
