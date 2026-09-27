@@ -30,6 +30,7 @@ function darken(color: Triplet, scale: number): Triplet {
 
 export class EnvironmentPolish {
   private readonly beacons: AnimatedBeacon[] = [];
+  private readonly ownedEntities: Entity[] = [];
   private readonly qualityEntities: Entity[] = [];
   private elapsed = 0;
   private reduced = false;
@@ -66,6 +67,7 @@ export class EnvironmentPolish {
       );
       if (ring.render) ring.render.material = beaconMaterial;
       this.app.root.addChild(ring);
+      this.ownedEntities.push(ring);
 
       const core = new Entity(`objective-core-${objective.id}`);
       core.addComponent('render', { type: 'cylinder' });
@@ -77,6 +79,7 @@ export class EnvironmentPolish {
       );
       if (core.render) core.render.material = coreMaterial;
       this.app.root.addChild(core);
+      this.ownedEntities.push(core);
 
       this.beacons.push({
         entity: ring,
@@ -103,6 +106,7 @@ export class EnvironmentPolish {
           objective.position[2],
         );
         this.app.root.addChild(glow);
+        this.ownedEntities.push(glow);
         this.qualityEntities.push(glow);
       }
     }
@@ -129,6 +133,7 @@ export class EnvironmentPolish {
       );
       if (post.render) post.render.material = postMaterial;
       this.app.root.addChild(post);
+      this.ownedEntities.push(post);
 
       const cap = new Entity(`wayfinding-cap-${node.id}`);
       cap.addComponent('render', { type: 'box' });
@@ -140,6 +145,7 @@ export class EnvironmentPolish {
       );
       if (cap.render) cap.render.material = capMaterial;
       this.app.root.addChild(cap);
+      this.ownedEntities.push(cap);
 
       if (!this.coarsePointer) {
         this.qualityEntities.push(post, cap);
@@ -169,6 +175,7 @@ export class EnvironmentPolish {
       });
       light.setPosition(node.position[0], node.position[1] + 2.7, node.position[2]);
       this.app.root.addChild(light);
+      this.ownedEntities.push(light);
       this.qualityEntities.push(light);
     }
   }
@@ -188,11 +195,9 @@ export class EnvironmentPolish {
   }
 
   destroy(): void {
-    for (const beacon of this.beacons) beacon.entity.destroy();
-    for (const entity of this.qualityEntities) {
-      if (entity.getGuid()) entity.destroy();
-    }
+    for (const entity of this.ownedEntities) entity.destroy();
     this.beacons.length = 0;
+    this.ownedEntities.length = 0;
     this.qualityEntities.length = 0;
   }
 }
