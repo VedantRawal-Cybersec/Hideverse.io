@@ -208,10 +208,14 @@ export class EnvironmentPolish {
   }
 
   completeObjectives(ids: readonly string[]): void {
+    let changed = false;
     for (const id of ids) {
-      if (this.objectiveVisuals.has(id)) this.completedObjectiveIds.add(id);
+      if (this.objectiveVisuals.has(id) && !this.completedObjectiveIds.has(id)) {
+        this.completedObjectiveIds.add(id);
+        changed = true;
+      }
     }
-    this.refreshObjectiveVisibility();
+    if (changed) this.refreshObjectiveVisibility();
   }
 
   resetObjectives(): void {
