@@ -60,11 +60,7 @@ export class EnvironmentPolish {
       ring.addComponent('render', { type: 'cylinder' });
       const radius = Math.max(0.52, Math.min(0.9, objective.radius * 0.28));
       ring.setLocalScale(radius, 0.025, radius);
-      ring.setPosition(
-        objective.position[0],
-        objective.position[1] + 0.06,
-        objective.position[2],
-      );
+      ring.setPosition(objective.position[0], objective.position[1] + 0.06, objective.position[2]);
       if (ring.render) ring.render.material = beaconMaterial;
       this.app.root.addChild(ring);
       this.ownedEntities.push(ring);
@@ -91,11 +87,7 @@ export class EnvironmentPolish {
         const glow = new Entity(`objective-glow-${objective.id}`);
         glow.addComponent('light', {
           type: 'omni',
-          color: new Color(
-            this.profile.accent[0],
-            this.profile.accent[1],
-            this.profile.accent[2],
-          ),
+          color: new Color(this.profile.accent[0], this.profile.accent[1], this.profile.accent[2]),
           intensity: 0.42,
           range: 7.5,
           castShadows: false,
@@ -164,11 +156,7 @@ export class EnvironmentPolish {
       const light = new Entity(`environment-accent-${index}`);
       light.addComponent('light', {
         type: 'omni',
-        color: new Color(
-          this.profile.accent[0],
-          this.profile.accent[1],
-          this.profile.accent[2],
-        ),
+        color: new Color(this.profile.accent[0], this.profile.accent[1], this.profile.accent[2]),
         intensity: 0.22,
         range: 9,
         castShadows: false,
