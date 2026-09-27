@@ -2,12 +2,14 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { Application, Color, Entity, FILLMODE_FILL_WINDOW, RESOLUTION_AUTO } from 'playcanvas';
 import { AudioFeedback } from './core/audio-feedback';
 import { CharacterSystem } from './core/character-system';
+import { EnvironmentPolish } from './core/environment-polish';
 import { GraphicsPipeline } from './core/graphics-pipeline';
 import { InputController } from './core/input-controller';
 import { ModeEngine } from './core/mode-engine';
 import { MultiplayerClient } from './core/multiplayer-client';
+import { mapVisualProfile } from './core/map-visual-profile';
 import { PerformanceManager, type QualityPreset } from './core/performance-manager';
-import { colorFromTriplet, referenceScene } from './core/reference-art-direction';
+import { colorFromTriplet } from './core/reference-art-direction';
 import { PlayerAvatar } from './core/player-avatar';
 import { FirstPersonController } from './core/player-controller';
 import {
@@ -73,6 +75,7 @@ const roundResultCopy = must<HTMLParagraphElement>('#round-result-copy');
 const restartRoundButton = must<HTMLButtonElement>('#restart-round');
 
 const map = selectedMapFromLocation();
+const visualProfile = mapVisualProfile(map);
 const query = new URLSearchParams(window.location.search);
 const debugEnabled = query.get('debug') === '1';
 
@@ -181,7 +184,7 @@ async function boot(): Promise<void> {
   const app = new Application(canvas);
   app.setCanvasFillMode(FILLMODE_FILL_WINDOW);
   app.setCanvasResolution(RESOLUTION_AUTO);
-  app.scene.ambientLight = color(referenceScene.ambient);
+  app.scene.ambientLight = color(visualProfile.ambient);
 
   const autoPixelScale = coarse && map.id === 'hotel' ? 0.78 : 1;
   const performanceManager = new PerformanceManager(app, coarse, autoPixelScale);
@@ -189,21 +192,21 @@ async function boot(): Promise<void> {
 
   const camera = new Entity('Player Camera');
   camera.addComponent('camera', {
-    clearColor: color(referenceScene.sky),
+    clearColor: color(visualProfile.sky),
     nearClip: 0.08,
     farClip: coarse ? 175 : 230,
     fov: coarse ? 78 : 82,
   });
   app.root.addChild(camera);
 
-  const graphicsPipeline = new GraphicsPipeline(app, camera, coarse);
+  const graphicsPipeline = new GraphicsPipeline(app, camera, coarse, visualProfile);
   graphicsPipeline.applyQuality(performanceManager.preset, performanceManager.reducedEffects);
 
   const sun = new Entity(`${map.name} Key Light`);
   sun.addComponent('light', {
     type: 'directional',
-    color: color(referenceScene.sun),
-    intensity: referenceScene.sunIntensity,
+    color: color(visualProfile.sun),
+    intensity: visualProfile.sunIntensity,
     castShadows: performanceManager.shadowsEnabled,
     shadowResolution: performanceManager.shadowResolution,
     shadowDistance: coarse
@@ -211,9 +214,9 @@ async function boot(): Promise<void> {
       : Math.min(62, map.lod.shadowDistance),
   });
   sun.setEulerAngles(
-    referenceScene.sunAngles[0],
-    referenceScene.sunAngles[1],
-    referenceScene.sunAngles[2],
+    visualProfile.sunAngles[0],
+    visualProfile.sunAngles[1],
+    visualProfile.sunAngles[2],
   );
   app.root.addChild(sun);
 
@@ -229,14 +232,14 @@ async function boot(): Promise<void> {
   const fill = new Entity(`${map.name} Fill Light`);
   fill.addComponent('light', {
     type: 'directional',
-    color: color(referenceScene.fill),
-    intensity: referenceScene.fillIntensity,
+    color: color(visualProfile.fill),
+    intensity: visualProfile.fillIntensity,
     castShadows: false,
   });
   fill.setEulerAngles(
-    referenceScene.fillAngles[0],
-    referenceScene.fillAngles[1],
-    referenceScene.fillAngles[2],
+    visualProfile.fillAngles[0],
+    visualProfile.fillAngles[1],
+    visualProfile.fillAngles[2],
   );
   app.root.addChild(fill);
 
@@ -257,6 +260,8 @@ async function boot(): Promise<void> {
 
   app.start();
   const runtime = await buildSelectedMap(app, world, map, setMapStatus);
+  const environmentPolish = new EnvironmentPolish(app, map, coarse, visualProfile);
+  environmentPolish.setReduced(performanceManager.reducedEffects);
   const interactions = new MapInteractionSystem(map, runtime.doors);
   const mode = new ModeEngine(map);
   const characters = new CharacterSystem(app, map);
@@ -277,6 +282,7 @@ async function boot(): Promise<void> {
     () => {
       multiplayer.dispose();
       input.dispose();
+      environmentPolish.destroy();
       graphicsPipeline.destroy();
     },
     { once: true },
@@ -308,6 +314,8 @@ async function boot(): Promise<void> {
     const interaction = interactions.update(position, interactPressed);
     if (interaction.handled && interactPressed) audio.cue('interact');
 
+    environmentPolish.update(deltaSeconds);
+
     const threat = characters.update(deltaSeconds, position, interaction.hidden);
     const modeState = mode.update(position, interactPressed && !interaction.handled, {
       deltaSeconds,
@@ -337,6 +345,7 @@ async function boot(): Promise<void> {
     const performance = performanceManager.update(deltaSeconds);
     if (performance.qualityChanged) {
       graphicsPipeline.setRuntimeReduction(performance.reducedEffects);
+      environmentPolish.setReduced(performance.reducedEffects);
       if (sun.light) {
         sun.light.castShadows = performanceManager.shadowsEnabled;
         sun.light.shadowResolution = performanceManager.shadowResolution;

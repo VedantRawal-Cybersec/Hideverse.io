@@ -1,6 +1,7 @@
 import { Application, CameraFrame, Entity, FOG_EXP, FOG_NONE, TONEMAP_ACES } from 'playcanvas';
 import type { QualityPreset } from './performance-manager';
-import { colorFromTriplet, referenceScene } from './reference-art-direction';
+import type { MapVisualProfile } from './map-visual-profile';
+import { colorFromTriplet } from './reference-art-direction';
 
 export class GraphicsPipeline {
   private readonly frame: CameraFrame;
@@ -11,6 +12,7 @@ export class GraphicsPipeline {
     private readonly app: Application,
     camera: Entity,
     private readonly coarsePointer: boolean,
+    private readonly visualProfile: MapVisualProfile,
   ) {
     if (!camera.camera) throw new Error('GraphicsPipeline requires a camera component.');
 
@@ -19,7 +21,7 @@ export class GraphicsPipeline {
     this.frame.rendering.sceneDepthMap = true;
     this.frame.rendering.toneMapping = TONEMAP_ACES;
     this.frame.rendering.sharpness = 0.12;
-    this.app.scene.fog.color = colorFromTriplet(referenceScene.fog);
+    this.app.scene.fog.color = colorFromTriplet(this.visualProfile.fog);
     this.applyQuality('auto');
   }
 
@@ -64,7 +66,8 @@ export class GraphicsPipeline {
     this.frame.ssao.scale = high ? 0.75 : 0.62;
 
     this.app.scene.fog.type = low ? FOG_NONE : FOG_EXP;
-    this.app.scene.fog.density = this.coarsePointer || runtimeReduced ? 0.0018 : 0.0025;
+    const fogScale = this.coarsePointer || runtimeReduced ? 0.72 : 1;
+    this.app.scene.fog.density = this.visualProfile.fogDensity * fogScale;
     this.frame.update();
   }
 
