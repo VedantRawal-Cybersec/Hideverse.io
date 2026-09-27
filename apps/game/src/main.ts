@@ -293,7 +293,7 @@ async function boot(): Promise<void> {
   const characters = new CharacterSystem(app, map);
   const multiplayer = new MultiplayerClient(app, map.id);
   const audio = new AudioFeedback();
-  const combat = new CombatSystem(camera, input, characters, audio);
+  const combat = new CombatSystem(app, camera, input, characters, audio);
 
   restartRoundButton.addEventListener('click', () => {
     multiplayer.resetRound();
@@ -317,6 +317,7 @@ async function boot(): Promise<void> {
   );
 
   let hudAccumulator = 0;
+  let combatRespawnSeconds = 0;
   let lastOutcome: 'playing' | 'won' | 'lost' = 'playing';
 
   app.on('update', (deltaSeconds: number) => {
@@ -327,6 +328,7 @@ async function boot(): Promise<void> {
       characters.resetCombat();
       combat.reset();
       player.reset();
+      combatRespawnSeconds = 0;
       lastOutcome = 'playing';
       setRoundResult('playing', '');
     }
@@ -334,6 +336,16 @@ async function boot(): Promise<void> {
     const remoteObjectives = multiplayer.consumeRemoteObjectives();
     mode.completeObjectives(remoteObjectives);
     environmentPolish.completeObjectives(remoteObjectives);
+
+    if (combatRespawnSeconds > 0) {
+      combatRespawnSeconds = Math.max(0, combatRespawnSeconds - Math.min(deltaSeconds, 0.1));
+      if (combatRespawnSeconds === 0) {
+        characters.resetCombat();
+        combat.reset();
+        player.reset();
+        setRoundResult('playing', '');
+      }
+    }
 
     player.update(deltaSeconds);
 
@@ -350,6 +362,14 @@ async function boot(): Promise<void> {
     environmentPolish.update(deltaSeconds);
 
     const threat = characters.update(deltaSeconds, position, interaction.hidden);
+    combat.applyThreat(threat, deltaSeconds);
+
+    if (combat.consumePlayerEliminated()) {
+      combatRespawnSeconds = 1.65;
+      flashScreen('lose');
+      setRoundResult('lost', 'HOSTILE CONTACT · RESPAWNING');
+    }
+
     const modeState = mode.update(position, interactPressed && !interaction.handled, {
       deltaSeconds,
       hidden: interaction.hidden,
@@ -362,7 +382,9 @@ async function boot(): Promise<void> {
       environmentPolish.completeObjectives([modeState.completedObjectiveId]);
     }
 
-    combat.setEnabled(modeState.outcome === 'playing' && !interaction.hidden);
+    combat.setEnabled(
+      modeState.outcome === 'playing' && !interaction.hidden && combatRespawnSeconds <= 0,
+    );
     combat.update(deltaSeconds, player.viewMode);
 
     if (modeState.event === 'objective') {
@@ -379,7 +401,9 @@ async function boot(): Promise<void> {
     }
     if (threat.detected && threat.danger > 0.5) audio.cue('danger');
 
-    player.setMovementLocked(interaction.hidden || modeState.outcome !== 'playing');
+    player.setMovementLocked(
+      interaction.hidden || modeState.outcome !== 'playing' || combatRespawnSeconds > 0,
+    );
 
     if (modeState.outcome !== lastOutcome) {
       lastOutcome = modeState.outcome;
