@@ -1,0 +1,207 @@
+name: Game V2 Live Promotion QA
+
+on:
+  push:
+    branches:
+      - qa/game-v2-live-promotion
+
+permissions:
+  contents: read
+
+jobs:
+  live-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [desktop, mobile]
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.23.2
+
+      - name: Install Playwright
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.61.1
+          npx playwright install --with-deps chromium
+
+      - name: Verify live Game V2
+        env:
+          PROFILE: ${{ matrix.profile }}
+          LIVE_URL: https://hideverse-io.onrender.com
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+
+          const mobile = process.env.PROFILE === 'mobile';
+          const browser = await chromium.launch({ headless: true });
+          const context = await browser.newContext(
+            mobile
+              ? {
+                  viewport: { width: 390, height: 844 },
+                  hasTouch: true,
+                  isMobile: true,
+                  deviceScaleFactor: 2,
+                }
+              : { viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 },
+          );
+          const page = await context.newPage();
+          const pageErrors = [];
+          const consoleErrors = [];
+          const failedRequests = [];
+          const badResponses = [];
+
+          page.on('pageerror', (error) => pageErrors.push(String(error)));
+          page.on('console', (message) => {
+            if (message.type() === 'error') consoleErrors.push(message.text());
+          });
+          page.on('requestfailed', (request) => {
+            failedRequests.push({
+              url: request.url(),
+              error: request.failure()?.errorText ?? 'unknown',
+            });
+          });
+          page.on('response', (response) => {
+            if (response.status() >= 500) {
+              badResponses.push({ url: response.url(), status: response.status() });
+            }
+          });
+
+          try {
+            const started = Date.now();
+            const url =
+              `${process.env.LIVE_URL}/game-v2/?mp=0&match=0&prewarm=1&q=low`;
+            await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 });
+            await page.waitForFunction(() => window.__READY__ === true, null, {
+              timeout: 120000,
+            });
+            const bootMs = Date.now() - started;
+
+            await page.waitForTimeout(4500);
+
+            const result = await page.evaluate(async () => {
+              const perf = window.__PERF__?.stats?.(180) ?? null;
+              const engine = window.__ENGINE__;
+              const canvas = document.querySelector('#game')?.getBoundingClientRect();
+              return {
+                ready: window.__READY__ === true,
+                engine: !!engine,
+                frame: engine?.time?.frame ?? 0,
+                perf,
+                canvas: canvas ? { width: canvas.width, height: canvas.height } : null,
+                touchClass: document.body.classList.contains('wm-touch'),
+                prewarm: window.__PREWARM__ ?? null,
+              };
+            });
+
+            const summary = {
+              profile: process.env.PROFILE,
+              bootMs,
+              result,
+              pageErrors,
+              consoleErrors,
+              failedRequests,
+              badResponses,
+            };
+            console.log('[game-v2-live]', JSON.stringify(summary));
+
+            if (!result.ready || !result.engine || result.frame < 30) {
+              throw new Error('Game V2 did not enter a live running state');
+            }
+            if (!result.canvas || result.canvas.width < 300 || result.canvas.height < 300) {
+              throw new Error('Game V2 canvas is not playable');
+            }
+            if (mobile && !result.touchClass) {
+              throw new Error('mobile Game V2 did not enter touch mode');
+            }
+            if (pageErrors.length || consoleErrors.length || failedRequests.length || badResponses.length) {
+              throw new Error('Game V2 browser/runtime/network errors detected');
+            }
+          } finally {
+            await context.close();
+            await browser.close();
+          }
+          NODE
+
+  live-websocket:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.23.2
+      - run: npm install --no-save --no-audit --no-fund ws@8.21.1
+      - name: Verify production V2 WebSocket room
+        run: |
+          node --input-type=module <<'NODE'
+          import WebSocket from 'ws';
+
+          function waitFor(ws, predicate, timeout = 8000) {
+            return new Promise((resolve, reject) => {
+              const timer = setTimeout(() => {
+                cleanup();
+                reject(new Error('timed out waiting for production WebSocket message'));
+              }, timeout);
+              const onMessage = (raw) => {
+                let msg;
+                try { msg = JSON.parse(raw.toString()); } catch { return; }
+                if (!predicate(msg)) return;
+                cleanup();
+                resolve(msg);
+              };
+              const onError = (error) => { cleanup(); reject(error); };
+              const cleanup = () => {
+                clearTimeout(timer);
+                ws.off('message', onMessage);
+                ws.off('error', onError);
+              };
+              ws.on('message', onMessage);
+              ws.on('error', onError);
+            });
+          }
+
+          async function connect(name) {
+            const ws = new WebSocket('wss://hideverse-io.onrender.com/ws');
+            const helloPromise = waitFor(ws, (m) => m.t === 'hello');
+            await new Promise((resolve, reject) => {
+              ws.once('open', resolve);
+              ws.once('error', reject);
+            });
+            const hello = await helloPromise;
+            const welcomePromise = waitFor(ws, (m) => m.t === 'welcome');
+            ws.send(JSON.stringify({
+              t: 'join',
+              room: 'promotion-qa',
+              name,
+              map: 'wilmot',
+            }));
+            const welcome = await welcomePromise;
+            return { ws, hello, welcome };
+          }
+
+          const a = await connect('Promotion-A');
+          const joinPromise = waitFor(a.ws, (m) => m.t === 'peer_join');
+          const b = await connect('Promotion-B');
+          const join = await joinPromise;
+
+          const pongPromise = waitFor(a.ws, (m) => m.t === 'pong');
+          a.ws.send(JSON.stringify({ t: 'ping', ts: 271828 }));
+          const pong = await pongPromise;
+
+          console.log('[game-v2-ws-live]', JSON.stringify({
+            a: a.welcome,
+            b: b.welcome,
+            join,
+            pong,
+          }));
+
+          if (b.welcome.peers?.length !== 1 || join.name !== 'Promotion-B' || pong.ts !== 271828) {
+            throw new Error('production Game V2 room relay failed');
+          }
+
+          a.ws.close();
+          b.ws.close();
+          NODE
