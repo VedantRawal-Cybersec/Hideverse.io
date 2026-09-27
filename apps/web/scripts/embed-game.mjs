@@ -23,7 +23,9 @@ try {
   const info = await stat(gameV2Dist);
   if (!info.isDirectory()) throw new Error('not a directory');
 } catch {
-  throw new Error('Game V2 production build is missing. Build @hideverse/game-v2 before @hideverse/web.');
+  throw new Error(
+    'Game V2 production build is missing. Build @hideverse/game-v2 before @hideverse/web.',
+  );
 }
 await rm(v2Destination, { recursive: true, force: true });
 await mkdir(v2Destination, { recursive: true });
