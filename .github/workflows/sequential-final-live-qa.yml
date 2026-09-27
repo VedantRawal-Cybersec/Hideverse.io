@@ -1,0 +1,175 @@
+name: Sequential Final Live QA
+
+on:
+  push:
+    branches:
+      - qa/sequential-final-live
+
+permissions:
+  contents: read
+
+jobs:
+  sequential-live-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.23.2
+
+      - name: Install Playwright
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Verify all live maps sequentially
+        env:
+          LIVE_URL: https://hideverse-io.onrender.com
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+
+          const maps = ['ravenwood', 'nexus', 'museum', 'hospital', 'hotel', 'axiom'];
+          const profiles = ['desktop', 'mobile'];
+          const browser = await chromium.launch({ headless: true });
+          const summaries = [];
+
+          try {
+            for (const profile of profiles) {
+              for (const map of maps) {
+                const mobile = profile === 'mobile';
+                const context = await browser.newContext(
+                  mobile
+                    ? {
+                        viewport: { width: 390, height: 844 },
+                        hasTouch: true,
+                        isMobile: true,
+                        deviceScaleFactor: 2,
+                      }
+                    : {
+                        viewport: { width: 1280, height: 720 },
+                        hasTouch: false,
+                        isMobile: false,
+                        deviceScaleFactor: 1,
+                      },
+                );
+                const page = await context.newPage();
+                const pageErrors = [];
+                const consoleErrors = [];
+                const failedRequests = [];
+                const badResponses = [];
+
+                page.on('pageerror', (error) => pageErrors.push(String(error)));
+                page.on('console', (message) => {
+                  if (message.type() === 'error') consoleErrors.push(message.text());
+                });
+                page.on('requestfailed', (request) => {
+                  const url = request.url();
+                  if (url.includes('/api/multiplayer/events')) return;
+                  failedRequests.push({
+                    url,
+                    error: request.failure()?.errorText ?? 'unknown',
+                  });
+                });
+                page.on('response', (response) => {
+                  if (response.status() >= 500) {
+                    badResponses.push({ url: response.url(), status: response.status() });
+                  }
+                });
+
+                const room = `SEQ-${profile.toUpperCase()}-${map.toUpperCase()}`;
+                const started = Date.now();
+
+                try {
+                  await page.goto(
+                    `${process.env.LIVE_URL}/game/?map=${map}&room=${room}`,
+                    { waitUntil: 'domcontentloaded', timeout: 90000 },
+                  );
+                  await page.waitForSelector('#boot-overlay.is-hidden', { timeout: 90000 });
+                  const bootMs = Date.now() - started;
+
+                  await page.waitForTimeout(mobile ? 5200 : 4200);
+
+                  const stats = await page.evaluate(async () => {
+                    const samples = [];
+                    let last = performance.now();
+                    const deadline = last + 3000;
+                    await new Promise((resolve) => {
+                      const tick = (now) => {
+                        samples.push(now - last);
+                        last = now;
+                        if (now >= deadline) resolve();
+                        else requestAnimationFrame(tick);
+                      };
+                      requestAnimationFrame(tick);
+                    });
+
+                    const sorted = [...samples].sort((a, b) => a - b);
+                    const percentile = (p) =>
+                      sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))] ?? 0;
+                    const averageMs =
+                      samples.reduce((sum, value) => sum + value, 0) / Math.max(1, samples.length);
+
+                    const textureResources = [
+                      ...new Set(
+                        performance
+                          .getEntriesByType('resource')
+                          .map((entry) => entry.name)
+                          .filter((name) => name.includes('/materials/cc0/')),
+                      ),
+                    ];
+
+                    return {
+                      averageFps: 1000 / averageMs,
+                      p95Ms: percentile(0.95),
+                      p99Ms: percentile(0.99),
+                      frames: samples.length,
+                      fpsHud: document.querySelector('#fps-value')?.textContent ?? '',
+                      quality: document.querySelector('#quality-select')?.value ?? '',
+                      network: document.querySelector('#network-value')?.textContent ?? '',
+                      status: document.querySelector('#map-status')?.textContent ?? '',
+                      textureResources,
+                      canvas: (() => {
+                        const rect = document.querySelector('#game-canvas')?.getBoundingClientRect();
+                        return rect ? { width: rect.width, height: rect.height } : null;
+                      })(),
+                    };
+                  });
+
+                  const summary = {
+                    map,
+                    profile,
+                    bootMs,
+                    stats,
+                    pageErrors,
+                    consoleErrors,
+                    failedRequests,
+                    badResponses,
+                  };
+                  summaries.push(summary);
+                  console.log('[sequential-live-qa]', JSON.stringify(summary));
+
+                  if (!stats.canvas || stats.canvas.width < 300 || stats.canvas.height < 300) {
+                    throw new Error(`${profile}/${map}: canvas is not playable`);
+                  }
+                  if (stats.textureResources.length < 4) {
+                    throw new Error(
+                      `${profile}/${map}: only ${stats.textureResources.length} real textures loaded`,
+                    );
+                  }
+                  if (pageErrors.length || consoleErrors.length || failedRequests.length || badResponses.length) {
+                    throw new Error(`${profile}/${map}: runtime/network errors detected`);
+                  }
+                } finally {
+                  await context.close();
+                }
+              }
+            }
+
+            console.log('[sequential-live-qa-final]', JSON.stringify(summaries));
+          } finally {
+            await browser.close();
+          }
+          NODE
