@@ -1,0 +1,155 @@
+name: Full Graphics Live QA
+
+on:
+  push:
+    branches:
+      - qa/full-graphics-live
+
+permissions:
+  contents: read
+
+jobs:
+  graphics-live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.23.2
+      - name: Install Playwright
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Verify production graphics across every map
+        env:
+          LIVE_URL: https://hideverse-io.onrender.com
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+
+          const maps = ['ravenwood', 'nexus', 'museum', 'hospital', 'hotel', 'axiom'];
+          const profiles = ['desktop', 'mobile'];
+          const browser = await chromium.launch({ headless: true });
+          const summaries = [];
+
+          try {
+            for (const profile of profiles) {
+              for (const map of maps) {
+                const mobile = profile === 'mobile';
+                const context = await browser.newContext(
+                  mobile
+                    ? {
+                        viewport: { width: 390, height: 844 },
+                        hasTouch: true,
+                        isMobile: true,
+                        deviceScaleFactor: 2,
+                      }
+                    : {
+                        viewport: { width: 1280, height: 720 },
+                        hasTouch: false,
+                        isMobile: false,
+                        deviceScaleFactor: 1,
+                      },
+                );
+                const page = await context.newPage();
+                const pageErrors = [];
+                const consoleErrors = [];
+                const failedRequests = [];
+                const serverErrors = [];
+
+                page.on('pageerror', (error) => pageErrors.push(String(error)));
+                page.on('console', (message) => {
+                  if (message.type() === 'error') consoleErrors.push(message.text());
+                });
+                page.on('requestfailed', (request) => {
+                  if (request.url().includes('/api/multiplayer/events')) return;
+                  failedRequests.push({
+                    url: request.url(),
+                    error: request.failure()?.errorText ?? 'unknown',
+                  });
+                });
+                page.on('response', (response) => {
+                  if (response.status() >= 500) {
+                    serverErrors.push({ url: response.url(), status: response.status() });
+                  }
+                });
+
+                const started = Date.now();
+                try {
+                  await page.goto(
+                    `${process.env.LIVE_URL}/game/?map=${map}&room=GRAPHICS-${profile}-${map}`,
+                    { waitUntil: 'domcontentloaded', timeout: 90000 },
+                  );
+                  await page.waitForSelector('#boot-overlay.is-hidden', { timeout: 90000 });
+                  const bootMs = Date.now() - started;
+
+                  // Mobile intentionally streams its first rigged role later than desktop.
+                  await page.waitForTimeout(mobile ? 7800 : 5200);
+
+                  const state = await page.evaluate(() => {
+                    const resources = performance.getEntriesByType('resource').map((entry) => entry.name);
+                    const textures = [
+                      ...new Set(resources.filter((name) => name.includes('/materials/cc0/'))),
+                    ];
+                    const characters = [
+                      ...new Set(resources.filter((name) => name.includes('/characters/kaykit/'))),
+                    ];
+                    const canvas = document.querySelector('#game-canvas')?.getBoundingClientRect();
+
+                    return {
+                      textures,
+                      characters,
+                      network: document.querySelector('#network-value')?.textContent ?? '',
+                      status: document.querySelector('#map-status')?.textContent ?? '',
+                      quality: document.querySelector('#quality-select')?.value ?? '',
+                      canvas: canvas ? { width: canvas.width, height: canvas.height } : null,
+                    };
+                  });
+
+                  const summary = {
+                    profile,
+                    map,
+                    bootMs,
+                    ...state,
+                    pageErrors,
+                    consoleErrors,
+                    failedRequests,
+                    serverErrors,
+                  };
+                  summaries.push(summary);
+                  console.log('[graphics-live-qa]', JSON.stringify(summary));
+
+                  if (!state.canvas || state.canvas.width < 300 || state.canvas.height < 300) {
+                    throw new Error(`${profile}/${map}: canvas did not render at playable size`);
+                  }
+                  if (state.textures.length < 3) {
+                    throw new Error(
+                      `${profile}/${map}: only ${state.textures.length} real surface textures loaded`,
+                    );
+                  }
+                  if (state.characters.length < 1) {
+                    throw new Error(`${profile}/${map}: no rigged character asset streamed`);
+                  }
+                  if (!state.network.includes('ONLINE')) {
+                    throw new Error(`${profile}/${map}: multiplayer transport is not online`);
+                  }
+                  if (
+                    pageErrors.length ||
+                    consoleErrors.length ||
+                    failedRequests.length ||
+                    serverErrors.length
+                  ) {
+                    throw new Error(`${profile}/${map}: runtime or network errors detected`);
+                  }
+                } finally {
+                  await context.close();
+                }
+              }
+            }
+
+            console.log('[graphics-live-qa-final]', JSON.stringify(summaries));
+          } finally {
+            await browser.close();
+          }
+          NODE
