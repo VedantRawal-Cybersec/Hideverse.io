@@ -112,13 +112,13 @@ jobs:
               const adsState = await page.locator('#combat-state').textContent();
               await aim.dispatchEvent('pointerup', { pointerId: 52, pointerType: 'touch' });
 
-              await weapon.dispatchEvent('pointerdown', { pointerId: 53, pointerType: 'touch' });
-              await page.waitForTimeout(120);
-              const switchedWeapon = await page.locator('#combat-weapon').textContent();
-
               await reload.dispatchEvent('pointerdown', { pointerId: 54, pointerType: 'touch' });
               await page.waitForTimeout(100);
               const reloadState = await page.locator('#combat-state').textContent();
+
+              await weapon.dispatchEvent('pointerdown', { pointerId: 53, pointerType: 'touch' });
+              await page.waitForTimeout(120);
+              const switchedWeapon = await page.locator('#combat-weapon').textContent();
 
               await slide.dispatchEvent('pointerdown', { pointerId: 55, pointerType: 'touch' });
               await page.waitForTimeout(80);
@@ -153,13 +153,13 @@ jobs:
               const adsState = await page.locator('#combat-state').textContent();
               await page.mouse.up({ button: 'right' });
 
-              await page.keyboard.press('Digit2');
-              await page.waitForTimeout(120);
-              const switchedWeapon = await page.locator('#combat-weapon').textContent();
-
               await page.keyboard.press('KeyR');
               await page.waitForTimeout(100);
               const reloadState = await page.locator('#combat-state').textContent();
+
+              await page.keyboard.press('Digit2');
+              await page.waitForTimeout(120);
+              const switchedWeapon = await page.locator('#combat-weapon').textContent();
 
               await page.keyboard.down('KeyW');
               await page.keyboard.down('ShiftLeft');
@@ -216,3 +216,5 @@ jobs:
             await browser.close();
           }
           NODE
+
+# rerun-after-mobile-pointer-capture-fix
