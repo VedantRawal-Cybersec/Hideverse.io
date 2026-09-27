@@ -390,9 +390,7 @@ export class CharacterSystem {
 
     const actorsToUpgrade = mobileOnly
       ? [...this.actors]
-          .sort(
-            (a, b) => mobileVisualPriority(b.role) - mobileVisualPriority(a.role),
-          )
+          .sort((a, b) => mobileVisualPriority(b.role) - mobileVisualPriority(a.role))
           .slice(0, 1)
       : this.actors;
 
