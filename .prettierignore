@@ -16,3 +16,6 @@ vendor/deadshot-open-source
 
 # Preserve pinned upstream FPS template source byte-for-byte.
 vendor/fps-template
+
+# Pinned MIT FPS foundation; keep upstream formatting stable.
+apps/game-v2

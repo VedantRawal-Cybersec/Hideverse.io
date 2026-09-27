@@ -1,0 +1,21 @@
+{
+  "name": "@hideverse/game-v2",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build --base=/game-v2/",
+    "build:static": "vite build --base=/game-v2/",
+    "verify": "npm run build"
+  },
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "vite": "^7.3.6"
+  },
+  "private": true,
+  "description": "Hideverse Game V2 based on the pinned MIT Workmelt browser FPS foundation"
+}
