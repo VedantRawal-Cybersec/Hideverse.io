@@ -355,8 +355,13 @@ export class InputController {
     const button = document.querySelector<HTMLButtonElement>(`#${id}`);
     if (!button) return;
     button.addEventListener('pointerdown', (event) => {
-      button.setPointerCapture(event.pointerId);
       action(true);
+      try {
+        button.setPointerCapture(event.pointerId);
+      } catch {
+        // Some mobile/webview pointer implementations do not expose a capturable
+        // pointer here. The gameplay action must still begin immediately.
+      }
       event.preventDefault();
       event.stopPropagation();
     });
