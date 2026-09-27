@@ -160,6 +160,12 @@ for (const marker of [
   'fireHitscan',
   'is-headshot',
   'combat-ammo',
+  'spawnTracer',
+  'spawnImpact',
+  'spawnShell',
+  'muzzle-flash',
+  'applyThreat',
+  'consumePlayerEliminated',
 ]) {
   if (!combatSystem.includes(marker)) fail(`FPS combat runtime missing ${marker}`);
 }
