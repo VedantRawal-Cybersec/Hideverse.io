@@ -8,6 +8,11 @@ type AnimatedBeacon = {
   phase: number;
 };
 
+type ObjectiveVisual = {
+  base: Entity[];
+  quality: Entity[];
+};
+
 function material(
   color: Triplet,
   emissiveIntensity: number,
@@ -28,10 +33,21 @@ function darken(color: Triplet, scale: number): Triplet {
   return [color[0] * scale, color[1] * scale, color[2] * scale];
 }
 
+function usesOrderedObjectives(modeId: string): boolean {
+  return (
+    modeId === 'hide-and-heist' ||
+    modeId === 'monster-hunt' ||
+    modeId === 'floor-by-floor' ||
+    modeId === 'traitor'
+  );
+}
+
 export class EnvironmentPolish {
   private readonly beacons: AnimatedBeacon[] = [];
   private readonly ownedEntities: Entity[] = [];
   private readonly qualityEntities: Entity[] = [];
+  private readonly objectiveVisuals = new Map<string, ObjectiveVisual>();
+  private readonly completedObjectiveIds = new Set<string>();
   private elapsed = 0;
   private reduced = false;
 
@@ -44,6 +60,7 @@ export class EnvironmentPolish {
     this.createObjectiveBeacons();
     this.createWayfindingPosts();
     this.createAccentLights();
+    this.refreshObjectiveVisibility();
   }
 
   private createObjectiveBeacons(): void {
@@ -83,6 +100,7 @@ export class EnvironmentPolish {
         phase: index * 1.37,
       });
 
+      const quality: Entity[] = [];
       if (!this.coarsePointer && index < 3) {
         const glow = new Entity(`objective-glow-${objective.id}`);
         glow.addComponent('light', {
@@ -99,8 +117,13 @@ export class EnvironmentPolish {
         );
         this.app.root.addChild(glow);
         this.ownedEntities.push(glow);
-        this.qualityEntities.push(glow);
+        quality.push(glow);
       }
+
+      this.objectiveVisuals.set(objective.id, {
+        base: [ring, core],
+        quality,
+      });
     }
   }
 
@@ -168,6 +191,38 @@ export class EnvironmentPolish {
     }
   }
 
+  private refreshObjectiveVisibility(): void {
+    const ordered = usesOrderedObjectives(this.map.mode.id);
+    const activeObjectiveId = ordered
+      ? this.map.objectives.find((objective) => !this.completedObjectiveIds.has(objective.id))?.id
+      : null;
+
+    for (const [objectiveId, visual] of this.objectiveVisuals) {
+      const visible =
+        !this.completedObjectiveIds.has(objectiveId) &&
+        (!ordered || objectiveId === activeObjectiveId);
+
+      for (const entity of visual.base) entity.enabled = visible;
+      for (const entity of visual.quality) entity.enabled = visible && !this.reduced;
+    }
+  }
+
+  completeObjectives(ids: readonly string[]): void {
+    let changed = false;
+    for (const id of ids) {
+      if (this.objectiveVisuals.has(id) && !this.completedObjectiveIds.has(id)) {
+        this.completedObjectiveIds.add(id);
+        changed = true;
+      }
+    }
+    if (changed) this.refreshObjectiveVisibility();
+  }
+
+  resetObjectives(): void {
+    this.completedObjectiveIds.clear();
+    this.refreshObjectiveVisibility();
+  }
+
   update(deltaSeconds: number): void {
     this.elapsed += Math.min(deltaSeconds, 0.1);
     for (const beacon of this.beacons) {
@@ -180,6 +235,7 @@ export class EnvironmentPolish {
     if (this.reduced === reduced) return;
     this.reduced = reduced;
     for (const entity of this.qualityEntities) entity.enabled = !reduced;
+    this.refreshObjectiveVisibility();
   }
 
   destroy(): void {
@@ -187,5 +243,7 @@ export class EnvironmentPolish {
     this.beacons.length = 0;
     this.ownedEntities.length = 0;
     this.qualityEntities.length = 0;
+    this.objectiveVisuals.clear();
+    this.completedObjectiveIds.clear();
   }
 }

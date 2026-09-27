@@ -295,12 +295,15 @@ async function boot(): Promise<void> {
     if (multiplayer.consumeRoundReset()) {
       mode.reset();
       interactions.reset();
+      environmentPolish.resetObjectives();
       player.reset();
       lastOutcome = 'playing';
       setRoundResult('playing', '');
     }
 
-    mode.completeObjectives(multiplayer.consumeRemoteObjectives());
+    const remoteObjectives = multiplayer.consumeRemoteObjectives();
+    mode.completeObjectives(remoteObjectives);
+    environmentPolish.completeObjectives(remoteObjectives);
 
     player.update(deltaSeconds);
 
@@ -326,6 +329,7 @@ async function boot(): Promise<void> {
 
     if (modeState.completedObjectiveId) {
       multiplayer.submitObjective(modeState.completedObjectiveId);
+      environmentPolish.completeObjectives([modeState.completedObjectiveId]);
     }
 
     if (modeState.event === 'objective') audio.cue('objective');
