@@ -13,3 +13,6 @@ docs/PHASE_2_ASSETS.md
 
 # Preserve pinned upstream Deadshot open-source artifacts byte-for-byte.
 vendor/deadshot-open-source
+
+# Preserve pinned upstream FPS template source byte-for-byte.
+vendor/fps-template

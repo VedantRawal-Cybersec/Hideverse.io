@@ -9,13 +9,16 @@ const [
   performanceManager,
   multiplayer,
   characters,
+  inputController,
   playerController,
   playerAvatar,
+  combatSystem,
   graphicsPipeline,
   surfaceTextures,
   mapDetailPass,
   ravenwoodRuntime,
   manifestText,
+  fpsTemplateSource,
 ] = await Promise.all([
   readFile(path.join(root, 'src/maps/map-data.json'), 'utf8'),
   readFile(path.join(root, 'index.html'), 'utf8'),
@@ -23,13 +26,16 @@ const [
   readFile(path.join(root, 'src/core/performance-manager.ts'), 'utf8'),
   readFile(path.join(root, 'src/core/multiplayer-client.ts'), 'utf8'),
   readFile(path.join(root, 'src/core/character-system.ts'), 'utf8'),
+  readFile(path.join(root, 'src/core/input-controller.ts'), 'utf8'),
   readFile(path.join(root, 'src/core/player-controller.ts'), 'utf8'),
   readFile(path.join(root, 'src/core/player-avatar.ts'), 'utf8'),
+  readFile(path.join(root, 'src/core/combat-system.ts'), 'utf8'),
   readFile(path.join(root, 'src/core/graphics-pipeline.ts'), 'utf8'),
   readFile(path.join(root, 'src/core/surface-textures.ts'), 'utf8'),
   readFile(path.join(root, 'src/maps/map-detail-pass.ts'), 'utf8'),
   readFile(path.join(root, 'src/maps/ravenwood/ravenwood.ts'), 'utf8'),
   readFile(path.resolve(root, '../../assets/manifest.json'), 'utf8'),
+  readFile(path.resolve(root, '../../vendor/fps-template/bulletstorm-arena/SOURCE.md'), 'utf8'),
 ]);
 
 const catalog = JSON.parse(catalogText);
@@ -54,6 +60,15 @@ for (const marker of [
   'id="mobile-interact"',
   'id="mobile-view"',
   'id="mobile-jump"',
+  'id="mobile-fire"',
+  'id="mobile-aim"',
+  'id="mobile-reload"',
+  'id="mobile-slide"',
+  'id="mobile-weapon"',
+  'id="combat-ammo"',
+  'id="combat-reserve"',
+  'id="combat-health"',
+  'id="hit-marker"',
   'id="quality-select"',
   'id="sensitivity-slider"',
   'id="round-result"',
@@ -66,6 +81,9 @@ for (const marker of [
   'roundElapsedSeconds',
   'consumeRemoteObjectives',
   'setMovementLocked',
+  'CombatSystem',
+  'combat.update',
+  'characters.resetCombat',
 ]) {
   if (!main.includes(marker)) fail(`main runtime missing ${marker}`);
 }
@@ -116,8 +134,47 @@ for (const marker of [
   'castRay',
   'third-person',
   'enableSnapToGround',
+  'slideSeconds',
+  'consumeSlide',
+  'slideDirectionX',
 ]) {
   if (!playerController.includes(marker)) fail(`player controller missing ${marker}`);
+}
+
+for (const marker of [
+  'consumeReload',
+  'consumeWeaponSwitch',
+  'mobile-fire',
+  'mobile-aim',
+  'addLookImpulse',
+]) {
+  if (!inputController.includes(marker)) fail(`combat input missing ${marker}`);
+}
+
+for (const marker of [
+  'VANGUARD AR',
+  'RIFT SMG',
+  'BREACH-12',
+  'adsFov',
+  'reloadSeconds',
+  'fireHitscan',
+  'is-headshot',
+  'combat-ammo',
+]) {
+  if (!combatSystem.includes(marker)) fail(`FPS combat runtime missing ${marker}`);
+}
+
+for (const marker of ['CombatHit', 'fireHitscan', 'headshot', 'resetCombat', 'respawnSeconds']) {
+  if (!characters.includes(marker)) fail(`character combat runtime missing ${marker}`);
+}
+
+for (const marker of [
+  'kamalesh404/multiplayer-fps-game',
+  'cdde0f3cca57769ad7ae610c3c890438393b24d4',
+  'MIT',
+  'Deliberately NOT imported',
+]) {
+  if (!fpsTemplateSource.includes(marker)) fail(`FPS template provenance missing ${marker}`);
 }
 
 for (const marker of ['Rogue.glb', 'setViewMode', "assignAnimation('run'"]) {
@@ -191,5 +248,5 @@ for (const marker of [
 }
 
 console.log(
-  `[release-qa] PASS — ${catalog.maps.length} maps, mobile budgets, adaptive rendering, touch controls, FPS/TPS physics, shared objectives, realtime room sync, multi-character rigged locomotion, HDR graphics, progressive map-specific CC0 tiled surfaces and six-map architectural realism verified.`,
+  `[release-qa] PASS — ${catalog.maps.length} maps, mobile budgets, adaptive rendering, touch controls, FPS/TPS physics, template-derived ADS/fire/reload/weapon switching/slide/headshot combat, shared objectives, realtime room sync, multi-character rigged locomotion, HDR graphics, progressive map-specific CC0 tiled surfaces and six-map architectural realism verified.`,
 );

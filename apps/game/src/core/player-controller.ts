@@ -24,6 +24,9 @@ export class FirstPersonController {
   private view: PlayerViewMode = 'first-person';
   private smoothedMoveX = 0;
   private smoothedMoveZ = 0;
+  private slideSeconds = 0;
+  private slideDirectionX = 0;
+  private slideDirectionZ = 0;
 
   constructor(
     private readonly world: RAPIER.World,
@@ -72,6 +75,10 @@ export class FirstPersonController {
     return this.view;
   }
 
+  get sliding(): boolean {
+    return this.slideSeconds > 0;
+  }
+
   setMovementLocked(locked: boolean): void {
     this.movementLocked = locked;
   }
@@ -115,18 +122,48 @@ export class FirstPersonController {
     rotation.transformVector(Vec3.FORWARD, forward);
     rotation.transformVector(Vec3.RIGHT, right);
 
+    const requestedSlide = this.input.consumeSlide();
+    if (
+      requestedSlide &&
+      !this.movementLocked &&
+      this.grounded &&
+      moveMagnitude > 0.35 &&
+      this.stamina > 5
+    ) {
+      const moveX = right.x * axes.x + forward.x * axes.z;
+      const moveZ = right.z * axes.x + forward.z * axes.z;
+      const moveLength = Math.max(0.001, Math.hypot(moveX, moveZ));
+      this.slideDirectionX = moveX / moveLength;
+      this.slideDirectionZ = moveZ / moveLength;
+      this.slideSeconds = 0.68;
+      this.stamina = Math.max(0, this.stamina - 7);
+    }
+
+    const sliding = this.slideSeconds > 0 && this.grounded && !this.movementLocked;
     const speed = this.movementLocked
       ? 0
-      : this.input.crouch
-        ? 2.2
-        : wantsSprint
-          ? 6.2
-          : moveMagnitude < 0.55
-            ? 2.6
-            : 3.8;
+      : sliding
+        ? 0
+        : this.input.crouch
+          ? 2.2
+          : wantsSprint
+            ? 6.2
+            : moveMagnitude < 0.55
+              ? 2.6
+              : 3.8;
 
-    const horizontalX = (right.x * axes.x + forward.x * axes.z) * speed * dt;
-    const horizontalZ = (right.z * axes.x + forward.z * axes.z) * speed * dt;
+    let horizontalX = (right.x * axes.x + forward.x * axes.z) * speed * dt;
+    let horizontalZ = (right.z * axes.x + forward.z * axes.z) * speed * dt;
+
+    if (sliding) {
+      const slideRatio = Math.max(0, Math.min(1, this.slideSeconds / 0.68));
+      const slideSpeed = 4.4 + 3.4 * slideRatio;
+      horizontalX = this.slideDirectionX * slideSpeed * dt;
+      horizontalZ = this.slideDirectionZ * slideSpeed * dt;
+      this.slideSeconds = Math.max(0, this.slideSeconds - dt);
+    } else if (this.slideSeconds > 0 && !this.grounded) {
+      this.slideSeconds = 0;
+    }
 
     if (!this.movementLocked && this.input.consumeJump() && this.grounded) {
       this.verticalVelocity = 6.7;
@@ -160,7 +197,9 @@ export class FirstPersonController {
     this.world.timestep = dt;
     this.world.step();
 
-    if (this.movementLocked || moveMagnitude <= 0.05) {
+    if (sliding) {
+      this.motion = 'sprint';
+    } else if (this.movementLocked || moveMagnitude <= 0.05) {
       this.motion = this.jumpMotionTimer > 0 ? 'jump' : 'idle';
     } else if (this.jumpMotionTimer > 0 && !this.grounded) {
       this.motion = 'jump';
@@ -184,6 +223,9 @@ export class FirstPersonController {
     this.movementLocked = false;
     this.smoothedMoveX = 0;
     this.smoothedMoveZ = 0;
+    this.slideSeconds = 0;
+    this.slideDirectionX = 0;
+    this.slideDirectionZ = 0;
     this.body.setTranslation(this.spawn, true);
     this.body.setNextKinematicTranslation(this.spawn);
     this.avatar.update(this.spawn, this.input.yaw, 'idle');
@@ -192,7 +234,7 @@ export class FirstPersonController {
 
   private syncCamera(deltaSeconds: number): void {
     const position = this.body.translation();
-    const targetEyeHeight = this.input.crouch ? 1.1 : 1.62;
+    const targetEyeHeight = this.slideSeconds > 0 ? 0.92 : this.input.crouch ? 1.1 : 1.62;
     const blend = 1 - Math.exp(-12 * Math.min(Math.max(deltaSeconds, 0), 0.1));
     this.eyeHeight += (targetEyeHeight - this.eyeHeight) * blend;
 

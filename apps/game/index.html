@@ -35,6 +35,24 @@
       </header>
 
       <div class="crosshair" aria-hidden="true"></div>
+      <div id="hit-marker" class="hit-marker" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <div id="eliminate-notice" class="eliminate-notice" aria-live="polite">ELIMINATED</div>
+
+      <aside class="combat-hud" aria-label="Combat status">
+        <div class="combat-weapon-row">
+          <span id="combat-weapon">VANGUARD AR</span>
+          <b id="combat-state">READY</b>
+        </div>
+        <div class="combat-ammo-row">
+          <strong id="combat-ammo">30</strong>
+          <span>/</span>
+          <b id="combat-reserve">120</b>
+        </div>
+        <div class="combat-vitals">
+          <span>HP <b id="combat-health">100</b></span>
+          <span>ARMOR <b id="combat-armor">100</b></span>
+        </div>
+      </aside>
 
       <div id="interaction-prompt" class="interaction-prompt" aria-live="polite"></div>
       <div id="hidden-state" class="hidden-state" aria-live="polite"></div>
@@ -112,8 +130,8 @@
       <aside class="desktop-help">
         <b>CLICK TO CAPTURE MOUSE</b>
         <span>
-          WASD move · Shift sprint · Space jump · C crouch · E interact/hide/open · V FPS/TPS · R
-          reset · Esc release
+          WASD move · Shift sprint · Space jump · C slide/crouch · Mouse1 fire · Mouse2 ADS · R
+          reload · 1/2/3 weapons · E interact · V FPS/TPS · K reset · Esc release
         </span>
       </aside>
 
@@ -122,11 +140,16 @@
           <div id="move-stick-knob" class="move-stick-knob"></div>
         </div>
         <div class="mobile-buttons">
+          <button id="mobile-fire" class="combat-touch primary-touch" type="button">FIRE</button>
+          <button id="mobile-aim" class="combat-touch" type="button">ADS</button>
+          <button id="mobile-jump" type="button">JUMP</button>
           <button id="mobile-sprint" type="button">RUN</button>
-          <button id="mobile-crouch" type="button">CROUCH</button>
+          <button id="mobile-slide" type="button">SLIDE</button>
+          <button id="mobile-reload" type="button">RELOAD</button>
+          <button id="mobile-weapon" type="button">WEAPON</button>
           <button id="mobile-interact" type="button">INTERACT</button>
           <button id="mobile-view" type="button">VIEW</button>
-          <button id="mobile-jump" class="primary-touch" type="button">JUMP</button>
+          <button id="mobile-crouch" type="button">CROUCH</button>
         </div>
       </div>
 

@@ -2,6 +2,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { Application, Color, Entity, FILLMODE_FILL_WINDOW, RESOLUTION_AUTO } from 'playcanvas';
 import { AudioFeedback } from './core/audio-feedback';
 import { CharacterSystem } from './core/character-system';
+import { CombatSystem } from './core/combat-system';
 import { EnvironmentPolish } from './core/environment-polish';
 import { GraphicsPipeline } from './core/graphics-pipeline';
 import { InputController } from './core/input-controller';
@@ -292,6 +293,7 @@ async function boot(): Promise<void> {
   const characters = new CharacterSystem(app, map);
   const multiplayer = new MultiplayerClient(app, map.id);
   const audio = new AudioFeedback();
+  const combat = new CombatSystem(camera, input, characters, audio);
 
   restartRoundButton.addEventListener('click', () => {
     multiplayer.resetRound();
@@ -307,6 +309,7 @@ async function boot(): Promise<void> {
     () => {
       multiplayer.dispose();
       input.dispose();
+      combat.destroy();
       environmentPolish.destroy();
       graphicsPipeline.destroy();
     },
@@ -321,6 +324,8 @@ async function boot(): Promise<void> {
       mode.reset();
       interactions.reset();
       environmentPolish.resetObjectives();
+      characters.resetCombat();
+      combat.reset();
       player.reset();
       lastOutcome = 'playing';
       setRoundResult('playing', '');
@@ -356,6 +361,9 @@ async function boot(): Promise<void> {
       multiplayer.submitObjective(modeState.completedObjectiveId);
       environmentPolish.completeObjectives([modeState.completedObjectiveId]);
     }
+
+    combat.setEnabled(modeState.outcome === 'playing' && !interaction.hidden);
+    combat.update(deltaSeconds, player.viewMode);
 
     if (modeState.event === 'objective') {
       audio.cue('objective');

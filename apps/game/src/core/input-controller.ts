@@ -17,6 +17,12 @@ export class InputController {
   private jumpQueued = false;
   private interactQueued = false;
   private viewToggleQueued = false;
+  private reloadQueued = false;
+  private slideQueued = false;
+  private weaponSwitchQueued: number | null = null;
+  private weaponCycleQueued = false;
+  private fireHeld = false;
+  private aimHeld = false;
   private sprintTouch = false;
   private crouchTouch = false;
   private yawValue = 0;
@@ -32,6 +38,8 @@ export class InputController {
     window.addEventListener('blur', this.resetTransientInput);
     document.addEventListener('visibilitychange', this.onVisibilityChange);
     document.addEventListener('mousemove', this.onMouseMove);
+    document.addEventListener('mousedown', this.onMouseDown);
+    document.addEventListener('mouseup', this.onMouseUp);
     canvas.addEventListener('click', this.onCanvasClick);
     canvas.addEventListener('pointerdown', this.onCanvasPointerDown);
     canvas.addEventListener('pointermove', this.onCanvasPointerMove);
@@ -48,6 +56,21 @@ export class InputController {
     });
     this.bindButton('mobile-view', () => {
       this.viewToggleQueued = true;
+    });
+    this.bindButton('mobile-reload', () => {
+      this.reloadQueued = true;
+    });
+    this.bindButton('mobile-slide', () => {
+      this.slideQueued = true;
+    });
+    this.bindButton('mobile-weapon', () => {
+      this.weaponCycleQueued = true;
+    });
+    this.bindHoldButton('mobile-fire', (active) => {
+      this.fireHeld = active;
+    });
+    this.bindHoldButton('mobile-aim', (active) => {
+      this.aimHeld = active;
     });
     this.bindHoldButton('mobile-sprint', (active) => {
       this.sprintTouch = active;
@@ -67,6 +90,14 @@ export class InputController {
 
   get sensitivity(): number {
     return this.lookSensitivity;
+  }
+
+  get fire(): boolean {
+    return this.fireHeld;
+  }
+
+  get aim(): boolean {
+    return this.aimHeld;
   }
 
   get sprint(): boolean {
@@ -118,9 +149,38 @@ export class InputController {
     return queued;
   }
 
+  consumeReload(): boolean {
+    const queued = this.reloadQueued;
+    this.reloadQueued = false;
+    return queued;
+  }
+
+  consumeSlide(): boolean {
+    const queued = this.slideQueued;
+    this.slideQueued = false;
+    return queued;
+  }
+
+  consumeWeaponSwitch(): number | null {
+    const queued = this.weaponSwitchQueued;
+    this.weaponSwitchQueued = null;
+    return queued;
+  }
+
+  consumeWeaponCycle(): boolean {
+    const queued = this.weaponCycleQueued;
+    this.weaponCycleQueued = false;
+    return queued;
+  }
+
+  addLookImpulse(yawDelta: number, pitchDelta: number): void {
+    this.yawValue += yawDelta;
+    this.pitchValue = Math.max(-84, Math.min(84, this.pitchValue + pitchDelta));
+  }
+
   consumeReset(): boolean {
-    if (!this.keys.has('KeyR')) return false;
-    this.keys.delete('KeyR');
+    if (!this.keys.has('KeyK')) return false;
+    this.keys.delete('KeyK');
     return true;
   }
 
@@ -130,6 +190,8 @@ export class InputController {
     window.removeEventListener('blur', this.resetTransientInput);
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
     document.removeEventListener('mousemove', this.onMouseMove);
+    document.removeEventListener('mousedown', this.onMouseDown);
+    document.removeEventListener('mouseup', this.onMouseUp);
     this.resetTransientInput();
   }
 
@@ -145,6 +207,15 @@ export class InputController {
     if (event.code === 'KeyV' && !event.repeat) {
       this.viewToggleQueued = true;
     }
+    if (event.code === 'KeyR' && !event.repeat) {
+      this.reloadQueued = true;
+    }
+    if (event.code === 'KeyC' && !event.repeat) {
+      this.slideQueued = true;
+    }
+    if (event.code === 'Digit1' && !event.repeat) this.weaponSwitchQueued = 1;
+    if (event.code === 'Digit2' && !event.repeat) this.weaponSwitchQueued = 2;
+    if (event.code === 'Digit3' && !event.repeat) this.weaponSwitchQueued = 3;
   };
 
   private onKeyUp = (event: KeyboardEvent): void => {
@@ -160,6 +231,17 @@ export class InputController {
   private onMouseMove = (event: MouseEvent): void => {
     if (document.pointerLockElement !== this.canvas) return;
     this.applyLook(event.movementX, event.movementY, 0.1);
+  };
+
+  private onMouseDown = (event: MouseEvent): void => {
+    if (document.pointerLockElement !== this.canvas) return;
+    if (event.button === 0) this.fireHeld = true;
+    if (event.button === 2) this.aimHeld = true;
+  };
+
+  private onMouseUp = (event: MouseEvent): void => {
+    if (event.button === 0) this.fireHeld = false;
+    if (event.button === 2) this.aimHeld = false;
   };
 
   private onCanvasPointerDown = (event: PointerEvent): void => {
@@ -198,6 +280,8 @@ export class InputController {
     this.joystickZ = 0;
     this.sprintTouch = false;
     this.crouchTouch = false;
+    this.fireHeld = false;
+    this.aimHeld = false;
     this.touchLookPointer = null;
   };
 
