@@ -880,6 +880,28 @@ export const PALETTE = {
           weather: [0.22, 0.24, 0.26, 0.34],
         },
       },
+      /** Near-black brick plinths like the reference loading/tunnel walls. */
+      gb_brick: {
+        name: 'brick',
+        surface: 'concrete',
+        opts: {
+          vertexMasks: true,
+          tint: 0x444548,
+          scale: 0.72,
+          normalStrength: 1.15,
+          weather: [0.34, 0.32, 0.44, 0.42],
+        },
+      },
+      /** Crisp paint for lane marks and safety stencils. */
+      gb_marking: {
+        name: 'flat_matte',
+        surface: 'concrete',
+        opts: {
+          vertexMasks: false,
+          tint: 0xd7d7d2,
+          scale: 1,
+        },
+      },
       /** Cheap merged grounding shadow used only by desktop Medium dressing. */
       gb_shadow: {
         name: 'flat_matte',
