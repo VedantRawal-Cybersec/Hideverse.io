@@ -757,6 +757,54 @@ function buildHouse(A, rng, spec) {
     });
   }
 
+  // ---- industrial facade panel breakup ----------------------------------
+  // Large blank wall fields are what made the old map read as a blockout.
+  // These shallow seams / service rails create the same large-panel rhythm as
+  // the reference refinery while staying in existing gb_dark / gb_grey batches.
+  for (const sx of [-1, 1]) {
+    for (let z = -hd + 1.65; z <= hd - 1.65; z += 2.35) {
+      A.add(
+        'gb_dark',
+        BOX_THIN(A),
+        LL(pm, sx * (hw + 0.025), eaves * 0.51, z, -H, 0.035, eaves - 1.2, 0.045),
+        null
+      );
+    }
+  }
+  for (const sz of [-1, 1]) {
+    for (let x = -hw + 1.5; x <= hw - 1.5; x += 2.25) {
+      A.add(
+        'gb_dark',
+        BOX_THIN(A),
+        LL(pm, x, eaves * 0.51, sz * (hd + 0.025), 0, 0.035, eaves - 1.2, 0.045),
+        null
+      );
+    }
+  }
+
+  // A mid-height service band plus two compact wall cabinets on the street
+  // face. These add industrial scale/readability without new materials.
+  A.add(
+    'gb_grey',
+    BOX_THIN(A),
+    LL(pm, hw + 0.035, 2.62, 0, -H, spec.d - 0.9, 0.10, 0.055),
+    { masks: [0.58, 0.36, 0.22] }
+  );
+  for (const z of [-3.9, 3.6]) {
+    A.add(
+      'gb_grey',
+      BOX(A),
+      LL(pm, hw + 0.18, 1.48, z, 0, 0.28, 0.78, 0.62),
+      { masks: [0.62, 0.32, 0.20] }
+    );
+    A.add(
+      'gb_red',
+      BOX_THIN(A),
+      LL(pm, hw + 0.335, 1.66, z, -H, 0.035, 0.24, 0.24),
+      null
+    );
+  }
+
   // ---- the stair ---------------------------------------------------------
   // Publishes its foot in the returned info so the self-test can assert the run
   // -up is clear: a stair blocked by dressing is the one mistake that makes a
