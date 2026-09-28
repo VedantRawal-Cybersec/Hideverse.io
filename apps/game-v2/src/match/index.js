@@ -98,8 +98,12 @@ export class MatchSystem {
     this._deathSite = new THREE.Vector3();
     this._lastAttack = new THREE.Vector3();
     this._lastAttackValid = false;
-    /** A level rebuild is in flight; nothing may start until it lands. */
+    /** A level transition is in flight; nothing may start until it lands. */
     this._mapBusy = false;
+    /** Fallback when a connected relay does not echo a requested map quickly. */
+    this._mapNavigateTimer = 0;
+    /** Map requested locally but not yet confirmed by the room relay. */
+    this._pendingMapId = null;
     /** Scorekeeper for a bots match (see ./bounds.js). Null in a room match. */
     this._tally = null;
     /** When the ceremony walks itself back to the lobby. 0 outside it. */
@@ -213,13 +217,45 @@ export class MatchSystem {
   _chooseMap(id) {
     if (this.state !== 'setup' || this._mapBusy) return;
     if (!this._knownMap(id) || id === this.world.mapId) return;
+    if (this.net?.connected && this.net.lobby?.live) return;
+
     this._sfx('ready', 0.7);
-    if (this.net?.connected) this.net.setMap(id);
-    else this._applyMap(id);
+
+    // Rebuilding a complete Three.js level in-place can hold the browser's main
+    // thread while physics, navigation, materials and minimap caches are all
+    // replaced. That made a map-card click look dead on slower devices.
+    //
+    // Use a page-level transition instead. A fresh boot is already optimized,
+    // deterministic for a chosen map, and avoids dangling references from the
+    // previous level. In a room, let the relay confirm the shared map first so
+    // every client reloads onto the same level.
+    this._mapBusy = true;
+    this.ui.setMapBusy(true);
+    this.ui.setMap(id);
+
+    if (this.net?.connected) {
+      this._pendingMapId = id;
+      this.net.setMap(id);
+      clearTimeout(this._mapNavigateTimer);
+      this._mapNavigateTimer = window.setTimeout(() => {
+        if (this.state === 'setup' && this.world.mapId !== id) this._navigateMap(id);
+      }, 1800);
+      return;
+    }
+
+    this._navigateMap(id);
   }
 
   _knownMap(id) {
     return !!id && (this.world.maps ?? []).some((m) => m.id === id);
+  }
+
+  _navigateMap(id) {
+    if (!this._knownMap(id)) return;
+    clearTimeout(this._mapNavigateTimer);
+    const next = new URL(window.location.href);
+    next.searchParams.set('map', id);
+    window.location.assign(next.toString());
   }
 
   /**
@@ -326,7 +362,32 @@ export class MatchSystem {
       }
       return;
     }
-    if (this._knownMap(roomMap) && roomMap !== this.world.mapId) this._applyMap(roomMap);
+    if (this._pendingMapId) {
+      if (roomMap === this._pendingMapId) {
+        this._pendingMapId = null;
+        this._navigateMap(roomMap);
+        return;
+      }
+
+      // A lobby frame carrying the old map can race the request we just sent.
+      // Keep waiting for the requested-map echo instead of cancelling the
+      // transition. A genuinely different authoritative map still wins.
+      if (roomMap !== this.world.mapId && this._knownMap(roomMap)) {
+        this._pendingMapId = null;
+        this._navigateMap(roomMap);
+        return;
+      }
+    } else if (this._knownMap(roomMap) && roomMap !== this.world.mapId) {
+      this._navigateMap(roomMap);
+      return;
+    }
+
+    if (!this._pendingMapId && roomMap === this.world.mapId) {
+      clearTimeout(this._mapNavigateTimer);
+      this._mapBusy = false;
+      this.ui.setMapBusy(false);
+      this.ui.setMap(this.world.mapId);
+    }
     this.ui.setRoom(this.net.room);
     this.ui.render(
       e ?? {
