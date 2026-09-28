@@ -192,9 +192,11 @@ export class RenderSystem {
     renderer.info.autoReset = false;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.NoToneMapping; // we tonemap in the composite
-    renderer.shadowMap.enabled = true; // for spot/point lights owned by others
+    // Low smoothness tiers disable every dynamic shadow path, including
+    // Three.js spot/point-light shadow maps owned by other systems.
+    renderer.shadowMap.enabled = q.shadows !== false;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.shadowMap.autoUpdate = true;
+    renderer.shadowMap.autoUpdate = q.shadows !== false;
     renderer.setClearColor(0x000000, 1);
     this.renderer = renderer;
 
@@ -249,6 +251,9 @@ export class RenderSystem {
     this.dof = (q.dof ?? this.qLevel >= 1) ? new DepthOfField() : null;
     this.bloom = q.bloom ? new Bloom(this.qLevel >= 2 ? 6 : 5) : null;
     this.exposure = new AutoExposure();
+    // Metering is five small GPU passes. Reusing the result for a few frames is
+    // visually indistinguishable but removes recurring GPU work on low tiers.
+    this._exposureEvery = cfg.quality === 'performance' ? 4 : cfg.quality === 'low' ? 2 : 1;
     // Headroom for a physically-scaled sky (sunlit scenes reach ~5000 cd/m2).
     // The lower limit is the night exposure lock: a moonlit street meters at
     // EV100 -5.2, and letting the meter chase that turns night into an overcast
@@ -1911,21 +1916,21 @@ export class RenderSystem {
 
     // ---- 15. metering -----------------------------------------------------
     const s = this.settings;
-    const exposureTex = this.exposure.update(
-      renderer,
-      color,
-      this.screenSize.width,
-      this.screenSize.height,
-      s.autoExposure ? dt : 1e3,
-      // The sky publishes a metering compensation for the current sun elevation:
-      // a street canyon under a four-degree sun is entirely in shade, and a meter
-      // weighted onto that geometry opens up two stops and flattens the sky it is
-      // lit by. See SkySystem.exposureBias.
-      s.exposureBias + this._skyExposureBias,
-      s.exposureKey,
-      this.needsPrepass ? this.depthTexture : null
-    );
-    this.exposureTexture = exposureTex;
+    let exposureTex = this.exposureTexture;
+    if (!exposureTex || this.frame % this._exposureEvery === 0) {
+      exposureTex = this.exposure.update(
+        renderer,
+        color,
+        this.screenSize.width,
+        this.screenSize.height,
+        s.autoExposure ? dt * this._exposureEvery : 1e3,
+        // The sky publishes a metering compensation for the current sun elevation.
+        s.exposureBias + this._skyExposureBias,
+        s.exposureKey,
+        this.needsPrepass ? this.depthTexture : null
+      );
+      this.exposureTexture = exposureTex;
+    }
 
     // ---- 16. bloom --------------------------------------------------------
     let bloomTex = null;
