@@ -4,7 +4,7 @@
  * fetches any of this or the subsystems it imports).
  */
 import { Engine } from './core/engine.js';
-import { createConfig } from './core/config.js';
+import { createConfig, QUALITY_PRESETS } from './core/config.js';
 import {
   AdaptiveQualitySystem,
   detectDeviceSignature,
@@ -76,23 +76,36 @@ const controls = capture ? { ...DEFAULT_CONTROLS } : loadControlSettings();
 // and an overlay of thumb controls in every baseline would be a visual change.
 const touchMode = !capture && detectTouchMode(params);
 
-// Phones/tablets get a hard Auto safety envelope before WebGL allocates the
-// expensive render targets. High-DPI mobile screens are the worst case for a
-// browser FPS: DPR 3 at 1440x3200 can request more pixels than a desktop 4K
-// monitor while running a much smaller GPU. Start at Performance, allow Auto to
-// prove its way up to Low, and never let a short quiet-scene benchmark promote
-// a touch device into desktop SSR/GTAO/4-cascade territory.
-if (adaptiveEnabled && graphics.mode === 'auto' && touchMode) {
-  const mobileScale = 0.55;
-  const tooHeavy = !graphics.tier || ['medium', 'high', 'ultra'].includes(graphics.tier);
-  graphics = saveGraphicsSettings({
-    ...graphics,
-    tier: tooHeavy ? 'performance' : graphics.tier,
-    tierCeiling: 'low',
-    renderScale: tooHeavy ? mobileScale : Math.min(graphics.renderScale, 0.72),
-    calibrated: true,
-    targetFps: 60,
-  });
+// Auto is now a competitive smoothness mode. Phones stay on Performance;
+// desktop Auto may climb only as high as Medium. High/Ultra remain available
+// explicitly in settings, but Auto never trades frame pacing for those effects.
+if (adaptiveEnabled && graphics.mode === 'auto') {
+  if (touchMode) {
+    graphics = saveGraphicsSettings({
+      ...graphics,
+      tier: 'performance',
+      tierCeiling: 'performance',
+      renderScale: Math.min(graphics.renderScale || 1, 0.45),
+      calibrated: true,
+      targetFps: 60,
+    });
+  } else {
+    const safeTier =
+      graphics.tier && ['performance', 'low', 'medium'].includes(graphics.tier)
+        ? graphics.tier
+        : 'low';
+    graphics = saveGraphicsSettings({
+      ...graphics,
+      tier: safeTier,
+      tierCeiling: 'medium',
+      renderScale: Math.min(
+        graphics.renderScale || 1,
+        QUALITY_PRESETS[safeTier]?.renderScale ?? 0.6
+      ),
+      calibrated: true,
+      targetFps: 60,
+    });
+  }
   bootQuality = graphics.tier;
 }
 
