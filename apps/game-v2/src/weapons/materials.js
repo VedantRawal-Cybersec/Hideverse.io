@@ -628,15 +628,61 @@ export const WEAPON_MATERIALS = {
  * materials that have no library equivalent (optic glass, illuminated reticle).
  * Those two are owned here and disposed here.
  */
+const FAST_COLORS = Object.freeze({
+  alu: 0x39404a,
+  alu_fine: 0x30363e,
+  steel: 0x303136,
+  steel_soot: 0x171719,
+  steel_bright: 0x51545b,
+  steel_black: 0x282a2f,
+  polymer: 0x2c2b29,
+  polymer_tan: 0x514a3d,
+  rubber: 0x1a1b1d,
+  cavity: 0x08090a,
+  optic_tube: 0x1d2023,
+  brass: 0x8b682a,
+  copper: 0x7a4028,
+});
+
 export class WeaponMaterials {
   constructor(ctx) {
     this.ctx = ctx;
     this.lib = ctx.peek('materials');
+    this.fastMode = ctx.config?.q?.prepass === false;
     this.cache = new Map();
     this.owned = [];
     this.ownedTex = [];
     this._rimTex = null;
     this._fallbacks = new Map();
+    this._fastMat = null;
+  }
+
+  /**
+   * Competitive viewmodel material. One untextured Lambert program can shade
+   * every opaque gun part after its material identity has been baked into the
+   * geometry's vertex colours. This lets Viewmodel merge the usual 7-9 material
+   * buckets per assembly into one draw without losing the dark-alloy / polymer /
+   * steel / brass value structure.
+   */
+  fastMaterial() {
+    if (this._fastMat) return this._fastMat;
+    const m = new THREE.MeshLambertMaterial({
+      color: 0xffffff,
+      vertexColors: true,
+      flatShading: true,
+      dithering: false,
+    });
+    m.name = 'ow-weapon-fast';
+    m.userData.owNoPatch = true;
+    this._fastMat = m;
+    this.owned.push(m);
+    return m;
+  }
+
+  /** Representative display colour used when collapsing an opaque material. */
+  fastColor(key) {
+    const hex = FAST_COLORS[key] ?? 0x303236;
+    return new THREE.Color(hex);
   }
 
   /** @returns {THREE.Material} */
