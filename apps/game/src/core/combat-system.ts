@@ -2,6 +2,7 @@ import { Application, Color, Entity, StandardMaterial, Vec3 } from 'playcanvas';
 import type { AudioFeedback } from './audio-feedback';
 import type { CharacterSystem, CombatHit, ThreatSnapshot } from './character-system';
 import type { InputController } from './input-controller';
+import { loadContainer } from './load-container';
 import type { PlayerViewMode } from './player-avatar';
 
 type WeaponId = 'assault' | 'smg' | 'shotgun';
@@ -24,6 +25,10 @@ type WeaponDefinition = {
   bodyScale: [number, number, number];
   barrelScale: [number, number, number];
   muzzleZ: number;
+  modelFile: string;
+  modelScale: number;
+  modelEuler: [number, number, number];
+  modelPosition: [number, number, number];
 };
 
 type WeaponState = {
@@ -65,6 +70,10 @@ const weapons: WeaponDefinition[] = [
     bodyScale: [0.13, 0.12, 0.52],
     barrelScale: [0.055, 0.055, 0.4],
     muzzleZ: -0.73,
+    modelFile: 'weapons/kenney/machinegun.glb',
+    modelScale: 0.34,
+    modelEuler: [0, 90, 0],
+    modelPosition: [0, -0.03, -0.06],
   },
   {
     id: 'smg',
@@ -84,6 +93,10 @@ const weapons: WeaponDefinition[] = [
     bodyScale: [0.14, 0.12, 0.4],
     barrelScale: [0.05, 0.05, 0.3],
     muzzleZ: -0.61,
+    modelFile: 'weapons/quaternius/mp5a5.glb',
+    modelScale: 0.42,
+    modelEuler: [0, 90, 0],
+    modelPosition: [0, -0.025, -0.04],
   },
   {
     id: 'shotgun',
@@ -103,6 +116,10 @@ const weapons: WeaponDefinition[] = [
     bodyScale: [0.15, 0.13, 0.6],
     barrelScale: [0.07, 0.07, 0.48],
     muzzleZ: -0.86,
+    modelFile: 'weapons/kenney/shotgun.glb',
+    modelScale: 0.31,
+    modelEuler: [0, 90, 0],
+    modelPosition: [0, -0.035, -0.08],
   },
 ];
 
@@ -169,6 +186,8 @@ export class CombatSystem {
   private readonly root = new Entity('fps-viewmodel');
   private readonly fxRoot = new Entity('combat-fx-root');
   private readonly modelRoots = new Map<WeaponId, Entity>();
+  private readonly fallbackRoots = new Map<WeaponId, Entity>();
+  private readonly importedModels = new Map<WeaponId, Entity>();
   private readonly muzzleFlashes = new Map<WeaponId, Entity>();
   private readonly state = new Map<WeaponId, WeaponState>();
   private readonly fxPool: FxRuntime[] = [];
@@ -192,6 +211,7 @@ export class CombatSystem {
   private eliminatedQueued = false;
   private shotSeed = 0x53a9c1ef;
   private fxCursor = 0;
+  private disposed = false;
 
   private readonly hudWeapon = required<HTMLElement>('#combat-weapon');
   private readonly hudAmmo = required<HTMLElement>('#combat-ammo');
@@ -224,6 +244,10 @@ export class CombatSystem {
     this.root.setLocalPosition(0.2, -0.22, -0.44);
     this.activateModel();
     this.updateHud(true);
+
+    window.setTimeout(() => {
+      void this.loadImportedViewModels();
+    }, 1100);
   }
 
   get weaponName(): string {
@@ -412,6 +436,7 @@ export class CombatSystem {
   }
 
   destroy(): void {
+    this.disposed = true;
     this.root.destroy();
     this.fxRoot.destroy();
   }
@@ -542,6 +567,10 @@ export class CombatSystem {
 
   private createViewModel(definition: WeaponDefinition): Entity {
     const weaponRoot = new Entity(`viewmodel-${definition.id}`);
+    const fallbackRoot = new Entity(`fallback-${definition.id}`);
+    weaponRoot.addChild(fallbackRoot);
+    this.fallbackRoots.set(definition.id, fallbackRoot);
+
     const primary = weaponMaterial(definition.color);
     const accent = accentMaterial();
     const dark = weaponMaterial([
@@ -550,9 +579,9 @@ export class CombatSystem {
       definition.color[2] * 0.52,
     ]);
 
-    part(weaponRoot, `${definition.id}-receiver`, definition.bodyScale, [0, 0, -0.05], primary);
+    part(fallbackRoot, `${definition.id}-receiver`, definition.bodyScale, [0, 0, -0.05], primary);
     part(
-      weaponRoot,
+      fallbackRoot,
       `${definition.id}-barrel`,
       definition.barrelScale,
       [0, 0.018, definition.muzzleZ + definition.barrelScale[2] * 0.42],
@@ -560,26 +589,40 @@ export class CombatSystem {
     );
 
     if (definition.id === 'assault') {
-      part(weaponRoot, 'assault-stock', [0.12, 0.105, 0.25], [0, -0.005, 0.3], dark);
-      part(weaponRoot, 'assault-handguard', [0.145, 0.1, 0.28], [0, 0, -0.34], primary);
-      part(weaponRoot, 'assault-magazine', [0.085, 0.2, 0.12], [0, -0.15, 0.06], dark, [-13, 0, 0]);
-      part(weaponRoot, 'assault-rail', [0.075, 0.025, 0.31], [0, 0.09, -0.14], accent);
-      part(weaponRoot, 'assault-optic', [0.07, 0.065, 0.105], [0, 0.135, -0.05], dark);
-      part(weaponRoot, 'assault-muzzle', [0.07, 0.07, 0.11], [0, 0.018, -0.7], dark);
+      part(fallbackRoot, 'assault-stock', [0.12, 0.105, 0.25], [0, -0.005, 0.3], dark);
+      part(fallbackRoot, 'assault-handguard', [0.145, 0.1, 0.28], [0, 0, -0.34], primary);
+      part(
+        fallbackRoot,
+        'assault-magazine',
+        [0.085, 0.2, 0.12],
+        [0, -0.15, 0.06],
+        dark,
+        [-13, 0, 0],
+      );
+      part(fallbackRoot, 'assault-rail', [0.075, 0.025, 0.31], [0, 0.09, -0.14], accent);
+      part(fallbackRoot, 'assault-optic', [0.07, 0.065, 0.105], [0, 0.135, -0.05], dark);
+      part(fallbackRoot, 'assault-muzzle', [0.07, 0.07, 0.11], [0, 0.018, -0.7], dark);
     } else if (definition.id === 'smg') {
-      part(weaponRoot, 'smg-stock', [0.085, 0.075, 0.2], [0, 0, 0.25], dark);
-      part(weaponRoot, 'smg-foregrip', [0.07, 0.15, 0.08], [0, -0.12, -0.27], dark, [-8, 0, 0]);
-      part(weaponRoot, 'smg-magazine', [0.07, 0.19, 0.09], [0, -0.16, 0.03], primary);
-      part(weaponRoot, 'smg-sight', [0.055, 0.05, 0.08], [0, 0.115, -0.08], accent);
+      part(fallbackRoot, 'smg-stock', [0.085, 0.075, 0.2], [0, 0, 0.25], dark);
+      part(
+        fallbackRoot,
+        'smg-foregrip',
+        [0.07, 0.15, 0.08],
+        [0, -0.12, -0.27],
+        dark,
+        [-8, 0, 0],
+      );
+      part(fallbackRoot, 'smg-magazine', [0.07, 0.19, 0.09], [0, -0.16, 0.03], primary);
+      part(fallbackRoot, 'smg-sight', [0.055, 0.05, 0.08], [0, 0.115, -0.08], accent);
     } else {
-      part(weaponRoot, 'shotgun-stock', [0.13, 0.11, 0.31], [0, -0.005, 0.4], dark);
-      part(weaponRoot, 'shotgun-pump', [0.16, 0.12, 0.24], [0, -0.02, -0.44], primary);
-      part(weaponRoot, 'shotgun-tube', [0.045, 0.045, 0.52], [0, -0.075, -0.51], accent);
-      part(weaponRoot, 'shotgun-sight', [0.03, 0.04, 0.04], [0, 0.115, -0.52], accent);
+      part(fallbackRoot, 'shotgun-stock', [0.13, 0.11, 0.31], [0, -0.005, 0.4], dark);
+      part(fallbackRoot, 'shotgun-pump', [0.16, 0.12, 0.24], [0, -0.02, -0.44], primary);
+      part(fallbackRoot, 'shotgun-tube', [0.045, 0.045, 0.52], [0, -0.075, -0.51], accent);
+      part(fallbackRoot, 'shotgun-sight', [0.03, 0.04, 0.04], [0, 0.115, -0.52], accent);
     }
 
     const grip = part(
-      weaponRoot,
+      fallbackRoot,
       `${definition.id}-grip`,
       [0.065, 0.18, 0.08],
       [0, -0.12, 0.02],
@@ -600,6 +643,63 @@ export class CombatSystem {
 
     this.root.addChild(weaponRoot);
     return weaponRoot;
+  }
+
+  private async loadImportedViewModels(): Promise<void> {
+    for (const definition of weapons) {
+      if (this.disposed) return;
+
+      try {
+        const asset = await loadContainer(
+          this.app,
+          `${import.meta.env.BASE_URL}${definition.modelFile}`,
+        );
+        if (this.disposed) return;
+
+        const model = asset.resource.instantiateRenderEntity({
+          castShadows: false,
+          receiveShadows: false,
+        });
+        model.name = `imported-viewmodel-${definition.id}`;
+        model.setLocalScale(
+          definition.modelScale,
+          definition.modelScale,
+          definition.modelScale,
+        );
+        model.setLocalEulerAngles(
+          definition.modelEuler[0],
+          definition.modelEuler[1],
+          definition.modelEuler[2],
+        );
+        model.setLocalPosition(
+          definition.modelPosition[0],
+          definition.modelPosition[1],
+          definition.modelPosition[2],
+        );
+
+        const root = this.modelRoots.get(definition.id);
+        if (!root) {
+          model.destroy();
+          continue;
+        }
+
+        root.addChild(model);
+        this.importedModels.set(definition.id, model);
+        const fallback = this.fallbackRoots.get(definition.id);
+        if (fallback) fallback.enabled = false;
+      } catch (error) {
+        console.warn(
+          `[Hideverse combat] ${definition.modelFile} unavailable; procedural fallback retained.`,
+          error,
+        );
+      }
+
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, 150);
+      });
+    }
+
+    this.activateModel();
   }
 
   private createFxPool(): void {
