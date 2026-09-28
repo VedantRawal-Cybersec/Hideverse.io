@@ -297,9 +297,10 @@ export class RenderSystem {
     this.contextLost = false;
     this._budgetNote = '';
 
-    // Always on: depthTexture/velocityTexture are part of the public contract
-    // (soft particles, SSR, motion blur) even when our own effects are off.
-    this.needsPrepass = true;
+    // Competitive Auto tiers do not pay for a full MRT geometry pass when none
+    // of their enabled effects consume depth/normal/velocity. High/Ultra retain
+    // the full cinematic pipeline.
+    this.needsPrepass = q.prepass !== false;
 
     this.hdrRt = null;
     this.viewRt = null;
@@ -1697,9 +1698,13 @@ export class RenderSystem {
     camera.updateMatrixWorld();
     viewCamera.updateMatrixWorld();
 
-    this._collect(scene);
+    // The expensive scene walk mainly exists to build prepass/shadow draw lists
+    // and discover directional lights. On the lean Auto path there are no CSM
+    // or prepass draws, so refresh that metadata at 10 Hz instead of every frame.
+    const leanForward = !this.needsPrepass && !this.csm.enabled;
+    if (!leanForward || this.frame <= 3 || this.frame % 6 === 0) this._collect(scene);
     this._ensureProbe(ctx);
-    this._syncSun(camera);
+    if (!leanForward || this.frame <= 3 || this.frame % 6 === 0) this._syncSun(camera);
     this._updateRooms();
     this._updateBounceFill();
     this._updateViewRig(viewCamera);
@@ -1969,10 +1974,12 @@ export class RenderSystem {
     // ---- bookkeeping ------------------------------------------------------
     // Only world objects are in the gbuffer now, so only their transforms need
     // remembering for next frame's velocity.
-    gb.beginRecord();
-    gb.recordMatrices(this._draw, this._nDraw);
-    gb.endRecord();
-    this._prevVP.copy(this._currVP);
+    if (this.needsPrepass) {
+      gb.beginRecord();
+      gb.recordMatrices(this._draw, this._nDraw);
+      gb.endRecord();
+      this._prevVP.copy(this._currVP);
+    }
     this._firstFrame = false;
     renderer.setRenderTarget(null);
 
