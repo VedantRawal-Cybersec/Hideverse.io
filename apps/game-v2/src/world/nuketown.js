@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { BOX, BOX_THIN, IDENT, LL, stairRun, worldOf, ryOf, windowUnit, doorUnit } from './kit.js';
+import { BOX, BOX_THIN, IDENT, LL, stairRun, worldOf, ryOf } from './kit.js';
 import { registerProps } from './props.js';
 import { registerNuketownProps } from './nuketownprops.js';
 import { fbm3, paintMasks } from './util.js';
@@ -399,7 +399,7 @@ function buildGround(A, rng) {
     out[1] = 0.2 + fbm3(x * 0.28, 2.1, z * 0.28, 2) * 0.4;
     out[0] = 0.18;
   });
-  A.add('dirt', terrain, null);
+  A.add('gb_grey', terrain, null);
   A.collideGeo('sand', terrain);
   terrain.dispose();
 
@@ -543,33 +543,53 @@ function buildPerimeter(A, rng) {
 function decorateOpenings(A, rng, pm, cx, cz, ry, y0, holes, wallT, floor) {
   if (!holes?.length) return;
   const panel = new THREE.Matrix4().copy(LL(pm, cx, y0, cz, ry));
+  const box = BOX_THIN(A);
+  const frame = 'gb_dark';
+  const trim = 'gb_grey';
 
   for (const o of holes) {
     const oy = o.y ?? 0;
-    const centreY = oy + o.h / 2;
-    const isDoor = oy <= 0.01 && o.h >= 1.95;
+    const h = o.h;
+    const w = o.w;
+    const x = o.u;
+    const y = oy + h / 2;
+    const isDoor = oy <= 0.01 && h >= 1.95;
+    const fw = isDoor ? 0.085 : 0.055;
+    const depth = wallT * 0.18;
+
+    // Jambs + head. They sit in the real hole, so the facade stops reading as
+    // a boolean cutout while remaining fully shoot-/walk-through.
+    A.add(frame, box, LL(panel, x - w / 2 + fw / 2, y, depth, 0, fw, h, 0.075), {
+      masks: [0.75, 0.4, 0.18],
+    });
+    A.add(frame, box, LL(panel, x + w / 2 - fw / 2, y, depth, 0, fw, h, 0.075), {
+      masks: [0.75, 0.4, 0.18],
+    });
+    A.add(frame, box, LL(panel, x, y + h / 2 - fw / 2, depth, 0, w, fw, 0.075), {
+      masks: [0.75, 0.4, 0.18],
+    });
 
     if (isDoor) {
-      // Keep combat routes open: realistic jamb/head/threshold, no blocking leaf.
-      doorUnit(A, panel, { x: o.u, y: centreY, w: o.w, h: o.h }, rng, {
-        t: wallT,
-        frameKey: 'gb_dark',
-        leaf: false,
+      // Stone threshold, still no blocking door leaf.
+      A.add(trim, box, LL(panel, x, 0.045, wallT * 0.16, 0, w + 0.12, 0.09, wallT * 0.7), {
+        masks: [0.55, 0.58, 0.34],
       });
       continue;
     }
 
-    // These are enterable houses, so the room itself is the backing. Open/ajar
-    // casements preserve the shoot-through route and avoid fake non-colliding
-    // glass while still giving every opening real depth and construction.
-    windowUnit(A, panel, { x: o.u, y: centreY, w: o.w, h: o.h }, rng, {
-      t: wallT,
-      frameKey: 'gb_dark',
-      state: floor === 0 ? 'ajar' : (rng.float() < 0.45 ? 'ajar' : 'open'),
-      back: false,
-      noGlass: true,
-      grille: false,
-      shutters: false,
+    // Window bottom rail, mullion and one offset transom. These five pieces are
+    // the cheapest geometry that reads as a real casement at 5-30 m.
+    A.add(frame, box, LL(panel, x, y - h / 2 + fw / 2, depth, 0, w, fw, 0.075), null);
+    A.add(frame, box, LL(panel, x, y, depth, 0, 0.042, h - 0.09, 0.066), null);
+    A.add(frame, box, LL(panel, x, y + h * 0.16, depth, 0, w - 0.10, 0.038, 0.066), null);
+
+    // Protruding sill + lintel catch real light and create the missing facade
+    // depth without another material or glass pass.
+    A.add(trim, box, LL(panel, x, y - h / 2 - 0.045, -0.035, 0, w + 0.20, 0.09, wallT * 0.5), {
+      masks: [0.48, 0.42, 0.26],
+    });
+    A.add(trim, box, LL(panel, x, y + h / 2 + 0.045, 0.01, 0, w + 0.16, 0.09, wallT * 0.4), {
+      masks: [0.45, 0.46, 0.26],
     });
   }
 }
@@ -801,7 +821,7 @@ function dress(A, rng, stairFeet) {
   const parkedCar = (x, z, ry) => {
     A.put('gb_car', x, 0.62, z, ry, 1, [0.9, 1.05, 1]);
     // Unlike loose dressing, cars are meaningful cover and must match visuals.
-    A.box('metal', x, 0.52, z, ry === 0 ? 1.82 : 4.0, 0.95, ry === 0 ? 4.0 : 1.82, ry);
+    A.box('metal', x, 0.52, z, 1.82, 0.95, 4.0, ry);
   };
 
   // ---- poured road barriers: sidewalk line and alley cover --------------
@@ -884,20 +904,9 @@ function dress(A, rng, stairFeet) {
     }
   }
 
-  // One vegetation prototype, repeated sparingly around yard/perimeter edges.
-  // It adds life and scale without alpha-card spam or a forest of extra draws.
-  const shrubs = [
-    [-21.8, -7.2], [-21.5, 4.8], [-20.8, 10.2],
-    [21.8, 7.2], [21.5, -4.8], [20.8, -10.2],
-    [-12.4, 7.0], [-14.8, 7.8], [12.4, -7.0], [14.8, -7.8],
-    [-22.4, 17.6], [22.4, -17.6],
-  ];
-  for (let i = 0; i < shrubs.length; i++) {
-    const [x, z] = shrubs[i];
-    if (!free(x, z, 0.45)) continue;
-    A.put('shrub', x, 0.02, z, rng.float() * Math.PI * 2, 0.55 + (i % 3) * 0.08);
-  }
-
+  // Vegetation is intentionally omitted from the competitive path: alpha-cut
+  // foliage costs an extra shader/program/texture family. The built environment
+  // now carries the realism budget instead.
   A.jitter = null;
 }
 
