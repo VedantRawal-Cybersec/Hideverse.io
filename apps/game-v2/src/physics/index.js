@@ -250,6 +250,11 @@ export class PhysicsSystem {
 
   async init(ctx) {
     this.ctx = ctx;
+    // Ragdolls are expensive PBD bodies. Keep the gameplay response but cap the
+    // number retained on smoothness tiers so a multi-kill cannot create a CPU
+    // spike that lasts several seconds.
+    this.maxRagdolls =
+      ctx.config.quality === 'performance' ? 3 : ctx.config.quality === 'low' ? 5 : 8;
     this.rng = ctx.rng.fork();
     this.ballistics.rng = this.rng;
     this.debug = new PhysicsDebugView(ctx.scene);
