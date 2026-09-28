@@ -90,14 +90,17 @@ if (adaptiveEnabled && graphics.mode === 'auto') {
       targetFps: 60,
     });
   } else {
-    const safeTier = 'medium';
+    // LOW is temporarily the desktop reference target. It is the tier being
+    // actively tuned to the clean Deadshot-style look: textured, crisp and
+    // readable, but still strictly frame-budgeted.
+    const safeTier = 'low';
     graphics = saveGraphicsSettings({
       ...graphics,
       tier: safeTier,
-      tierCeiling: 'medium',
+      tierCeiling: 'low',
       renderScale: Math.min(
         graphics.renderScale || 1,
-        QUALITY_PRESETS.medium.renderScale
+        QUALITY_PRESETS.low.renderScale
       ),
       calibrated: true,
       targetFps: 60,
