@@ -497,7 +497,11 @@ const server = createServer(async (req, res) => {
 
     // Game V2 is the production FPS. Keep the established /game/ public URL,
     // but send it to the template-based V2 build while preserving room/map params.
-    if (url.pathname === '/game' || url.pathname === '/game/' || url.pathname === '/game/index.html') {
+    if (
+      url.pathname === '/game' ||
+      url.pathname === '/game/' ||
+      url.pathname === '/game/index.html'
+    ) {
       const suffix = url.search ? url.search : '';
       res.writeHead(302, {
         Location: `/game-v2/${suffix}`,

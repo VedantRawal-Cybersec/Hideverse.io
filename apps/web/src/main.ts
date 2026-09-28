@@ -22,14 +22,62 @@ const gameHref = `${siteBase}game-v2/`;
 const mapHref = (id: string): string => `${gameHref}?map=${encodeURIComponent(id)}`;
 
 const maps = [
-  { id: 'nuketown', index: '01', name: 'Nuketown', mode: 'Competitive FPS', detail: 'Compact two-house test site with fast lanes, interiors and crisp daylight.' },
-  { id: 'rust', index: '02', name: 'Rust', mode: 'Competitive FPS', detail: 'Desert refinery with vertical steel platforms, containers and close-range rotations.' },
-  { id: 'dome', index: '03', name: 'Dome', mode: 'Competitive FPS', detail: 'Radar station combat around a broken radome and tight military structures.' },
-  { id: 'bloodgulch', index: '04', name: 'Blood Gulch', mode: 'Competitive FPS', detail: 'Open canyon sightlines with bases, vehicles-scale cover and long-range fights.' },
-  { id: 'sitework', index: '05', name: 'Site Work', mode: 'Competitive FPS', detail: 'Night construction site with neon lighting, industrial cover and layered routes.' },
-  { id: 'shivam', index: '06', name: 'Shivam', mode: 'Competitive FPS', detail: 'Beachfront combat space with open lanes and dense urban cover.' },
-  { id: 'wilmot', index: '07', name: 'Wilmot', mode: 'Competitive FPS', detail: 'Estate grounds with enterable manor, garden cover and varied engagement ranges.' },
-  { id: 'fishers', index: '08', name: "The Fisher's", mode: 'Competitive FPS', detail: 'North Shore estate built around a pool axis, terraces and flanking routes.' },
+  {
+    id: 'nuketown',
+    index: '01',
+    name: 'Nuketown',
+    mode: 'Competitive FPS',
+    detail: 'Compact two-house test site with fast lanes, interiors and crisp daylight.',
+  },
+  {
+    id: 'rust',
+    index: '02',
+    name: 'Rust',
+    mode: 'Competitive FPS',
+    detail: 'Desert refinery with vertical steel platforms, containers and close-range rotations.',
+  },
+  {
+    id: 'dome',
+    index: '03',
+    name: 'Dome',
+    mode: 'Competitive FPS',
+    detail: 'Radar station combat around a broken radome and tight military structures.',
+  },
+  {
+    id: 'bloodgulch',
+    index: '04',
+    name: 'Blood Gulch',
+    mode: 'Competitive FPS',
+    detail: 'Open canyon sightlines with bases, vehicles-scale cover and long-range fights.',
+  },
+  {
+    id: 'sitework',
+    index: '05',
+    name: 'Site Work',
+    mode: 'Competitive FPS',
+    detail: 'Night construction site with neon lighting, industrial cover and layered routes.',
+  },
+  {
+    id: 'shivam',
+    index: '06',
+    name: 'Shivam',
+    mode: 'Competitive FPS',
+    detail: 'Beachfront combat space with open lanes and dense urban cover.',
+  },
+  {
+    id: 'wilmot',
+    index: '07',
+    name: 'Wilmot',
+    mode: 'Competitive FPS',
+    detail: 'Estate grounds with enterable manor, garden cover and varied engagement ranges.',
+  },
+  {
+    id: 'fishers',
+    index: '08',
+    name: "The Fisher's",
+    mode: 'Competitive FPS',
+    detail: 'North Shore estate built around a pool axis, terraces and flanking routes.',
+  },
 ];
 
 const app = document.querySelector<HTMLDivElement>('#app');
