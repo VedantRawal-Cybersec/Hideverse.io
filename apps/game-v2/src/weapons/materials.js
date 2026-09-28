@@ -695,16 +695,27 @@ export class WeaponMaterials {
    */
   fastMaterial() {
     if (this._fastMat) return this._fastMat;
-    const m = new THREE.MeshLambertMaterial({
-      color: 0xffffff,
-      vertexColors: true,
-      // Performance keeps the faceted proxy look. LOW uses the detailed authored
-      // geometry, so smooth normals give it the clean reference silhouette for
-      // exactly the same number of submissions.
-      flatShading: this.ctx.config?.quality === 'performance',
-      dithering: this.ctx.config?.quality !== 'performance',
-    });
-    m.name = 'ow-weapon-fast';
+    const low = this.ctx.config?.quality === 'low';
+
+    // LOW deliberately uses an unlit vertex-colour material. The reference
+    // low-graphics FPS keeps the first-person gun readable independent of world
+    // sun direction; this also removes lighting cost and prevents the receiver
+    // collapsing into a black silhouette.
+    const m = low
+      ? new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          vertexColors: true,
+          fog: false,
+          toneMapped: false,
+        })
+      : new THREE.MeshLambertMaterial({
+          color: 0xffffff,
+          vertexColors: true,
+          flatShading: true,
+          dithering: false,
+        });
+
+    m.name = low ? 'ow-weapon-low-unlit' : 'ow-weapon-fast';
     m.userData.owNoPatch = true;
     this._fastMat = m;
     this.owned.push(m);
