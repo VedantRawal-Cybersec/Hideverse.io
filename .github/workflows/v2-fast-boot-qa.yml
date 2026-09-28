@@ -87,7 +87,7 @@ jobs:
           try {
             const started = Date.now();
             await page.goto(
-              'http://127.0.0.1:43993/game-v2/?mp=0&match=0&q=low',
+              'http://127.0.0.1:43993/game-v2/?mp=0&q=low',
               { waitUntil: 'domcontentloaded', timeout: 90000 },
             );
             await page.waitForFunction(() => window.__READY__ === true, null, {
@@ -121,7 +121,7 @@ jobs:
               throw new Error('V2 did not reach running state');
             }
             if (bootMs > 30000) {
-              throw new Error(`V2 boot remained too slow: ${bootMs}ms`);
+              throw new Error(`V2 production-path boot remained too slow: ${bootMs}ms`);
             }
             if (!result.canvas || result.canvas.width < 300 || result.canvas.height < 300) {
               throw new Error('V2 canvas is not playable');
