@@ -649,7 +649,6 @@ export class CharacterSystem {
     return strongest;
   }
 
-
   shootHitscan(
     origin: { x: number; y: number; z: number },
     direction: { x: number; y: number; z: number },

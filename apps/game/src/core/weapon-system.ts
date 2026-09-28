@@ -1,9 +1,4 @@
-import {
-  Application,
-  Color,
-  Entity,
-  StandardMaterial,
-} from 'playcanvas';
+import { Application, Color, Entity, StandardMaterial } from 'playcanvas';
 import type { MotionState } from './character-system';
 import type { InputController } from './input-controller';
 import { loadContainer } from './load-container';
@@ -210,11 +205,7 @@ export class WeaponSystem {
     const y = hip[1] + (ads[1] - hip[1]) * this.adsBlend - bobY + this.recoil * 0.024;
     const z = hip[2] + (ads[2] - hip[2]) * this.adsBlend + this.recoil * 0.09;
     this.mount.setLocalPosition(x, y, z);
-    this.mount.setLocalEulerAngles(
-      -this.recoil * 2.8,
-      bobX * 22,
-      -bobX * 13,
-    );
+    this.mount.setLocalEulerAngles(-this.recoil * 2.8, bobX * 22, -bobX * 13);
 
     if (this.camera.camera) {
       const targetFov = this.adsBlend > 0.02 ? 82 - this.adsBlend * 18 : 82;
@@ -303,10 +294,15 @@ export class WeaponSystem {
         }
         this.models[index] = model;
       } catch (error) {
-        console.warn(`[Hideverse weapons] ${definition.file} unavailable; fallback retained.`, error);
+        console.warn(
+          `[Hideverse weapons] ${definition.file} unavailable; fallback retained.`,
+          error,
+        );
       }
 
-      await new Promise<void>((resolve) => window.setTimeout(resolve, this.coarsePointer ? 180 : 90));
+      await new Promise<void>((resolve) =>
+        window.setTimeout(resolve, this.coarsePointer ? 180 : 90),
+      );
     }
 
     this.refreshActiveModel();

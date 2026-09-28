@@ -103,8 +103,7 @@ export class AudioFeedback {
 
     const oscillator = context.createOscillator();
     const gain = context.createGain();
-    oscillator.type =
-      type === 'danger' || type === 'lose' || type === 'fire' ? 'sawtooth' : 'sine';
+    oscillator.type = type === 'danger' || type === 'lose' || type === 'fire' ? 'sawtooth' : 'sine';
     oscillator.frequency.setValueAtTime(frequency, context.currentTime);
     if (type === 'win') {
       oscillator.frequency.exponentialRampToValueAtTime(

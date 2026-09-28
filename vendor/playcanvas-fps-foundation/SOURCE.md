@@ -13,6 +13,7 @@ template's browser-first control semantics, pointer-lock behavior, touch support
 feel and camera conventions.
 
 Referenced upstream files:
+
 - LICENSE
 - templates/_shared/first-person-controller/README.md
 - templates/_shared/first-person-controller/src/controller.ts
