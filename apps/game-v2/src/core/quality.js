@@ -31,8 +31,8 @@ const CPU_LIMIT_MS = 15000;
 export const GRAPHICS_STORAGE_KEY = 'cod_graphics_v1';
 export const GRAPHICS_MODES = ['auto', 'low', 'medium', 'high', 'ultra'];
 export const FPS_TARGETS = [30, 60, 90, 120, 144, 165, 240];
-const STORED_VERSIONS = [1, 2, 3, 4, 5, 6];
-const CURRENT_VERSION = 6;
+const STORED_VERSIONS = [1, 2, 3, 4, 5, 6, 7];
+const CURRENT_VERSION = 7;
 
 const DEFAULT_GRAPHICS = Object.freeze({
   version: CURRENT_VERSION,
@@ -118,6 +118,16 @@ export function loadGraphicsSettings(storage = browserStorage()) {
   // one clean calibration from the light boot tier so an existing localStorage
   // value cannot keep a device stuck on an expensive renderer.
   if (raw.version < 6 && mode === 'auto') {
+    tier = null;
+    tierCeiling = null;
+    renderScale = QUALITY_PRESETS.low.renderScale;
+    calibrated = false;
+  }
+  // v7 switches Auto to the strict smoothness ladder. Re-score old Auto
+  // profiles so a previously persisted High/Ultra tier cannot survive the
+  // performance migration. Boot then pins the appropriate device ceiling.
+  if (raw.version < 7 && mode === 'auto') {
+    targetFps = 60;
     tier = null;
     tierCeiling = null;
     renderScale = QUALITY_PRESETS.low.renderScale;
