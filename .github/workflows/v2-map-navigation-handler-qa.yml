@@ -1,0 +1,99 @@
+name: V2 Map Navigation Handler QA
+
+on:
+  push:
+    branches:
+      - qa/v2-map-navigation-handler
+
+permissions:
+  contents: read
+
+jobs:
+  map-handler:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.23.2
+      - run: |
+          npm install --no-audit --no-fund
+          npm run build:live
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start local production server
+        run: |
+          PORT=43993 npm run start --workspace @hideverse/web > /tmp/server.log 2>&1 &
+          for i in {1..100}; do
+            if curl -fsS http://127.0.0.1:43993/game-v2/ >/dev/null; then exit 0; fi
+            sleep 0.2
+          done
+          cat /tmp/server.log
+          exit 1
+      - name: Exercise map card handlers
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch({ headless: true });
+          const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+          const page = await context.newPage();
+          const errors = [];
+          page.on('pageerror', e => errors.push(String(e)));
+          page.on('console', m => {
+            if (m.type() === 'error') errors.push(m.text());
+          });
+
+          const waitMap = async (id) => {
+            await page.waitForFunction(
+              expected => {
+                try { return window.__ENGINE__?.ctx?.get?.('world')?.mapId === expected; }
+                catch { return false; }
+              },
+              id,
+              { timeout: 30000 },
+            );
+          };
+
+          try {
+            await page.goto('http://127.0.0.1:43993/game-v2/?map=wilmot&mp=0', {
+              waitUntil: 'domcontentloaded',
+              timeout: 90000,
+            });
+            await waitMap('wilmot');
+
+            const targets = [
+              ['Rust', 'rust'],
+              ['Nuketown', 'nuketown'],
+              ['Dome', 'dome'],
+              ['Site Work', 'sitework'],
+            ];
+
+            for (const [label, id] of targets) {
+              const started = Date.now();
+              const found = await page.evaluate((wanted) => {
+                const cards = [...document.querySelectorAll('.mapcard')];
+                const card = cards.find((el) => el.querySelector('.nm')?.textContent?.trim() === wanted);
+                if (!card) return false;
+                card.click();
+                return true;
+              }, label);
+              if (!found) throw new Error(`Map card missing: ${label}`);
+
+              await page.waitForURL(url => url.searchParams.get('map') === id, { timeout: 10000 });
+              await waitMap(id);
+
+              console.log('[v2-map-handler]', JSON.stringify({
+                label,
+                id,
+                elapsedMs: Date.now() - started,
+                url: page.url(),
+              }));
+            }
+
+            if (errors.length) throw new Error(errors.join(' | '));
+          } finally {
+            await context.close();
+            await browser.close();
+          }
+          NODE
