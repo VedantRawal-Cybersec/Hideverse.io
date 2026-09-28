@@ -790,64 +790,94 @@ export const PALETTE = {
     // generators already used by the rest of Game V2, so realism increases
     // without adding meshes or external texture memory.
     return {
-      /** Warm painted plaster: subtle grain, edge wear and lower-wall grime. */
+      /**
+       * REF-LOW facade concrete: cool light grey with just enough aggregate and
+       * panel grime to read at 5-30 m. This replaces the old warm plaster and is
+       * the dominant value in the user's refinery reference.
+       */
       gb_white: {
-        name: 'plaster',
-        surface: 'plaster',
+        name: 'concrete',
+        surface: 'concrete',
         opts: {
           vertexMasks: true,
-          tint: 0xc9b79d,
-          scale: 1.55,
-          normalStrength: 1.05,
-          weather: [0.34, 0.30, 0.62, 0.42],
+          tint: 0xb9b8b2,
+          scale: 1.25,
+          normalStrength: 1.18,
+          weather: [0.32, 0.28, 0.46, 0.38],
         },
       },
-      /** Cast concrete for perimeter/roof masses with restrained variation. */
+      /** Mid concrete for kerbs, service plinths and utility masses. */
       gb_grey: {
         name: 'concrete',
         surface: 'concrete',
         opts: {
           vertexMasks: true,
-          tint: 0x817d75,
-          scale: 1.85,
-          normalStrength: 1.08,
-          weather: [0.34, 0.34, 0.48, 0.46],
+          tint: 0x858682,
+          scale: 1.35,
+          normalStrength: 1.12,
+          weather: [0.36, 0.34, 0.52, 0.46],
         },
       },
-      /** Street/apron: procedural concrete, rough and non-glossy for readability. */
+      /** Darker poured concrete used for barriers / internal slabs. */
       gb_grid: {
-        name: 'concrete',
+        name: 'concrete_floor',
         surface: 'concrete',
         opts: {
           vertexMasks: true,
-          tint: 0x6d6962,
-          scale: 1.45,
-          normalStrength: 0.92,
-          weather: [0.22, 0.24, 0.34, 0.36],
+          tint: 0x666a6c,
+          scale: 1.15,
+          normalStrength: 1.0,
+          weather: [0.24, 0.28, 0.38, 0.40],
         },
       },
-      /** Painted orange metal gives the map one saturated industrial accent. */
+      /** Dark low-graphics asphalt like the reference refinery yard. */
+      gb_asphalt: {
+        name: 'asphalt',
+        surface: 'concrete',
+        opts: {
+          vertexMasks: true,
+          tint: 0x4f5357,
+          scale: 1.65,
+          detile: 0.65,
+          normalStrength: 1.08,
+          weather: [0.22, 0.30, 0.18, 0.34],
+          wear: [0, 0.55, 0.45, 0],
+        },
+      },
+      /** Safety yellow — railings, forklift, hazard hardware. */
       gb_accent: {
         name: 'metal_painted',
         surface: 'metal',
         opts: {
           vertexMasks: true,
-          tint: 0xa85c2c,
-          scale: 1.15,
+          tint: 0xc59618,
+          scale: 0.85,
           normalStrength: 0.95,
-          weather: [0.2, 0.22, 0.3, 0.3],
+          weather: [0.24, 0.26, 0.30, 0.34],
         },
       },
-      /** Real timber grain on crates and door elements. */
-      gb_dark: {
-        name: 'wood',
-        surface: 'wood',
+      /** Safety red — stripe bands, warning panels, refinery identity. */
+      gb_red: {
+        name: 'metal_painted',
+        surface: 'metal',
         opts: {
           vertexMasks: true,
-          tint: 0x4f3c2c,
-          scale: 0.62,
-          normalStrength: 1.05,
-          weather: [0.25, 0.2, 0.25, 0.34],
+          tint: 0xa22a26,
+          scale: 0.9,
+          normalStrength: 0.92,
+          weather: [0.24, 0.22, 0.30, 0.32],
+        },
+      },
+      /** Charcoal painted steel for frames, vents, doors, wheels and trims. */
+      gb_dark: {
+        name: 'metal_painted',
+        surface: 'metal',
+        opts: {
+          vertexMasks: true,
+          tint: 0x2d3135,
+          scale: 0.72,
+          normalStrength: 1.0,
+          weather: [0.22, 0.24, 0.26, 0.34],
         },
       },
       /** Cheap merged grounding shadow used only by desktop Medium dressing. */
