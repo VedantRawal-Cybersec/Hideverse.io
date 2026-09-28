@@ -168,6 +168,9 @@ export class RenderSystem {
       Math.max(this._minRenderScale, q.renderScale ?? 1)
     );
     this.qLevel = QUALITY_LEVEL[cfg.quality] ?? 3;
+    // Auto smoothness tiers deliberately avoid the cinematic depth/post chain.
+    // The flag is stable for the life of the renderer (tier changes reload).
+    this._leanForward = q.prepass === false && q.shadows === false;
     this.rng = ctx.rng.fork();
     this.frame = 0;
 
@@ -1204,11 +1207,14 @@ export class RenderSystem {
     // The viewmodel gets its own colour+depth buffer with 4x MSAA, cleared to
     // TRANSPARENT black so the composite has real coverage to work with.
     this.viewRt?.dispose();
-    this.viewRt = hdrTarget(rw, rh, {
-      depthBuffer: true,
-      samples: this._viewSamples,
-      name: 'viewmodel',
-    });
+    this.viewRt = null;
+    if (!this._leanForward) {
+      this.viewRt = hdrTarget(rw, rh, {
+        depthBuffer: true,
+        samples: this._viewSamples,
+        name: 'viewmodel',
+      });
+    }
     this.pingRt[0]?.dispose();
     this.pingRt[1]?.dispose();
     this.pingRt[0] = hdrTarget(rw, rh, { name: 'ping0' });
@@ -1855,13 +1861,22 @@ export class RenderSystem {
       // the shadow/AO/fill injection. It just no longer feeds the gbuffer.
       this._collectViewScene(viewScene);
 
-      renderer.setRenderTarget(this.viewRt);
-      // Transparent clear: the composite needs coverage, and the MSAA resolve
-      // turns partially covered edge pixels into premultiplied fractional alpha.
-      renderer.setClearColor(0x000000, 0);
-      renderer.clear(true, true, false);
-      renderer.render(viewScene, viewCamera);
-      renderer.setClearColor(0x000000, 1);
+      if (this._leanForward) {
+        // Competitive fast path: the world colour is already in hdrRt. Clear
+        // only its depth attachment and draw the first-person weapon directly
+        // over it with the view camera. This removes one full-resolution HDR
+        // target, its clear, and the full-screen viewComposite pass.
+        renderer.setRenderTarget(this.hdrRt);
+        renderer.clearDepth();
+        renderer.render(viewScene, viewCamera);
+      } else {
+        renderer.setRenderTarget(this.viewRt);
+        // Transparent clear: the cinematic path composites viewmodel coverage.
+        renderer.setClearColor(0x000000, 0);
+        renderer.clear(true, true, false);
+        renderer.render(viewScene, viewCamera);
+        renderer.setClearColor(0x000000, 1);
+      }
 
       this.csm.uniforms.owCsmParams.value.x = prevStrength;
       feat.y = prevFeat;
@@ -1918,7 +1933,7 @@ export class RenderSystem {
     // pixels, so compositing earlier would bury the weapon in 40 m of aerial
     // perspective. Before metering and bloom, so the muzzle flash still meters
     // and still blooms.
-    if (this._viewVisible) {
+    if (this._viewVisible && !this._leanForward) {
       const vu = this.viewComposite.uniforms;
       const out = this.pingRt[this._pingIndex];
       vu.tColor.value = color;
