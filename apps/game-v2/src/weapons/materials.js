@@ -644,6 +644,30 @@ const FAST_COLORS = Object.freeze({
   copper: 0x7a4028,
 });
 
+/**
+ * LOW reference weapon palette.
+ *
+ * The target screenshots use a very readable two-tone rifle: pale alloy /
+ * painted receiver against a black optic, grip, magazine and steel hardware.
+ * Keeping this in vertex colours preserves the merged one-draw-per-assembly
+ * LOW path; no texture or material bucket is added.
+ */
+const LOW_FAST_COLORS = Object.freeze({
+  alu: 0xbfc2c0,
+  alu_fine: 0x292d31,
+  steel: 0x34373b,
+  steel_soot: 0x17191b,
+  steel_bright: 0x62676d,
+  steel_black: 0x25282c,
+  polymer: 0x242629,
+  polymer_tan: 0x9a907c,
+  rubber: 0x17191b,
+  cavity: 0x08090a,
+  optic_tube: 0x1a1d20,
+  brass: 0x8c6b31,
+  copper: 0x73412e,
+});
+
 export class WeaponMaterials {
   constructor(ctx) {
     this.ctx = ctx;
@@ -674,8 +698,11 @@ export class WeaponMaterials {
     const m = new THREE.MeshLambertMaterial({
       color: 0xffffff,
       vertexColors: true,
-      flatShading: true,
-      dithering: false,
+      // Performance keeps the faceted proxy look. LOW uses the detailed authored
+      // geometry, so smooth normals give it the clean reference silhouette for
+      // exactly the same number of submissions.
+      flatShading: this.ctx.config?.quality === 'performance',
+      dithering: this.ctx.config?.quality !== 'performance',
     });
     m.name = 'ow-weapon-fast';
     m.userData.owNoPatch = true;
@@ -686,7 +713,8 @@ export class WeaponMaterials {
 
   /** Representative display colour used when collapsing an opaque material. */
   fastColor(key) {
-    const hex = FAST_COLORS[key] ?? 0x303236;
+    const palette = this.ctx.config?.quality === 'low' ? LOW_FAST_COLORS : FAST_COLORS;
+    const hex = palette[key] ?? 0x303236;
     return new THREE.Color(hex);
   }
 
