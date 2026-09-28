@@ -338,6 +338,10 @@ export class SkySystem {
       steps: Math.max(8, steps),
       scale: 0.5,
     });
+    // Smoothness tiers use the sky dome + ordinary distance fog from the
+    // materials, but skip the extra full-screen aerial-perspective composite.
+    // High/Ultra retain the cinematic volumetric/analytic post path.
+    this.volumetrics.enabled = q.prepass !== false;
     this._unregisterPass = r.registerPass(this.volumetrics);
 
     // ---- bookkeeping ------------------------------------------------------
