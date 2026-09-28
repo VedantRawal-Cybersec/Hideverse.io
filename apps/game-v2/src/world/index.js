@@ -159,12 +159,24 @@ export class WorldSystem {
     this._teardown();
     this._build(id);
     saveMapPreference(id);
-    try {
-      await this.prewarmMaterials(this.ctx, { sync: true });
-    } catch (err) {
-      // A driver we cannot pre-warm on still has to be able to play the map.
-      console.warn('[world] prewarm after map change failed', err);
+
+    // Normal players must never wait for a full synchronous shader/material
+    // prewarm just because they chose another map in the lobby. The production
+    // boot path already skips this expensive diagnostic work for the same
+    // reason. Keep it available only for deterministic capture and explicit
+    // ?prewarm=1 diagnostics.
+    const explicitPrewarm =
+      typeof location !== 'undefined' &&
+      new URLSearchParams(location.search).get('prewarm') === '1';
+    if (this.ctx.config?.deterministic || explicitPrewarm) {
+      try {
+        await this.prewarmMaterials(this.ctx, { sync: true });
+      } catch (err) {
+        // A driver we cannot pre-warm on still has to be able to play the map.
+        console.warn('[world] prewarm after map change failed', err);
+      }
     }
+
     this.ctx.events.emit('world:rebuilt', { mapId: this.mapId, map: this.map });
     console.info(`[world] switched to "${id}" in ${(performance.now() - t0).toFixed(0)}ms`);
     return this.mapId;
