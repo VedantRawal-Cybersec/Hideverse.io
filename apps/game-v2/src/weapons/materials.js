@@ -653,19 +653,19 @@ const FAST_COLORS = Object.freeze({
  * LOW path; no texture or material bucket is added.
  */
 const LOW_FAST_COLORS = Object.freeze({
-  alu: 0xbfc2c0,
-  alu_fine: 0x292d31,
-  steel: 0x34373b,
-  steel_soot: 0x17191b,
-  steel_bright: 0x62676d,
-  steel_black: 0x25282c,
-  polymer: 0x242629,
-  polymer_tan: 0x9a907c,
-  rubber: 0x17191b,
-  cavity: 0x08090a,
-  optic_tube: 0x1a1d20,
-  brass: 0x8c6b31,
-  copper: 0x73412e,
+  alu: 0xd4d6d2,
+  alu_fine: 0x8e9499,
+  steel: 0x5c6268,
+  steel_soot: 0x34383c,
+  steel_bright: 0x8c9298,
+  steel_black: 0x41464b,
+  polymer: 0x3f4448,
+  polymer_tan: 0xb8aa91,
+  rubber: 0x33373b,
+  cavity: 0x24272a,
+  optic_tube: 0x363b40,
+  brass: 0xa77e38,
+  copper: 0x8b5037,
 });
 
 export class WeaponMaterials {
