@@ -27,7 +27,7 @@ const PROMOTE_SUSTAIN_UNPROVEN_MS = 20000;
 const PROMOTE_HEADROOM = 0.7;
 // Sustained CPU-bound target misses before a tier walk-down (resolution cannot
 // help a CPU-bound frame, but a cheaper tier's draw/LOD budgets can).
-const CPU_LIMIT_MS = 15000;
+const CPU_LIMIT_MS = 5000;
 export const GRAPHICS_STORAGE_KEY = 'cod_graphics_v1';
 export const GRAPHICS_MODES = ['auto', 'low', 'medium', 'high', 'ultra'];
 export const FPS_TARGETS = [30, 60, 90, 120, 144, 165, 240];
@@ -287,8 +287,8 @@ export class AdaptiveQualityPolicy {
     initialScale = 1,
     minScale = 0.5,
     maxScale = 1,
-    evaluateEveryMs = 2000,
-    cooldownMs = 3000,
+    evaluateEveryMs = 1000,
+    cooldownMs = 1500,
   } = {}) {
     this.targetFps = targetFps;
     this.minScale = minScale;
@@ -329,8 +329,9 @@ export class AdaptiveQualityPolicy {
     // could ratchet resolution down on a machine that is otherwise perfect.
     // Headroom stays on p95 — raising resolution should stay conservative.
     const missFrameMs = Number.isFinite(p90FrameMs) ? p90FrameMs : p95FrameMs;
-    const missed = missFrameMs > budget * 1.05;
-    const roomy = p95FrameMs < budget * 0.85;
+    const missed = missFrameMs > budget * 1.03;
+    const severe = p95FrameMs > budget * 1.5;
+    const roomy = p95FrameMs < budget * 0.82;
     this._misses = missed ? this._misses + 1 : 0;
     this._headroom = roomy ? this._headroom + 1 : 0;
     if (missed && bound === 'cpu') {
@@ -344,7 +345,7 @@ export class AdaptiveQualityPolicy {
     } else if (missed && this.renderScale <= this.minScale) {
       this._cpuMissSinceMs = null;
       if (this._floorMissSinceMs === null) this._floorMissSinceMs = nowMs;
-      if (nowMs - this._floorMissSinceMs >= 10000) this._status = 'limited';
+      if (nowMs - this._floorMissSinceMs >= 5000) this._status = 'limited';
     } else {
       this._floorMissSinceMs = null;
       this._cpuMissSinceMs = null;
@@ -354,12 +355,12 @@ export class AdaptiveQualityPolicy {
     if (
       missed &&
       bound !== 'cpu' &&
-      this._misses >= 2 &&
+      (severe || this._misses >= 1) &&
       nowMs - this._lastChangeMs >= this.cooldownMs &&
       this.renderScale > this.minScale
     ) {
       const desired = this.renderScale * Math.sqrt(budget / p95FrameMs);
-      const step = this.renderScale - desired >= 0.075 ? 0.1 : 0.05;
+      const step = severe ? 0.15 : this.renderScale - desired >= 0.075 ? 0.1 : 0.05;
       this.renderScale = quantizeScale(Math.max(this.minScale, this.renderScale - step));
       this._lastChangeMs = nowMs;
       this._misses = 0;
@@ -368,7 +369,7 @@ export class AdaptiveQualityPolicy {
 
     if (
       roomy &&
-      this._headroom >= 3 &&
+      this._headroom >= 5 &&
       nowMs - this._lastChangeMs >= this.cooldownMs &&
       this.renderScale < this.maxScale
     ) {
@@ -546,11 +547,11 @@ export class AdaptiveQualitySystem {
       return;
     }
     const adaptiveFrames = ctx.perf.count - this._adaptiveStartFrame;
-    if (!this.policy || adaptiveFrames < 240) return;
+    if (!this.policy || adaptiveFrames < 120) return;
     if (nowMs < this._nextSampleMs) return;
-    this._nextSampleMs = nowMs + 2000;
+    this._nextSampleMs = nowMs + 1000;
 
-    const stats = ctx.perf.stats(240);
+    const stats = ctx.perf.stats(120);
     const result = this.policy.update({
       nowMs,
       p95FrameMs: stats.frameMs.p95,
