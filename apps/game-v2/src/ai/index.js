@@ -186,7 +186,10 @@ export class AiSystem {
     /** A* solves allowed per frame. Measured: one solve is 0.5-1.1 ms on the
      *  221x221 grid, and a squad that all enters combat on the same frame used to
      *  ask for six of them at once. */
-    this.pathsPerFrame = 2;
+    // A* can cost ~0.5-1.1 ms per solve. On the smoothness tiers, one solve per
+    // frame prevents combat/pathing bursts from stealing several milliseconds
+    // from input + rendering on phones and weaker CPUs.
+    this.pathsPerFrame = ['performance', 'low'].includes(ctx.config.quality) ? 1 : 2;
     this.stats.pathsDeferred = 0;
     this._frustum = new THREE.Frustum();
     this._mvp = new THREE.Matrix4();
