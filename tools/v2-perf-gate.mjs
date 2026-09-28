@@ -60,17 +60,26 @@ if (!chrome) {
   throw new Error('No Chromium/Chrome binary found on CI runner');
 }
 const userData = fs.mkdtempSync(path.join(os.tmpdir(),'hideverse-v2-perf-'));
+const chromeEnv = { ...process.env };
+// GitHub-hosted runners occasionally expose a malformed session bus address.
+// Chrome does not need D-Bus for this isolated headless benchmark.
+delete chromeEnv.DBUS_SESSION_BUS_ADDRESS;
 const chromeProc = spawn(chrome,[
-  '--headless=new',
+  '--headless',
   '--no-sandbox',
   '--disable-dev-shm-usage',
+  '--disable-gpu',
+  '--enable-unsafe-swiftshader',
+  '--use-gl=angle',
+  '--use-angle=swiftshader',
   '--ignore-gpu-blocklist',
   '--enable-webgl',
   '--window-size=1280,720',
+  '--remote-debugging-address=127.0.0.1',
   '--remote-debugging-port=9222',
   '--user-data-dir='+userData,
   'about:blank'
-],{stdio:['ignore','ignore','pipe']});
+],{stdio:['ignore','ignore','pipe'],env:chromeEnv});
 let stderr='';
 chromeProc.stderr.on('data',(d)=>{ stderr += String(d); });
 
@@ -83,7 +92,13 @@ for (let i=0;i<80;i++) {
   } catch {}
   await sleep(100);
 }
-if (!version) throw new Error('Chrome DevTools endpoint did not start: '+stderr.slice(-1500));
+if (!version) {
+  throw new Error(
+    'Chrome DevTools endpoint did not start' +
+    (chromeProc.exitCode !== null ? ` (exit ${chromeProc.exitCode})` : '') +
+    ': ' + stderr.slice(-2000)
+  );
+}
 
 const targets = await (await fetch('http://127.0.0.1:9222/json')).json();
 const target = targets.find((x)=>x.type==='page');
