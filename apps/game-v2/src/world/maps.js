@@ -190,7 +190,7 @@ export function mapRegistry() {
  * market was parked; every baseline shot before that framed the market and is
  * not comparable to one shot now.
  */
-export const DEFAULT_MAP_ID = 'wilmot';
+export const DEFAULT_MAP_ID = 'nuketown';
 
 /** Where the chosen map is remembered between sessions. */
 const STORAGE_KEY = 'workmelt.map';

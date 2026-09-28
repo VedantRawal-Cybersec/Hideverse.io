@@ -18,51 +18,65 @@ type AssetSummary = {
 };
 
 const siteBase = import.meta.env.BASE_URL;
-const gameHref = `${siteBase}game/index.html`;
+const gameHref = `${siteBase}game-v2/`;
 const mapHref = (id: string): string => `${gameHref}?map=${encodeURIComponent(id)}`;
 
 const maps = [
   {
-    id: 'ravenwood',
+    id: 'nuketown',
     index: '01',
-    name: 'Ravenwood Mansion',
-    mode: 'Kick the Box',
-    detail: 'Victorian mansion, estate cover, interactive doors, hiding and five objectives.',
+    name: 'Nuketown',
+    mode: 'Competitive FPS',
+    detail: 'Compact two-house test site with fast lanes, interiors and crisp daylight.',
   },
   {
-    id: 'nexus',
+    id: 'rust',
     index: '02',
-    name: 'Nexus Mega Mall',
-    mode: 'Who Is Real?',
-    detail: 'Mall atrium, retail wings, crowds, mimic role and verification objectives.',
+    name: 'Rust',
+    mode: 'Competitive FPS',
+    detail: 'Desert refinery with vertical steel platforms, containers and close-range rotations.',
   },
   {
-    id: 'museum',
+    id: 'dome',
     index: '03',
-    name: 'Grand Museum & Vault',
-    mode: 'Hide & Heist',
-    detail: 'Gallery lanes, security roles, vault route, artifacts and extraction objective.',
+    name: 'Dome',
+    mode: 'Competitive FPS',
+    detail: 'Radar station combat around a broken radome and tight military structures.',
   },
   {
-    id: 'hospital',
+    id: 'bloodgulch',
     index: '04',
-    name: 'Blackwood Hospital',
-    mode: 'Monster Hunt',
-    detail: 'Dark wards, surgery wing, monster patrol, power restoration and survival cover.',
+    name: 'Blood Gulch',
+    mode: 'Competitive FPS',
+    detail: 'Open canyon sightlines with bases, vehicles-scale cover and long-range fights.',
   },
   {
-    id: 'hotel',
+    id: 'sitework',
     index: '05',
-    name: 'Vertigo Hotel',
-    mode: 'Floor by Floor',
-    detail: 'Stacked playable floors, stair route, service cover and sequential floor objectives.',
+    name: 'Site Work',
+    mode: 'Competitive FPS',
+    detail: 'Night construction site with neon lighting, industrial cover and layered routes.',
   },
   {
-    id: 'axiom',
+    id: 'shivam',
     index: '06',
-    name: 'Axiom Research Facility',
-    mode: 'Traitor',
-    detail: 'Research wings, reactor route, scientists, security and hidden-traitor tasks.',
+    name: 'Shivam',
+    mode: 'Competitive FPS',
+    detail: 'Beachfront combat space with open lanes and dense urban cover.',
+  },
+  {
+    id: 'wilmot',
+    index: '07',
+    name: 'Wilmot',
+    mode: 'Competitive FPS',
+    detail: 'Estate grounds with enterable manor, garden cover and varied engagement ranges.',
+  },
+  {
+    id: 'fishers',
+    index: '08',
+    name: "The Fisher's",
+    mode: 'Competitive FPS',
+    detail: 'North Shore estate built around a pool axis, terraces and flanking routes.',
   },
 ];
 
@@ -79,7 +93,7 @@ app.innerHTML = `
       <a href="#progress">Progress</a>
       <a href="#maps">Maps</a>
       <a href="#assets">Assets</a>
-      <a class="nav-play" href="${mapHref('ravenwood')}">Play Build</a>
+      <a class="nav-play" href="${mapHref('nuketown')}">Play Build</a>
     </nav>
   </header>
 
@@ -89,26 +103,26 @@ app.innerHTML = `
         <p class="eyebrow">LIVE DEVELOPMENT BUILD</p>
         <h1>HIDE.<br />PLAY.<br /><span>BELONG.</span></h1>
         <p class="lede">
-          Six maps, six game modes, shared objectives, adaptive PC/mobile rendering and realtime
-          room synchronization in one browser-first social-stealth runtime.
+          Eight competitive FPS maps, template-based gunplay, bots, advanced rendering, adaptive PC/mobile
+          graphics and realtime WebSocket rooms in one browser-first multiplayer runtime.
         </p>
         <div class="actions">
-          <a class="button primary" href="${mapHref('ravenwood')}">Launch Current Build</a>
+          <a class="button primary" href="${mapHref('nuketown')}">Launch Current Build</a>
           <a class="button secondary" href="#maps">Choose a Map</a>
         </div>
       </div>
       <div class="hero-card">
         <div class="signal"><i></i> LIVE PIPELINE</div>
         <div class="card-grid">
-          <div><span>ENGINE</span><strong>PlayCanvas</strong></div>
-          <div><span>PHYSICS</span><strong>Rapier 3D</strong></div>
-          <div><span>MAPS / MODES</span><strong>6 / 6</strong></div>
+          <div><span>ENGINE</span><strong>Three.js / WebGL2</strong></div>
+          <div><span>FPS CORE</span><strong>Workmelt MIT Foundation</strong></div>
+          <div><span>FPS MAPS</span><strong>8 ENABLED</strong></div>
           <div><span>DEPLOY</span><strong>Render Live</strong></div>
         </div>
         <p>
           The public build is generated from the latest verified <code>main</code> commit. The
-          Render deployment provides authoritative rooms, SSE realtime peer updates, shared
-          objectives and replay state, with local room sync retained as a static-host fallback.
+          Render deployment provides the Game V2 WebSocket relay, room-ready flow, synchronized
+          competitive matches, bots, advanced weapon systems and adaptive graphics.
         </p>
       </div>
     </section>
@@ -160,8 +174,8 @@ app.innerHTML = `
 
     <section id="maps" class="section shell">
       <div class="section-head">
-        <p class="eyebrow">SIX PLAYABLE ROUTES</p>
-        <h2>Choose the map and mode</h2>
+        <p class="eyebrow">EIGHT PLAYABLE FPS MAPS</p>
+        <h2>Choose the combat map</h2>
       </div>
       <div class="maps-grid">
         ${maps
@@ -193,7 +207,7 @@ app.innerHTML = `
             Ravenwood uses the pinned CC0 Victorian house asset, optimized below the runtime
             triangle budget and combined with local Kenney and KayKit environment assets.
           </p>
-          <a class="button primary" href="${mapHref('ravenwood')}">Enter Ravenwood</a>
+          <a class="button primary" href="${mapHref('nuketown')}">Enter Ravenwood</a>
         </div>
         <div class="map-meta">
           <div><span>ARCHITECTURE</span><strong>CC0 Victorian House</strong></div>
