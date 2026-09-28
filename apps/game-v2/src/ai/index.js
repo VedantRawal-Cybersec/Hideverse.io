@@ -118,10 +118,13 @@ export class AiSystem {
     // leaves them hovering: see grounding.js.
     const lowCostTier = ['performance', 'low'].includes(ctx.config.quality);
     this.ground = new GroundShadows(this.root, ctx.config.quality === 'performance' ? 8 : lowCostTier ? 12 : 16);
-    // Animation LOD moves closer on smoothness tiers. Full-rate posing remains
-    // inside normal close combat range; distant silhouettes update less often.
-    this._animNear = lowCostTier ? 18 : ANIM_NEAR;
-    this._animFar = lowCostTier ? 34 : ANIM_FAR;
+    this._groundEnabled = ctx.config.quality !== 'performance';
+    // Animation LOD moves closer on smoothness tiers. Performance keeps full
+    // posing only in immediate combat range; Low keeps a wider readable band.
+    this._animNear =
+      ctx.config.quality === 'performance' ? 12 : ctx.config.quality === 'low' ? 18 : ANIM_NEAR;
+    this._animFar =
+      ctx.config.quality === 'performance' ? 24 : ctx.config.quality === 'low' ? 32 : ANIM_FAR;
     this._variants = new Map();
     /** `${variant}|${liverySlot}` -> THREE.Material[] */
     this._liveryMats = new Map();
@@ -1346,7 +1349,7 @@ export class AiSystem {
       // Ground AO is purely visual. If relevance proved the actor cannot reach
       // a pixel, do not spend bone queries + instance uploads on its contact
       // patches. Dead visible ragdolls still keep their contact.
-      if (!a.lodIrrelevant) g.addActor(a);
+      if (this._groundEnabled && !a.lodIrrelevant) g.addActor(a);
     }
     g.end();
   }
