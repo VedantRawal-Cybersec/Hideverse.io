@@ -145,7 +145,10 @@ export class Agent {
     const { bones, skeleton, root } = RIG.createSkeleton();
     this.bones = bones;
     this.skeleton = skeleton;
-    this.mesh = new THREE.SkinnedMesh(def.geometry, ai.materialsFor(this.variantName, this.livery));
+    this.mesh = new THREE.SkinnedMesh(
+      ai.geometryFor(this.variantName, this.livery),
+      ai.materialsFor(this.variantName, this.livery)
+    );
     this.mesh.castShadow = true;
     this.mesh.receiveShadow = true;
     this.mesh.frustumCulled = true;
