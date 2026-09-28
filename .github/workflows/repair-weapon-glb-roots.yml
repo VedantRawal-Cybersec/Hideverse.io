@@ -1,0 +1,116 @@
+name: Repair Weapon GLB Roots
+
+on:
+  push:
+    branches:
+      - phase/full-graphics-completion
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: phase/full-graphics-completion
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.23.2
+      - name: Repair invalid GLB scene roots
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+
+          const files = [
+            'assets/runtime/weapons/kenney/machinegun.glb',
+            'assets/runtime/weapons/kenney/pistol.glb',
+            'assets/runtime/weapons/kenney/shotgun.glb',
+          ];
+
+          const JSON_CHUNK = 0x4e4f534a;
+
+          for (const file of files) {
+            const input = fs.readFileSync(file);
+            if (input.readUInt32LE(0) !== 0x46546c67) throw new Error(`${file}: not GLB`);
+
+            const version = input.readUInt32LE(4);
+            let offset = 12;
+            const chunks = [];
+
+            while (offset < input.length) {
+              const length = input.readUInt32LE(offset);
+              const type = input.readUInt32LE(offset + 4);
+              const data = Buffer.from(input.subarray(offset + 8, offset + 8 + length));
+              chunks.push({ type, data });
+              offset += 8 + length;
+            }
+
+            const jsonChunk = chunks.find((chunk) => chunk.type === JSON_CHUNK);
+            if (!jsonChunk) throw new Error(`${file}: missing JSON chunk`);
+
+            const jsonText = jsonChunk.data.toString('utf8').replace(/[\u0000\u0020]+$/g, '');
+            const gltf = JSON.parse(jsonText);
+            const parent = new Map();
+
+            for (let i = 0; i < (gltf.nodes ?? []).length; i += 1) {
+              for (const child of gltf.nodes[i]?.children ?? []) parent.set(child, i);
+            }
+
+            const rootOf = (node) => {
+              let cursor = node;
+              const seen = new Set();
+              while (parent.has(cursor)) {
+                if (seen.has(cursor)) throw new Error(`${file}: cyclic node graph`);
+                seen.add(cursor);
+                cursor = parent.get(cursor);
+              }
+              return cursor;
+            };
+
+            for (const scene of gltf.scenes ?? []) {
+              scene.nodes = [...new Set((scene.nodes ?? []).map(rootOf))];
+            }
+
+            const encoded = Buffer.from(JSON.stringify(gltf));
+            const pad = (4 - (encoded.length % 4)) % 4;
+            jsonChunk.data = Buffer.concat([encoded, Buffer.alloc(pad, 0x20)]);
+
+            let totalLength = 12;
+            for (const chunk of chunks) totalLength += 8 + chunk.data.length;
+
+            const output = Buffer.alloc(totalLength);
+            output.writeUInt32LE(0x46546c67, 0);
+            output.writeUInt32LE(version, 4);
+            output.writeUInt32LE(totalLength, 8);
+
+            offset = 12;
+            for (const chunk of chunks) {
+              output.writeUInt32LE(chunk.data.length, offset);
+              output.writeUInt32LE(chunk.type, offset + 4);
+              chunk.data.copy(output, offset + 8);
+              offset += 8 + chunk.data.length;
+            }
+
+            fs.writeFileSync(file, output);
+            console.log('[repair]', file);
+          }
+          NODE
+
+      - name: Validate repaired GLBs
+        run: |
+          npm install --no-audit --no-fund
+          npm run assets:validate-gltf
+
+      - name: Commit repaired weapon assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/runtime/weapons/kenney/*.glb
+          if ! git diff --cached --quiet; then
+            git commit -m "Repair weapon GLB scene roots"
+            git push
+          fi
