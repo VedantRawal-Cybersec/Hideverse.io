@@ -114,6 +114,10 @@ export class AiSystem {
     // this costs microseconds where the camo/cordura/skin bake it replaced cost
     // 3.27 s of blocking main-thread JavaScript and 38.7 MB of RGBA8.
     this.materials = new SoldierMaterials();
+    // Auto smoothness tiers collapse each animated soldier from ~10 material
+    // groups to one draw. Geometry, skeleton, animation, hitboxes and livery
+    // identity remain unchanged.
+    this._singleDrawCharacters = ctx.config.q.prepass === false;
     // Contact occlusion under every actor. Without it the cast shadow alone
     // leaves them hovering: see grounding.js.
     const lowCostTier = ['performance', 'low'].includes(ctx.config.quality);
@@ -610,10 +614,14 @@ export class AiSystem {
     const key = `${variantName}|${slot | 0}`;
     let mats = this._liveryMats.get(key);
     if (!mats) {
-      mats = resolveMaterials(def.materialNames, this.materials, liveryFor(slot));
+      if (this._singleDrawCharacters) {
+        mats = this.materials.fast(liveryFor(slot));
+      } else {
+        mats = resolveMaterials(def.materialNames, this.materials, liveryFor(slot));
+        const r = this.ctx.peek('render');
+        if (r?.patcher) for (const m of mats) r.patcher.patch(m);
+      }
       this._liveryMats.set(key, mats);
-      const r = this.ctx.peek('render');
-      if (r?.patcher) for (const m of mats) r.patcher.patch(m);
     }
     return mats;
   }
