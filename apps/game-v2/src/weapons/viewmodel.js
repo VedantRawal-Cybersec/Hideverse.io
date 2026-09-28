@@ -52,6 +52,26 @@ const _q = new THREE.Quaternion();
 const _q2 = new THREE.Quaternion();
 const _e = new THREE.Euler(0, 0, 0, 'XYZ');
 const _m = new THREE.Matrix4();
+
+const FAST_SEPARATE_MATERIALS = new Set([
+  'glass',
+  'lens_ring',
+  'lens_vig',
+  'lens_vig_soft',
+]);
+
+function bakeFastColour(geo, colour) {
+  const pos = geo?.getAttribute?.('position');
+  if (!pos) return geo;
+  const a = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++) {
+    a[i * 3] = colour.r;
+    a[i * 3 + 1] = colour.g;
+    a[i * 3 + 2] = colour.b;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(a, 3));
+  return geo;
+}
 const _axisX = new THREE.Vector3(1, 0, 0);
 const _axisY = new THREE.Vector3(0, 1, 0);
 const _axisZ = new THREE.Vector3(0, 0, 1);
@@ -379,41 +399,53 @@ export class Viewmodel {
 
     const build = (asm, parent, wearScale = 1) => {
       const map = asm.build();
+
+      if (this.mats.fastMode) {
+        const opaque = [];
+        const separate = [];
+        for (const [matKey, geo] of map) {
+          if (FAST_SEPARATE_MATERIALS.has(matKey)) {
+            separate.push([matKey, geo]);
+            continue;
+          }
+          bakeFastColour(geo, this.mats.fastColor(matKey));
+          opaque.push(geo);
+        }
+
+        const merged = mergeAll(opaque);
+        if (merged) {
+          const mesh = new THREE.Mesh(merged, this.mats.fastMaterial());
+          mesh.name = `${asm.name}-fast`;
+          mesh.castShadow = false;
+          mesh.receiveShadow = false;
+          mesh.frustumCulled = false;
+          parent.add(mesh);
+          meshes.push(mesh);
+          tris += triCount(merged);
+        }
+
+        // Keep only the few genuinely transparent / optical materials separate.
+        for (const [matKey, geo] of separate) {
+          const mesh = new THREE.Mesh(geo, this.mats.get(matKey));
+          mesh.name = `${asm.name}-${matKey}`;
+          mesh.castShadow = false;
+          mesh.receiveShadow = false;
+          mesh.frustumCulled = false;
+          parent.add(mesh);
+          meshes.push(mesh);
+          tris += triCount(geo);
+        }
+        return;
+      }
+
       for (const [matKey, geo] of map) {
-        // Curvature masks: convex chamfers wear to bright metal, creases fill
-        // with grime. This is what stops the gun reading as clean plastic.
+        // Curvature masks are valuable on the cinematic path, but Auto's
+        // one-material path intentionally skips this CPU bake and the shader
+        // work that consumes it.
         if (bake) {
-          /**
-           * Chamfered hard-surface geometry has no interior vertices on a face,
-           * so a per-vertex edge mask interpolates linearly from the chamfer all
-           * the way to the far side of the panel: a rail tooth, a mount top face
-           * or a handguard slat comes out uniformly worn, which is what turned
-           * the rail teeth into flat near-white bars and the mount into beige MDF.
-           *
-           * Bake the mask at full amplitude and then SHAPE it (below): raising the
-           * exponent is the only knob that pulls a vertex-interpolated ramp back
-           * onto the outer millimetre or two of the edge, because it pushes
-           * everything below the chamfer's own vertices toward zero.
-           */
           const soft = matKey === 'polymer' || matKey === 'rubber' || matKey === 'polymer_tan';
           bake(geo, { wear: 1, grime: 1, ao: 1, edgeThreshold: 0.16, rng: this.rng });
           shapeMasks(geo, {
-            /**
-             * wearAmp comes DOWN and grimeAmp goes UP.
-             *
-             * With the viewmodel recalibrated to be diffuse-dominant (see
-             * materials.js `alu`), the wear layer's contrast against the base
-             * albedo is what decides whether a chamfer reads as polished alloy or
-             * as a white pencil line, and on small parts — where every vertex is
-             * convex — it decides whether a takedown pin reads as steel or as a
-             * cream plastic cube. 0.9 -> 0.62 on hard surfaces.
-             *
-             * Grime is the opposite: it is the only mask that paints the CONCAVE
-             * side of the geometry, so it is what puts dirt in the magwell corners,
-             * the trigger-guard fillet, the rail slots and the seam between the
-             * handguard panels. Those creases were reading perfectly clean, which
-             * is a large part of "props read as pasted-on decals" applied to a gun.
-             */
             wearAmp: (soft ? 0.42 : 0.62) * wearScale,
             wearExp: soft ? 3.4 : 2.8,
             grimeAmp: 1.15,
@@ -424,10 +456,6 @@ export class Viewmodel {
         }
         const mesh = new THREE.Mesh(geo, this.mats.get(matKey));
         mesh.name = `${asm.name}-${matKey}`;
-        // The viewmodel does not cast into the cascades (it is not in the world
-        // scene), but it absolutely must RECEIVE the sun shadow: without this the
-        // gun is lit at full sun while the street around it is in shade, which is
-        // the single most obvious "pasted-on sticker" tell.
         mesh.castShadow = false;
         mesh.receiveShadow = true;
         mesh.frustumCulled = false;
