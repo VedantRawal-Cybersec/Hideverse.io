@@ -138,7 +138,7 @@ export const PALETTE = {
       scale: 1.5,
       detile: 0.7,
       weather: [0.3, 0.5, 0.15, 0.28],
-      wear: [0, 0.55, 0.45, 0],
+      wear: [0, 0.28, 0.22, 0],
     },
   },
   sand: {
@@ -521,7 +521,7 @@ export const PALETTE = {
       vertexMasks: true,
       tint: 0x8e9490,
       scale: 2.2,
-      normalStrength: 1.15,
+      normalStrength: 0.85,
       weather: [0.4, 0.25, 0.5, 0.75],
       grimeColor: 0x3a4030,
     },
@@ -590,7 +590,7 @@ export const PALETTE = {
   roof_slate: {
     name: 'tile',
     surface: 'concrete',
-    opts: { vertexMasks: true, tint: 0x555a60, scale: 1.25, normalStrength: 1.4, weather: [0.5, 0.45, 0.7, 0.55] },
+    opts: { vertexMasks: true, tint: 0x555a60, scale: 1.10, normalStrength: 1.4, weather: [0.5, 0.45, 0.7, 0.55] },
   },
   /**
    * Spruce. Deliberately its own key rather than a reuse of `leaf_core`: the
@@ -800,10 +800,10 @@ export const PALETTE = {
         surface: 'concrete',
         opts: {
           vertexMasks: true,
-          tint: 0xb9b8b2,
+          tint: 0xd1d0ca,
           scale: 1.25,
-          normalStrength: 1.18,
-          weather: [0.32, 0.28, 0.46, 0.38],
+          normalStrength: 0.78,
+          weather: [0.12, 0.12, 0.18, 0.16],
         },
       },
       /** Mid concrete for kerbs, service plinths and utility masses. */
@@ -812,10 +812,10 @@ export const PALETTE = {
         surface: 'concrete',
         opts: {
           vertexMasks: true,
-          tint: 0x858682,
+          tint: 0xa7a8a3,
           scale: 1.35,
-          normalStrength: 1.12,
-          weather: [0.36, 0.34, 0.52, 0.46],
+          normalStrength: 0.82,
+          weather: [0.14, 0.14, 0.20, 0.18],
         },
       },
       /** Darker poured concrete used for barriers / internal slabs. */
@@ -824,10 +824,10 @@ export const PALETTE = {
         surface: 'concrete',
         opts: {
           vertexMasks: true,
-          tint: 0x666a6c,
+          tint: 0x85898c,
           scale: 1.15,
           normalStrength: 1.0,
-          weather: [0.24, 0.28, 0.38, 0.40],
+          weather: [0.12, 0.14, 0.18, 0.18],
         },
       },
       /** Dark low-graphics asphalt like the reference refinery yard. */
@@ -836,11 +836,11 @@ export const PALETTE = {
         surface: 'concrete',
         opts: {
           vertexMasks: true,
-          tint: 0x4f5357,
+          tint: 0x666c71,
           scale: 1.65,
           detile: 0.65,
-          normalStrength: 1.08,
-          weather: [0.22, 0.30, 0.18, 0.34],
+          normalStrength: 0.78,
+          weather: [0.10, 0.12, 0.10, 0.16],
           wear: [0, 0.55, 0.45, 0],
         },
       },
@@ -850,10 +850,10 @@ export const PALETTE = {
         surface: 'metal',
         opts: {
           vertexMasks: true,
-          tint: 0xc59618,
+          tint: 0xe1b52b,
           scale: 0.85,
           normalStrength: 0.95,
-          weather: [0.24, 0.26, 0.30, 0.34],
+          weather: [0.10, 0.10, 0.14, 0.14],
         },
       },
       /** Safety red — stripe bands, warning panels, refinery identity. */
@@ -862,10 +862,10 @@ export const PALETTE = {
         surface: 'metal',
         opts: {
           vertexMasks: true,
-          tint: 0xa22a26,
+          tint: 0xc33a32,
           scale: 0.9,
           normalStrength: 0.92,
-          weather: [0.24, 0.22, 0.30, 0.32],
+          weather: [0.10, 0.10, 0.14, 0.14],
         },
       },
       /** Charcoal painted steel for frames, vents, doors, wheels and trims. */
@@ -874,10 +874,10 @@ export const PALETTE = {
         surface: 'metal',
         opts: {
           vertexMasks: true,
-          tint: 0x2d3135,
+          tint: 0x4a5055,
           scale: 0.72,
           normalStrength: 1.0,
-          weather: [0.22, 0.24, 0.26, 0.34],
+          weather: [0.10, 0.10, 0.12, 0.14],
         },
       },
       /** Near-black brick plinths like the reference loading/tunnel walls. */
@@ -886,10 +886,10 @@ export const PALETTE = {
         surface: 'concrete',
         opts: {
           vertexMasks: true,
-          tint: 0x444548,
+          tint: 0x5b6064,
           scale: 0.72,
           normalStrength: 1.15,
-          weather: [0.34, 0.32, 0.44, 0.42],
+          weather: [0.12, 0.12, 0.16, 0.18],
         },
       },
       /** Crisp paint for lane marks and safety stencils. */
@@ -898,7 +898,7 @@ export const PALETTE = {
         surface: 'concrete',
         opts: {
           vertexMasks: false,
-          tint: 0xd7d7d2,
+          tint: 0xf1f1eb,
           scale: 1,
         },
       },
