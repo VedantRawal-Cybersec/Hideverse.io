@@ -399,7 +399,7 @@ function buildGround(A, rng) {
     out[1] = 0.2 + fbm3(x * 0.28, 2.1, z * 0.28, 2) * 0.4;
     out[0] = 0.18;
   });
-  A.add('gb_grey', terrain, null);
+  A.add('dirt', terrain, null);
   A.collideGeo('sand', terrain);
   terrain.dispose();
 
@@ -422,7 +422,7 @@ function buildGround(A, rng) {
     out[0] = 0.2 + n * 0.26;
     out[1] = 0.12 + n * 0.2;
   });
-  A.add('gb_grid', apron, null);
+  A.add('floor_concrete', apron, null);
   A.box('dirt', 0, -0.25, 0, W, 0.5, D);
   apron.dispose();
 
@@ -991,16 +991,16 @@ export const NUKETOWN_MAP = {
   environment: {
     // Bright competitive-FPS daylight: clean blue sky, warm directional key,
     // crisp readable shadows and very little distance wash.
-    hour: 14.25,
-    exposureBias: -0.04,
+    hour: 15.15,
+    exposureBias: 0.08,
     weather: {
-      cloudCoverage: 0.16,
-      cloudDensity: 1.15,
-      turbidity: 2.0,
+      cloudCoverage: 0.10,
+      cloudDensity: 0.92,
+      turbidity: 1.55,
       cirrusCoverage: 0.06,
       cirrusOpacity: 0.12,
-      horizonMurk: 0.12,
-      fogDensity: 0.28,
+      horizonMurk: 0.07,
+      fogDensity: 0.16,
       fogHeight: 14,
       shaftGain: 1.7,
     },
