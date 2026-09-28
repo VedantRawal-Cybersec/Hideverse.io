@@ -102,6 +102,8 @@ export class MatchSystem {
     this._mapBusy = false;
     /** Fallback when a connected relay does not echo a requested map quickly. */
     this._mapNavigateTimer = 0;
+    /** Map requested locally but not yet confirmed by the room relay. */
+    this._pendingMapId = null;
     /** Scorekeeper for a bots match (see ./bounds.js). Null in a room match. */
     this._tally = null;
     /** When the ceremony walks itself back to the lobby. 0 outside it. */
@@ -232,6 +234,7 @@ export class MatchSystem {
     this.ui.setMap(id);
 
     if (this.net?.connected) {
+      this._pendingMapId = id;
       this.net.setMap(id);
       clearTimeout(this._mapNavigateTimer);
       this._mapNavigateTimer = window.setTimeout(() => {
@@ -359,11 +362,27 @@ export class MatchSystem {
       }
       return;
     }
-    if (this._knownMap(roomMap) && roomMap !== this.world.mapId) {
+    if (this._pendingMapId) {
+      if (roomMap === this._pendingMapId) {
+        this._pendingMapId = null;
+        this._navigateMap(roomMap);
+        return;
+      }
+
+      // A lobby frame carrying the old map can race the request we just sent.
+      // Keep waiting for the requested-map echo instead of cancelling the
+      // transition. A genuinely different authoritative map still wins.
+      if (roomMap !== this.world.mapId && this._knownMap(roomMap)) {
+        this._pendingMapId = null;
+        this._navigateMap(roomMap);
+        return;
+      }
+    } else if (this._knownMap(roomMap) && roomMap !== this.world.mapId) {
       this._navigateMap(roomMap);
       return;
     }
-    if (roomMap === this.world.mapId) {
+
+    if (!this._pendingMapId && roomMap === this.world.mapId) {
       clearTimeout(this._mapNavigateTimer);
       this._mapBusy = false;
       this.ui.setMapBusy(false);
