@@ -33,6 +33,16 @@
       </header>
 
       <div class="crosshair" aria-hidden="true"></div>
+      <div id="hit-marker" class="hit-marker" aria-hidden="true"></div>
+
+      <aside class="weapon-hud" aria-label="Weapon status">
+        <span id="weapon-name">HV-AR MACHINE GUN</span>
+        <div class="weapon-ammo">
+          <b id="ammo-value">30</b>
+          <small>/ <span id="reserve-value">120</span></small>
+        </div>
+        <i id="weapon-state">READY</i>
+      </aside>
 
       <div id="interaction-prompt" class="interaction-prompt" aria-live="polite"></div>
       <div id="hidden-state" class="hidden-state" aria-live="polite"></div>
@@ -110,8 +120,8 @@
       <aside class="desktop-help">
         <b>CLICK TO CAPTURE MOUSE</b>
         <span>
-          WASD move · Shift sprint · Space jump · C crouch · E interact/hide/open · V FPS/TPS · R
-          reset · Esc release
+          WASD move · Shift sprint · Space jump · C crouch · E interact · LMB fire · RMB ADS · R
+          reload · 1/2/3 weapons · V FPS/TPS · K reset · Esc release
         </span>
       </aside>
 
@@ -124,7 +134,10 @@
           <button id="mobile-crouch" type="button">CROUCH</button>
           <button id="mobile-interact" type="button">INTERACT</button>
           <button id="mobile-view" type="button">VIEW</button>
-          <button id="mobile-jump" class="primary-touch" type="button">JUMP</button>
+          <button id="mobile-ads" type="button">ADS</button>
+          <button id="mobile-reload" type="button">RELOAD</button>
+          <button id="mobile-jump" type="button">JUMP</button>
+          <button id="mobile-fire" class="primary-touch combat-touch" type="button">FIRE</button>
         </div>
       </div>
 
