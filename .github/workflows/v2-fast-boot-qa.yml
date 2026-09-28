@@ -109,7 +109,7 @@ jobs:
 
           try {
             await page.goto(
-              \`http://127.0.0.1:43993/game-v2/?mp=0&q=performance&map=\${process.env.MAP_ID}\`,
+              `http://127.0.0.1:43993/game-v2/?mp=0&q=performance&map=${process.env.MAP_ID}`,
               { waitUntil: 'domcontentloaded', timeout: 90000 },
             );
             try {
