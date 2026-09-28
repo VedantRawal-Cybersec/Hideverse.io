@@ -158,16 +158,22 @@ const shotApi = installShotApi(engine, { capture, lockstep });
 // with ?prewarm=1. Normal /game-v2/ starts immediately; Three.js compiles only the
 // permutations actually encountered during play.
 const requestedPrewarm = params.get('prewarm');
-const shouldPrewarm = capture || requestedPrewarm === '1';
-const warmup = shouldPrewarm
-  ? await prewarm(engine)
-  : {
-      ok: false,
-      reason:
-        requestedPrewarm === '0'
-          ? 'disabled by ?prewarm=0'
-          : 'production fast boot — full prewarm is opt-in with ?prewarm=1',
-    };
+let warmup;
+if (requestedPrewarm === '0') {
+  warmup = { ok: false, reason: 'disabled by ?prewarm=0' };
+} else if (capture || requestedPrewarm === '1') {
+  warmup = await prewarm(engine);
+} else {
+  // Production warmup: compile the world/render permutations that otherwise make
+  // the first visible frame stall, but deliberately exclude AI's expensive
+  // skinned-character compile. One representative pose is enough because
+  // renderer.compileAsync traverses the whole scene.
+  warmup = await prewarm(engine, {
+    poseLimit: 1,
+    skipHookIds: ['ai'],
+  });
+  warmup.mode = 'production-light';
+}
 console.info('[boot] prewarm', warmup);
 window.__PREWARM__ = warmup;
 
