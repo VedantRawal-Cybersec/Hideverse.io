@@ -57,6 +57,7 @@ export class MaterialSystem {
     // name here), so the advanced graphics menu has something to override — and
     // so "Texture Quality: Ultra" is one number in one place.
     this._quality = q?.textureScale ?? 1;
+    this._lean = q?.prepass === false;
     /** Multiplier on per-surface parallax depth; 0 turns the POM march off. */
     this._parallax = q?.parallaxScale ?? 1;
     /** Multiplier on the shared micro-detail layer's strength and fade range. */
@@ -83,15 +84,18 @@ export class MaterialSystem {
     }
     const t0 = performance.now();
     this._forge = new TextureForge(renderer, { anisotropy: this._anisotropy });
-    // 1K, not 512: the micro tooth is 1.6-4 mm over a 0.25 m tile, which needs
-    // ~6 texels per grain to survive mip 1 instead of averaging to flat grey.
-    const detail = this._forge.buildDetail(this._size(1024));
-    const macro = this._forge.buildMacro(256);
-    this._shared = {
-      detailNormal: detail.normal,
-      detailAlbedo: detail.albedo,
-      macro: macro.albedo,
-    };
+    if (this._lean) {
+      // Competitive Auto never samples the shared micro/macro maps.
+      this._shared = { detailNormal: null, detailAlbedo: null, macro: null };
+    } else {
+      const detail = this._forge.buildDetail(this._size(1024));
+      const macro = this._forge.buildMacro(256);
+      this._shared = {
+        detailNormal: detail.normal,
+        detailAlbedo: detail.albedo,
+        macro: macro.albedo,
+      };
+    }
     this._built = true;
     const ms = performance.now() - t0;
     if (ms > 30) console.info(`[materials] shared maps ${ms.toFixed(0)}ms`);
@@ -174,6 +178,14 @@ export class MaterialSystem {
       param: bake.param ? new THREE.Vector4().fromArray(bake.param) : undefined,
     });
     set.name = key;
+    if (this._lean) {
+      // Auto samples albedo only. Releasing normal/ORM cuts texture memory and
+      // removes two texture samplers from every world material.
+      set.normal?.dispose?.();
+      set.orm?.dispose?.();
+      set.normal = null;
+      set.orm = null;
+    }
     this._sets.set(cacheKey, set);
     const ms = performance.now() - t0;
     if (ms > 40) console.info(`[materials] bake ${key} ${bake.size}px ${ms.toFixed(0)}ms`);
@@ -222,31 +234,41 @@ export class MaterialSystem {
     const usePhysical = threeProps.physical === true;
     delete threeProps.physical;
 
-    const Ctor = usePhysical ? THREE.MeshPhysicalMaterial : THREE.MeshStandardMaterial;
-    const mat = new Ctor({
-      color: 0xffffff,
-      roughness: 1,
-      metalness: 1,
-      dithering: true,
-    });
+    const Ctor = this._lean
+      ? THREE.MeshLambertMaterial
+      : usePhysical
+        ? THREE.MeshPhysicalMaterial
+        : THREE.MeshStandardMaterial;
+    const mat = this._lean
+      ? new Ctor({ color: p.tint ?? 0xffffff, dithering: false })
+      : new Ctor({
+          color: 0xffffff,
+          roughness: 1,
+          metalness: 1,
+          dithering: true,
+        });
     mat.name = matKey;
 
     if (set) {
       mat.map = set.albedo;
-      mat.normalMap = set.normal;
-      mat.normalScale.set(1, 1);
-      mat.roughnessMap = set.orm;
-      // The height in albedo.a is only meaningful with the extension; keep the
-      // stock alpha path off unless the surface is actually alpha-masked.
+      if (!this._lean) {
+        mat.normalMap = set.normal;
+        mat.normalScale.set(1, 1);
+        mat.roughnessMap = set.orm;
+      }
       if (!(p.alphaMask || threeProps.transparent)) mat.transparent = false;
+      if (this._lean && p.alphaMask && mat.alphaTest <= 0) mat.alphaTest = 0.42;
     } else if (!this._warned) {
       console.warn(`[materials] "${key}" built without textures (no renderer)`);
     }
 
-    if (p.vertexMasks) mat.vertexColors = true;
+    if (!this._lean && p.vertexMasks) mat.vertexColors = true;
     applyProps(mat, threeProps);
 
-    if (set) extendMaterial(mat, p, this._shared);
+    if (set) {
+      if (this._lean) extendFastProjectedMaterial(mat, p);
+      else extendMaterial(mat, p, this._shared);
+    }
 
     this._materials.set(matKey, mat);
     return mat;
@@ -323,6 +345,39 @@ export class MaterialSystem {
     this._shared = null;
     this._built = false;
   }
+}
+
+/**
+ * Minimal one-sample world projection for competitive Auto tiers.
+ * It keeps real albedo textures on UV-less architecture without the detailed
+ * PBR extension's normal/ORM/micro/macro/weathering work.
+ */
+function extendFastProjectedMaterial(material, p) {
+  const tileScale = p.uvMode === 'mesh' ? p.scale : 1 / Math.max(0.01, p.scale);
+  const u = { owFastTile: { value: new THREE.Vector4(tileScale, tileScale, p.offset[0], p.offset[1]) } };
+  material.userData.owNoPatch = true;
+  material.userData.owFastUniforms = u;
+  const meshUv = p.uvMode === 'mesh';
+  const alphaMask = !!p.alphaMask;
+  material.customProgramCacheKey = () => 'ow-fast-' + (meshUv ? 'mesh' : 'projected') + '-' + (alphaMask ? 'alpha' : 'opaque');
+  material.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, u);
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vOwFastWPos;\nvarying vec3 vOwFastWNrm;')
+      .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\n{\n  mat4 owFastModel = modelMatrix;\n  #ifdef USE_BATCHING\n    owFastModel = owFastModel * batchingMatrix;\n  #endif\n  #ifdef USE_INSTANCING\n    owFastModel = owFastModel * instanceMatrix;\n  #endif\n  vec4 owFastWP = owFastModel * vec4( transformed, 1.0 );\n  vOwFastWPos = owFastWP.xyz;\n  vOwFastWNrm = normalize( mat3( owFastModel ) * objectNormal );\n}');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <clipping_planes_pars_fragment>', '#include <clipping_planes_pars_fragment>\nvarying vec3 vOwFastWPos;\nvarying vec3 vOwFastWNrm;\nuniform vec4 owFastTile;')
+      .replace('#include <map_fragment>',
+        '#ifdef USE_MAP\n{\n' +
+        (meshUv
+          ? '  vec2 owUv = vMapUv * owFastTile.xy + owFastTile.zw;\n'
+          : '  vec3 owN = abs( normalize( vOwFastWNrm ) );\n  vec2 owUv;\n  if ( owN.x > owN.y && owN.x > owN.z ) owUv = vec2( -vOwFastWPos.z * sign( vOwFastWNrm.x ), vOwFastWPos.y );\n  else if ( owN.y > owN.z ) owUv = vec2( vOwFastWPos.x, -vOwFastWPos.z * sign( vOwFastWNrm.y ) );\n  else owUv = vec2( vOwFastWPos.x * sign( vOwFastWNrm.z ), vOwFastWPos.y );\n  owUv = owUv * owFastTile.xy + owFastTile.zw;\n') +
+        '  vec4 owTexel = texture2D( map, owUv );\n  diffuseColor.rgb *= owTexel.rgb;\n' +
+        (alphaMask ? '  diffuseColor.a *= owTexel.a;\n' : '') +
+        '}\n#endif');
+  };
+  material.needsUpdate = true;
+  return material;
 }
 
 /**
