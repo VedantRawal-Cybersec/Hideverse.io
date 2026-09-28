@@ -154,13 +154,13 @@ export function registerNuketownProps(A, rng) {
   const P = (id, key, geo, opts = {}) => A.proto(id, { geo, key, ...opts });
 
   // Four prototypes, same cardinality as the old greybox set.
-  P('gb_crate', 'gb_dark', fieldCrate(0.92), {
+  P('gb_crate', 'wood_prop', fieldCrate(0.92), {
     chunk: false,
     skirt: 0.5,
     tilt: 0.045,
     sink: 0.016,
   });
-  P('gb_barrel', 'gb_accent', oilDrum(), {
+  P('gb_barrel', 'metal_dark', oilDrum(), {
     chunk: false,
     skirt: 0.31,
     tilt: 0.05,
