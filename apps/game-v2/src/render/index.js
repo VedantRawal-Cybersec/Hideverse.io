@@ -170,7 +170,7 @@ export class RenderSystem {
     this.qLevel = QUALITY_LEVEL[cfg.quality] ?? 3;
     // Auto smoothness tiers deliberately avoid the cinematic depth/post chain.
     // The flag is stable for the life of the renderer (tier changes reload).
-    this._leanForward = q.prepass === false && q.shadows === false;
+    this._leanForward = q.prepass === false;
     this.rng = ctx.rng.fork();
     this.frame = 0;
 
