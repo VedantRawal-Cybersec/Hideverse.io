@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { BOX, BOX_THIN, IDENT, LL, stairRun, worldOf, ryOf } from './kit.js';
+import { BOX, BOX_THIN, IDENT, LL, stairRun, worldOf, ryOf, windowUnit, doorUnit } from './kit.js';
 import { registerProps } from './props.js';
 import { registerNuketownProps } from './nuketownprops.js';
 import { fbm3, paintMasks } from './util.js';
@@ -399,7 +399,7 @@ function buildGround(A, rng) {
     out[1] = 0.2 + fbm3(x * 0.28, 2.1, z * 0.28, 2) * 0.4;
     out[0] = 0.18;
   });
-  A.add('gb_grey', terrain, null);
+  A.add('dirt', terrain, null);
   A.collideGeo('sand', terrain);
   terrain.dispose();
 
@@ -444,7 +444,26 @@ function buildGround(A, rng) {
     out[0] = 0.15;
     out[1] = 0.25 + Math.abs(x / NUKE.streetHalf) * 0.35;
   });
-  A.add('gb_grid', street, null);
+  A.add('asphalt', street, null);
+
+  // Broken centre line + short edge markers. They merge into the house plaster
+  // batch, so this adds geometry but no new material draw call.
+  for (let z = -17; z <= 17; z += 6) {
+    A.add(
+      'gb_white',
+      BOX_THIN(A),
+      LL(IDENT, 0, 0.095, z, 0, 0.10, 0.012, 2.2),
+      { masks: [0.2, 0.18, 0.08] }
+    );
+  }
+  for (const sx of [-1, 1])
+    A.add(
+      'gb_white',
+      BOX_THIN(A),
+      LL(IDENT, sx * (NUKE.streetHalf - 0.35), 0.088, 0, 0, 0.07, 0.01, D - 2.5),
+      { masks: [0.25, 0.2, 0.1] }
+    );
+
   street.dispose();
 
   // Kerbs: a 0.14 m step each side. Low enough to walk over, which is what the
@@ -521,6 +540,40 @@ function buildPerimeter(A, rng) {
  * house is centred on the origin. The caller supplies the panel matrix that
  * puts it on the map, so the east house is the west one with a half-turn.
  */
+function decorateOpenings(A, rng, pm, cx, cz, ry, y0, holes, wallT, floor) {
+  if (!holes?.length) return;
+  const panel = new THREE.Matrix4().copy(LL(pm, cx, y0, cz, ry));
+
+  for (const o of holes) {
+    const oy = o.y ?? 0;
+    const centreY = oy + o.h / 2;
+    const isDoor = oy <= 0.01 && o.h >= 1.95;
+
+    if (isDoor) {
+      // Keep combat routes open: realistic jamb/head/threshold, no blocking leaf.
+      doorUnit(A, panel, { x: o.u, y: centreY, w: o.w, h: o.h }, rng, {
+        t: wallT,
+        frameKey: 'gb_dark',
+        leaf: false,
+      });
+      continue;
+    }
+
+    // These are enterable houses, so the room itself is the backing. Open/ajar
+    // casements preserve the shoot-through route and avoid fake non-colliding
+    // glass while still giving every opening real depth and construction.
+    windowUnit(A, panel, { x: o.u, y: centreY, w: o.w, h: o.h }, rng, {
+      t: wallT,
+      frameKey: 'gb_dark',
+      state: floor === 0 ? 'ajar' : (rng.float() < 0.45 ? 'ajar' : 'open'),
+      back: false,
+      noGlass: true,
+      grille: false,
+      shutters: false,
+    });
+  }
+}
+
 function buildHouse(A, rng, spec) {
   /**
    * The panel matrix must be its OWN Matrix4, never the one `LL` hands back.
@@ -564,17 +617,21 @@ function buildHouse(A, rng, spec) {
       ? [{ u: -1.2, w: 1.3, y: 0, h: doorH }, { u: 3.2, w: 1.8, y: winY, h: winH }]
       : [{ u: -3.4, w: 1.6, y: 0.9, h: winH }, { u: 1.4, w: 1.8, y: 0.9, h: winH }, { u: 5.0, w: 1.4, y: 0.9, h: winH }];
     wallWithHoles(A, pm, key, hw, 0, -H, spec.d, y0, h, t, front, masks);
+    decorateOpenings(A, rng, pm, hw, 0, -H, y0, front, t, floor);
 
     // Back face (-X): the alley door, and one upstairs window watching the alley.
     const back = floor === 0
       ? [{ u: 2.0, w: 1.3, y: 0, h: doorH }, { u: -3.6, w: 1.6, y: winY, h: winH }]
       : [{ u: 0.4, w: 1.6, y: 0.9, h: winH }];
     wallWithHoles(A, pm, key, -hw, 0, H, spec.d, y0, h, t, back, masks);
+    decorateOpenings(A, rng, pm, -hw, 0, H, y0, back, t, floor);
 
     // The two end faces, one window each, aimed up and down the alleys.
     for (const sz of [-1, 1]) {
       const holes = [{ u: sz * 1.6, w: 1.6, y: floor === 0 ? winY : 0.9, h: winH }];
-      wallWithHoles(A, pm, key, 0, sz * hd, sz > 0 ? 0 : Math.PI, spec.w, y0, h, t, holes, masks);
+      const wallRy = sz > 0 ? 0 : Math.PI;
+      wallWithHoles(A, pm, key, 0, sz * hd, wallRy, spec.w, y0, h, t, holes, masks);
+      decorateOpenings(A, rng, pm, 0, sz * hd, wallRy, y0, holes, t, floor);
     }
   }
 
@@ -596,7 +653,7 @@ function buildHouse(A, rng, spec) {
   const ang = Math.atan2(rise, runX);
   const slabLen = Math.hypot(runX, rise);
   for (const sx of [-1, 1]) {
-    A.add('gb_grey', BOX(A),
+    A.add('gb_dark', BOX(A),
       LL(pm, sx * runX / 2, eaves + rise / 2, 0, 0, slabLen, 0.24, spec.d + over * 2, 0, -sx * ang),
       { masks: [0.6, 0.45, 0.25] });
   }
@@ -627,6 +684,29 @@ function buildHouse(A, rng, spec) {
   // Two steps up to the threshold.
   for (let i = 0; i < 2; i++)
     pbox(A, pm, 'gb_grid', hw + 0.6 + i * 0.42, 0.09 + i * 0.09, -1.2, 0, 0.5, 0.18, 2.2, [0.6, 0.5, 0.3]);
+
+  // Real construction cues: base course, eave/fascia lines and downpipes.
+  // All share existing static material batches, so they do not add draw calls.
+  for (const sx of [-1, 1]) {
+    A.add('gb_grey', BOX_THIN(A), LL(pm, sx * hw, 0.23, 0, -H, spec.d - 0.35, 0.18, 0.08), {
+      masks: [0.45, 0.65, 0.4],
+    });
+    A.add('gb_grey', BOX_THIN(A), LL(pm, sx * (hw + 0.04), eaves - 0.06, 0, -H, spec.d + 0.2, 0.12, 0.10), {
+      masks: [0.72, 0.3, 0.18],
+    });
+  }
+  for (const sz of [-1, 1]) {
+    A.add('gb_grey', BOX_THIN(A), LL(pm, 0, 0.23, sz * hd, 0, spec.w - 0.35, 0.18, 0.08), {
+      masks: [0.45, 0.65, 0.4],
+    });
+    A.add('gb_grey', BOX_THIN(A), LL(pm, 0, eaves - 0.06, sz * (hd + 0.04), 0, spec.w + 0.2, 0.12, 0.10), {
+      masks: [0.72, 0.3, 0.18],
+    });
+  }
+  for (const z of [-hd + 0.4, hd - 0.4])
+    A.add('gb_grey', BOX_THIN(A), LL(pm, hw + 0.09, eaves / 2, z, 0, 0.10, eaves - 0.3, 0.10), {
+      masks: [0.6, 0.5, 0.3],
+    });
 
   // Copied, not aliased: `worldOf` returns a shared scratch array, so both
   // houses would otherwise hand back the same one and report the same stair.
@@ -677,7 +757,7 @@ function buildSheds(A, rng) {
     A.box('concrete', x, h / 2, z, w, h, d);
     // The roof oversails the box by 15 cm and leans 6°, so the shed reads as
     // built rather than extruded, for one extra part.
-    A.add('gb_grey', BOX(A), LL(IDENT, x, h + 0.14, z, 0, w + 0.3, 0.18, d + 0.3, 0, 0.1), {
+    A.add('gb_dark', BOX(A), LL(IDENT, x, h + 0.14, z, 0, w + 0.3, 0.18, d + 0.3, 0, 0.1), {
       masks: [0.65, 0.45, 0.25],
     });
     // A door on the face that looks back at the street.
@@ -700,16 +780,11 @@ function dress(A, rng, stairFeet) {
   };
 
   /**
-   * QUARTER TURNS ONLY, AND NO SCALE JITTER.
-   *
-   * Every other map in the game arms `A.jitter` here so no two instances sit
-   * alike — identical clones are the loudest tell in an instanced cloud. This
-   * map wants exactly the opposite. A blockout reads as a blockout because its
-   * objects are repetitions of one object, on a grid, all plumb; a crate rolled
-   * three degrees off true would be the only thing on screen not aligned to the
-   * 1 m ruling under it. So `A.jitter` is never armed, scale is always 1, and
-   * rotation is snapped to the compass.
+   * Real placement, still deterministic. Loose crates/drums get a few degrees
+   * of yaw/tilt and a small scale spread; fixed barriers and vehicles stay
+   * plumb. The prototypes remain instanced, so variation costs no extra draws.
    */
+  A.jitter = { rng, yaw: 0.12, scale: 0.045 };
   // `Rng.int` takes (min, max). Called with one argument it returns NaN, which
   // does not throw and does not fail any headless check — it propagates into
   // the instance matrix, then into the InstancedMesh's bounding sphere, and
@@ -718,15 +793,18 @@ function dress(A, rng, stairFeet) {
   // appear on screen gave it away.
   const turn = () => Math.floor(rng.float() * 4) * H;
 
-  /** A crate is two instances at one transform: the box, then its bracing. */
+  /** One merged timber crate: body, posts, slats and lid in one draw. */
   const crate = (x, y, z, ry) => {
-    A.put('gb_crate', x, y, z, ry, 1);
-    A.put('gb_crate_brace', x, y, z, ry, 1);
+    A.put('gb_crate', x, y, z, ry, 1, [1, rng.range(0.85, 1.2), 1]);
   };
 
-  // ---- blocks: the sidewalk line and the alley cover ---------------------
-  // These were jersey barriers; the positions are unchanged because the spawn
-  // probe's line-of-sight result is measured against them.
+  const parkedCar = (x, z, ry) => {
+    A.put('gb_car', x, 0.62, z, ry, 1, [0.9, 1.05, 1]);
+    // Unlike loose dressing, cars are meaningful cover and must match visuals.
+    A.box('metal', x, 0.52, z, ry === 0 ? 1.82 : 4.0, 0.95, ry === 0 ? 4.0 : 1.82, ry);
+  };
+
+  // ---- poured road barriers: sidewalk line and alley cover --------------
   const blocks = [
     [-7.9, -12.0, 0], [-7.9, -3.0, 0], [-7.9, 6.0, 0], [-7.9, 14.0, 0],
     [7.9, 12.0, 0], [7.9, 3.0, 0], [7.9, -6.0, 0], [7.9, -14.0, 0],
@@ -736,6 +814,17 @@ function dress(A, rng, stairFeet) {
     [-6.0, 19.0, 0], [6.0, -19.0, 0],
   ];
   for (const [x, z, ry] of blocks) if (free(x, z, 0.9)) A.put('gb_block', x, 0.46, z, ry, 1);
+
+  // Parked cars make the street read as a lived-in suburban lane while also
+  // breaking long sightlines. Kept close to the kerbs so the centre route stays
+  // fast and readable.
+  for (const [x, z, ry] of [
+    [-4.35, -9.8, 0.03],
+    [4.30, 9.4, Math.PI - 0.04],
+    [-4.25, 2.0, 0.02],
+  ]) {
+    if (free(x, z, 1.35)) parkedCar(x, z, ry);
+  }
 
   // ---- crates, on the ground and stacked ---------------------------------
   const crates = [
@@ -759,7 +848,7 @@ function dress(A, rng, stairFeet) {
     if (i % 3 === 0) crate(x, S * 1.5 + 0.03, z, turn());
   }
 
-  // ---- barrels: the map's only saturated colour --------------------------
+  // ---- weathered oil drums ------------------------------------------------
   const barrels = [
     [-9.0, -10.0], [-9.6, -9.2], [-10.4, 5.5], [9.0, 10.0], [9.6, 9.2], [10.4, -5.5],
     [-22.0, -13.5], [22.0, 13.5], [-13.5, 16.5], [13.5, -16.5],
@@ -794,6 +883,22 @@ function dress(A, rng, stairFeet) {
       }
     }
   }
+
+  // One vegetation prototype, repeated sparingly around yard/perimeter edges.
+  // It adds life and scale without alpha-card spam or a forest of extra draws.
+  const shrubs = [
+    [-21.8, -7.2], [-21.5, 4.8], [-20.8, 10.2],
+    [21.8, 7.2], [21.5, -4.8], [20.8, -10.2],
+    [-12.4, 7.0], [-14.8, 7.8], [12.4, -7.0], [14.8, -7.8],
+    [-22.4, 17.6], [22.4, -17.6],
+  ];
+  for (let i = 0; i < shrubs.length; i++) {
+    const [x, z] = shrubs[i];
+    if (!free(x, z, 0.45)) continue;
+    A.put('shrub', x, 0.02, z, rng.float() * Math.PI * 2, 0.55 + (i % 3) * 0.08);
+  }
+
+  A.jitter = null;
 }
 
 /**
@@ -873,15 +978,15 @@ export const NUKETOWN_MAP = {
     // Bright competitive-FPS daylight: clean blue sky, warm directional key,
     // crisp readable shadows and very little distance wash.
     hour: 14.25,
-    exposureBias: -0.22,
+    exposureBias: -0.04,
     weather: {
-      cloudCoverage: 0.12,
-      cloudDensity: 1.35,
-      turbidity: 1.3,
+      cloudCoverage: 0.16,
+      cloudDensity: 1.15,
+      turbidity: 2.0,
       cirrusCoverage: 0.06,
       cirrusOpacity: 0.12,
-      horizonMurk: 0.08,
-      fogDensity: 0.46,
+      horizonMurk: 0.12,
+      fogDensity: 0.28,
       fogHeight: 14,
       shaftGain: 1.7,
     },
