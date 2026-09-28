@@ -12,6 +12,7 @@ import { PerformanceManager, type QualityPreset } from './core/performance-manag
 import { colorFromTriplet } from './core/reference-art-direction';
 import { PlayerAvatar } from './core/player-avatar';
 import { FirstPersonController } from './core/player-controller';
+import { WeaponSystem } from './core/weapon-system';
 import {
   hideverseMaps,
   nearestAreaLabel,
@@ -73,6 +74,11 @@ const roundResultKicker = must<HTMLElement>('#round-result-kicker');
 const roundResultTitle = must<HTMLElement>('#round-result-title');
 const roundResultCopy = must<HTMLParagraphElement>('#round-result-copy');
 const restartRoundButton = must<HTMLButtonElement>('#restart-round');
+const weaponName = must<HTMLSpanElement>('#weapon-name');
+const ammoValue = must<HTMLElement>('#ammo-value');
+const reserveValue = must<HTMLSpanElement>('#reserve-value');
+const weaponState = must<HTMLElement>('#weapon-state');
+const hitMarker = must<HTMLDivElement>('#hit-marker');
 
 const map = selectedMapFromLocation();
 const visualProfile = mapVisualProfile(map);
@@ -257,6 +263,7 @@ async function boot(): Promise<void> {
     y: map.spawn[1],
     z: map.spawn[2],
   });
+  const weaponSystem = new WeaponSystem(app, camera, coarse);
 
   app.start();
   const runtime = await buildSelectedMap(app, world, map, setMapStatus);
@@ -283,7 +290,7 @@ async function boot(): Promise<void> {
       multiplayer.dispose();
       input.dispose();
       environmentPolish.destroy();
-      environmentPolish.destroy();
+      weaponSystem.destroy();
       graphicsPipeline.destroy();
     },
     { once: true },
@@ -291,6 +298,8 @@ async function boot(): Promise<void> {
 
   let hudAccumulator = 0;
   let lastOutcome: 'playing' | 'won' | 'lost' = 'playing';
+  let lastWeaponName = weaponSystem.weaponName;
+  let lastReloading = weaponSystem.reloading;
 
   app.on('update', (deltaSeconds: number) => {
     if (multiplayer.consumeRoundReset()) {
@@ -305,6 +314,7 @@ async function boot(): Promise<void> {
 
     player.update(deltaSeconds);
     environmentPolish.update(deltaSeconds);
+    weaponSystem.update(deltaSeconds, input, player.motionState, player.viewMode);
 
     const position = player.position;
     if (!pointInsideMap(map, position)) {
@@ -316,7 +326,26 @@ async function boot(): Promise<void> {
     const interaction = interactions.update(position, interactPressed);
     if (interaction.handled && interactPressed) audio.cue('interact');
 
-    environmentPolish.update(deltaSeconds);
+    const shot = weaponSystem.consumeShot();
+    if (shot) {
+      audio.cue('fire');
+      const origin = camera.getPosition();
+      const direction = camera.forward;
+      const hit = characters.shootHitscan(
+        { x: origin.x, y: origin.y, z: origin.z },
+        { x: direction.x, y: direction.y, z: direction.z },
+        shot.damage,
+        shot.spread,
+      );
+
+      if (hit.hit) {
+        audio.cue(hit.eliminated ? 'eliminate' : 'hit');
+        hitMarker.classList.remove('is-visible', 'is-elimination');
+        void hitMarker.offsetWidth;
+        hitMarker.classList.add('is-visible');
+        if (hit.eliminated) hitMarker.classList.add('is-elimination');
+      }
+    }
 
     const threat = characters.update(deltaSeconds, position, interaction.hidden);
     const modeState = mode.update(position, interactPressed && !interaction.handled, {
@@ -384,6 +413,23 @@ async function boot(): Promise<void> {
       motionValue.textContent = player.motionState.toUpperCase();
       staminaValue.textContent = `${Math.round(player.staminaPercent)}%`;
       viewValue.textContent = player.viewMode === 'first-person' ? 'FPS' : 'TPS';
+
+      weaponName.textContent = weaponSystem.weaponName;
+      ammoValue.textContent = weaponSystem.magazineAmmo.toString();
+      reserveValue.textContent = weaponSystem.reserveAmmo.toString();
+      weaponState.textContent = weaponSystem.reloading
+        ? 'RELOADING'
+        : weaponSystem.aiming
+          ? 'ADS'
+          : 'READY';
+      document.querySelector('#app')?.classList.toggle('is-ads', weaponSystem.aiming);
+
+      if (weaponSystem.weaponName !== lastWeaponName) {
+        lastWeaponName = weaponSystem.weaponName;
+        audio.cue('switch');
+      }
+      if (weaponSystem.reloading && !lastReloading) audio.cue('reload');
+      lastReloading = weaponSystem.reloading;
 
       networkValue.textContent = multiplayer.status;
       roomValue.textContent = multiplayer.roomCode;
