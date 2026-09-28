@@ -513,7 +513,7 @@ function buildGround(A, rng) {
         const a = shA + j * 0.22;
         const len = (2.4 - Math.abs(j) * 0.25) * ps;
         A.add(
-          'gb_shadow',
+          'gb_dark',
           leaf,
           LL(
             IDENT,
@@ -528,7 +528,7 @@ function buildGround(A, rng) {
           null
         );
       }
-      A.add('gb_shadow', leaf, LL(IDENT, px + 0.16, 0.087, pz + 0.13, -0.78, 0.72 * ps, 0.012, 0.24 * ps), null);
+      A.add('gb_dark', leaf, LL(IDENT, px + 0.16, 0.087, pz + 0.13, -0.78, 0.72 * ps, 0.012, 0.24 * ps), null);
     }
   }
 }
@@ -892,7 +892,7 @@ function dress(A, rng, stairFeet) {
     A.box('metal', x, 0.52, z, 1.82, 0.95, 4.0, ry);
     if (!['performance', 'low'].includes(A.quality)) {
       A.add(
-        'gb_shadow',
+        'gb_dark',
         BOX_THIN(A),
         LL(IDENT, x + 0.34, 0.086, z + 0.32, ry - 0.10, 1.72, 0.012, 3.72),
         null
