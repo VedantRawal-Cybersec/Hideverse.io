@@ -33,7 +33,10 @@ export class NetPuppet {
     const { bones, skeleton, root } = RIG.createSkeleton();
     this.bones = bones;
     this.skeleton = skeleton;
-    this.mesh = new THREE.SkinnedMesh(def.geometry, ai.materialsFor(variant, livery));
+    this.mesh = new THREE.SkinnedMesh(
+      ai.geometryFor(variant, livery),
+      ai.materialsFor(variant, livery)
+    );
     this.mesh.castShadow = true;
     this.mesh.receiveShadow = true;
     this.mesh.frustumCulled = true;
@@ -96,6 +99,7 @@ export class NetPuppet {
     const s = slot | 0;
     if (s === this.livery) return;
     this.livery = s;
+    this.mesh.geometry = this.ai.geometryFor(this.variantName, s);
     this.mesh.material = this.ai.materialsFor(this.variantName, s);
   }
 
