@@ -177,7 +177,9 @@ export class RenderSystem {
     // ---- renderer -------------------------------------------------------
     const renderer = new THREE.WebGLRenderer({
       canvas: ctx.canvas,
-      antialias: false, // TAA/FXAA handle this; MSAA cannot resolve HDR post
+      // The direct Medium path never reaches FXAA/TAA, so desktop Medium uses
+      // native backbuffer MSAA. Performance/Low remain single-sample.
+      antialias: cfg.quality === 'medium',
       alpha: false,
       depth: true,
       stencil: false,
@@ -199,7 +201,10 @@ export class RenderSystem {
     renderer.toneMapping = this._leanForward
       ? THREE.ACESFilmicToneMapping
       : THREE.NoToneMapping;
-    renderer.toneMappingExposure = 1.0;
+    renderer.toneMappingExposure =
+      this._leanForward && cfg.quality === 'medium'
+        ? 0.82
+        : 1.0;
     // Low smoothness tiers disable every dynamic shadow path, including
     // Three.js spot/point-light shadow maps owned by other systems.
     renderer.shadowMap.enabled = q.shadows !== false;
