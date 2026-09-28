@@ -1,0 +1,156 @@
+name: V2 Production Smoothness QA
+
+on:
+  push:
+    branches:
+      - qa/v2-production-smoothness
+
+permissions:
+  contents: read
+
+jobs:
+  production-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [desktop, mobile]
+        map: [nuketown, wilmot]
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.23.2
+
+      - name: Install Playwright
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Verify public V2 route
+        env:
+          PROFILE: ${{ matrix.profile }}
+          MAP_ID: ${{ matrix.map }}
+          LIVE_URL: https://hideverse-io.onrender.com
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+
+          const mobile = process.env.PROFILE === 'mobile';
+          const browser = await chromium.launch({ headless: true });
+          const context = await browser.newContext(
+            mobile
+              ? {
+                  viewport: { width: 390, height: 844 },
+                  hasTouch: true,
+                  isMobile: true,
+                  deviceScaleFactor: 2,
+                }
+              : {
+                  viewport: { width: 1280, height: 720 },
+                  deviceScaleFactor: 1,
+                },
+          );
+          const page = await context.newPage();
+          const errors = [];
+          const consoleErrors = [];
+          const failed = [];
+          const badResponses = [];
+          page.on('pageerror', (error) => errors.push(String(error)));
+          page.on('console', (message) => {
+            if (message.type() === 'error') consoleErrors.push(message.text());
+          });
+          page.on('requestfailed', (request) => {
+            failed.push({
+              url: request.url(),
+              error: request.failure()?.errorText ?? 'unknown',
+            });
+          });
+          page.on('response', (response) => {
+            if (response.status() >= 500) {
+              badResponses.push({ url: response.url(), status: response.status() });
+            }
+          });
+
+          try {
+            const started = Date.now();
+            const response = await page.goto(
+              `${process.env.LIVE_URL}/game/?mp=0&map=${process.env.MAP_ID}`,
+              { waitUntil: 'domcontentloaded', timeout: 90000 },
+            );
+            await page.waitForFunction(() => window.__READY__ === true, null, {
+              timeout: 70000,
+            });
+            const bootMs = Date.now() - started;
+            await page.waitForTimeout(2500);
+
+            const stats = await page.evaluate(async () => {
+              const samples = [];
+              let last = performance.now();
+              const deadline = last + 5000;
+              await new Promise((resolve) => {
+                const tick = (now) => {
+                  samples.push(now - last);
+                  last = now;
+                  if (now >= deadline) resolve();
+                  else requestAnimationFrame(tick);
+                };
+                requestAnimationFrame(tick);
+              });
+              const sorted = [...samples].sort((a, b) => a - b);
+              const percentile = (p) =>
+                sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))] ?? 0;
+              const avgMs =
+                samples.reduce((sum, value) => sum + value, 0) / Math.max(1, samples.length);
+
+              return {
+                href: location.href,
+                ready: window.__READY__ === true,
+                frame: window.__ENGINE__?.time?.frame ?? 0,
+                averageFps: 1000 / avgMs,
+                p50Ms: percentile(0.5),
+                p95Ms: percentile(0.95),
+                p99Ms: percentile(0.99),
+                samples: samples.length,
+                touch: document.body.classList.contains('wm-touch'),
+                qualityText:
+                  document.querySelector('[data-quality]')?.textContent ??
+                  document.querySelector('#quality')?.textContent ??
+                  '',
+                canvas: (() => {
+                  const rect =
+                    document.querySelector('#game')?.getBoundingClientRect() ??
+                    document.querySelector('canvas')?.getBoundingClientRect();
+                  return rect ? { width: rect.width, height: rect.height } : null;
+                })(),
+              };
+            });
+
+            const summary = {
+              profile: process.env.PROFILE,
+              map: process.env.MAP_ID,
+              status: response?.status() ?? null,
+              bootMs,
+              stats,
+              errors,
+              consoleErrors,
+              failed,
+              badResponses,
+            };
+            console.log('[v2-production-qa]', JSON.stringify(summary));
+
+            if (!stats.ready || stats.frame < 3) throw new Error('V2 never reached running state');
+            if (!stats.canvas || stats.canvas.width < 300 || stats.canvas.height < 300) {
+              throw new Error('V2 canvas is not playable');
+            }
+            if (mobile && !stats.touch) throw new Error('Touch mode did not activate');
+            if (errors.length || consoleErrors.length || failed.length || badResponses.length) {
+              throw new Error('Runtime/network errors detected');
+            }
+          } finally {
+            await context.close();
+            await browser.close();
+          }
+          NODE
