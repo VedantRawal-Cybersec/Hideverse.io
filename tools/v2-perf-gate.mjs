@@ -166,7 +166,8 @@ const expression = String.raw`new Promise((resolve) => {
       over33: dts.filter(x=>x>33.34).length,
       over50: dts.filter(x=>x>50).length,
       engine: window.__PERF_STATS__?.(600) ?? null,
-      render: window.__RENDER_INFO__ ?? null
+      render: window.__RENDER_INFO__ ?? null,
+      scene: window.__SCENE_STATS__?.() ?? null
     });
   }
   function tick(t) {
