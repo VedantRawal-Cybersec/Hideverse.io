@@ -117,7 +117,7 @@ export class AiSystem {
     // Auto smoothness tiers collapse each animated soldier from ~10 material
     // groups to one draw. Geometry, skeleton, animation, hitboxes and livery
     // identity remain unchanged.
-    this._singleDrawCharacters = ctx.config.q.prepass === false;
+    this._singleDrawCharacters = ['performance', 'low'].includes(ctx.config.quality);
     // Contact occlusion under every actor. Without it the cast shadow alone
     // leaves them hovering: see grounding.js.
     const lowCostTier = ['performance', 'low'].includes(ctx.config.quality);
