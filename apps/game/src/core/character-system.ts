@@ -13,6 +13,13 @@ export type ThreatSnapshot = {
   label: string;
 };
 
+export type WeaponHitResult = {
+  hit: boolean;
+  role: ActorRole | 'none';
+  eliminated: boolean;
+  distance: number;
+};
+
 type GraphEdge = {
   id: string;
   cost: number;
@@ -45,6 +52,8 @@ type ActorRuntime = {
   senseTimer: number;
   cachedDirectSight: boolean;
   cachedDetected: boolean;
+  health: number;
+  downTimer: number;
 };
 
 const roleColors: Record<ActorRole, Triplet> = {
@@ -335,6 +344,8 @@ export class CharacterSystem {
         senseTimer: Math.random() * 0.12,
         cachedDirectSight: false,
         cachedDetected: false,
+        health: 100,
+        downTimer: 0,
       });
     }
 
@@ -475,6 +486,15 @@ export class CharacterSystem {
     };
 
     for (const actor of this.actors) {
+      if (actor.downTimer > 0) {
+        actor.downTimer = Math.max(0, actor.downTimer - dt);
+        if (actor.downTimer === 0) {
+          actor.health = 100;
+          actor.root.enabled = true;
+        }
+        continue;
+      }
+
       const actorPosition = actor.root.getPosition();
       const current: Triplet = [actorPosition.x, actorPosition.y, actorPosition.z];
       const currentDistance = distance(current, player);
@@ -627,6 +647,79 @@ export class CharacterSystem {
     }
 
     return strongest;
+  }
+
+
+  shootHitscan(
+    origin: { x: number; y: number; z: number },
+    direction: { x: number; y: number; z: number },
+    damage: number,
+    spread = 0,
+  ): WeaponHitResult {
+    const length = Math.max(0.0001, Math.hypot(direction.x, direction.y, direction.z));
+    const jitterX = (Math.random() - 0.5) * spread;
+    const jitterY = (Math.random() - 0.5) * spread;
+    const jitterZ = (Math.random() - 0.5) * spread;
+    const dx = direction.x / length + jitterX;
+    const dy = direction.y / length + jitterY;
+    const dz = direction.z / length + jitterZ;
+    const jitteredLength = Math.max(0.0001, Math.hypot(dx, dy, dz));
+    const ray = {
+      x: dx / jitteredLength,
+      y: dy / jitteredLength,
+      z: dz / jitteredLength,
+    };
+
+    let bestActor: ActorRuntime | null = null;
+    let bestDistance = Number.POSITIVE_INFINITY;
+
+    for (const actor of this.actors) {
+      if (actor.downTimer > 0 || !actor.root.enabled) continue;
+
+      const actorPosition = actor.root.getPosition();
+      const chestY = actorPosition.y + (actor.role === 'monster' ? 1.05 : 0.82);
+      const toX = actorPosition.x - origin.x;
+      const toY = chestY - origin.y;
+      const toZ = actorPosition.z - origin.z;
+      const projection = toX * ray.x + toY * ray.y + toZ * ray.z;
+      if (projection <= 0 || projection > 95 || projection >= bestDistance) continue;
+
+      const totalSquared = toX * toX + toY * toY + toZ * toZ;
+      const closestSquared = Math.max(0, totalSquared - projection * projection);
+      const radius = actor.role === 'monster' ? 0.95 : 0.62;
+      if (closestSquared > radius * radius) continue;
+
+      const target: Triplet = [actorPosition.x, chestY, actorPosition.z];
+      const source: Triplet = [origin.x, origin.y, origin.z];
+      if (!lineClear(this.map, source, target)) continue;
+
+      bestActor = actor;
+      bestDistance = projection;
+    }
+
+    if (!bestActor) {
+      return {
+        hit: false,
+        role: 'none',
+        eliminated: false,
+        distance: Number.POSITIVE_INFINITY,
+      };
+    }
+
+    bestActor.health = Math.max(0, bestActor.health - Math.max(1, damage));
+    bestActor.alertSeconds = Math.max(bestActor.alertSeconds, 4);
+    const eliminated = bestActor.health <= 0;
+    if (eliminated) {
+      bestActor.downTimer = 4.5;
+      bestActor.root.enabled = false;
+    }
+
+    return {
+      hit: true,
+      role: bestActor.role,
+      eliminated,
+      distance: bestDistance,
+    };
   }
 
   nearestRole(position: { x: number; y: number; z: number }): string {
