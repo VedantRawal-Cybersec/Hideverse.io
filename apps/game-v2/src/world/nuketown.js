@@ -445,13 +445,13 @@ function buildGround(A, rng) {
     out[0] = 0.15;
     out[1] = 0.25 + Math.abs(x / NUKE.streetHalf) * 0.35;
   });
-  A.add('asphalt', street, null);
+  A.add(richSurfaces ? 'gb_asphalt' : 'gb_grid', street, null);
 
   // Broken centre line + short edge markers. They merge into the house plaster
   // batch, so this adds geometry but no new material draw call.
   for (let z = -17; z <= 17; z += 6) {
     A.add(
-      'gb_white',
+      richSurfaces ? 'gb_marking' : 'gb_white',
       BOX_THIN(A),
       LL(IDENT, 0, 0.095, z, 0, 0.10, 0.012, 2.2),
       { masks: [0.2, 0.18, 0.08] }
@@ -459,7 +459,7 @@ function buildGround(A, rng) {
   }
   for (const sx of [-1, 1])
     A.add(
-      'gb_white',
+      richSurfaces ? 'gb_marking' : 'gb_white',
       BOX_THIN(A),
       LL(IDENT, sx * (NUKE.streetHalf - 0.35), 0.088, 0, 0, 0.07, 0.01, D - 2.5),
       { masks: [0.25, 0.2, 0.1] }
@@ -513,7 +513,7 @@ function buildGround(A, rng) {
         const a = shA + j * 0.22;
         const len = (2.4 - Math.abs(j) * 0.25) * ps;
         A.add(
-          'gb_dark',
+          'gb_shadow',
           leaf,
           LL(
             IDENT,
@@ -528,7 +528,7 @@ function buildGround(A, rng) {
           null
         );
       }
-      A.add('gb_dark', leaf, LL(IDENT, px + 0.16, 0.087, pz + 0.13, -0.78, 0.72 * ps, 0.012, 0.24 * ps), null);
+      A.add('gb_shadow', leaf, LL(IDENT, px + 0.16, 0.087, pz + 0.13, -0.78, 0.72 * ps, 0.012, 0.24 * ps), null);
     }
   }
 }
@@ -723,6 +723,27 @@ function buildHouse(A, rng, spec) {
     }
   }
 
+  // ---- refinery facade bands ---------------------------------------------
+  // Dark brick plinth + red safety stripe are the two strongest value/chroma
+  // cues in the LOW reference. They merge into one batch per material across
+  // both buildings.
+  for (const sx of [-1, 1]) {
+    A.add('gb_brick', BOX_THIN(A), LL(pm, sx * (hw + 0.01), 0.42, 0, -H, spec.d - 0.12, 0.84, 0.08), {
+      masks: [0.56, 0.52, 0.42],
+    });
+    A.add('gb_red', BOX_THIN(A), LL(pm, sx * (hw + 0.02), eaves - 0.56, 0, -H, spec.d + 0.04, 0.24, 0.075), {
+      masks: [0.72, 0.28, 0.20],
+    });
+  }
+  for (const sz of [-1, 1]) {
+    A.add('gb_brick', BOX_THIN(A), LL(pm, 0, 0.42, sz * (hd + 0.01), 0, spec.w - 0.12, 0.84, 0.08), {
+      masks: [0.56, 0.52, 0.42],
+    });
+    A.add('gb_red', BOX_THIN(A), LL(pm, 0, eaves - 0.56, sz * (hd + 0.02), 0, spec.w + 0.04, 0.24, 0.075), {
+      masks: [0.72, 0.28, 0.20],
+    });
+  }
+
   // ---- the stair ---------------------------------------------------------
   // Publishes its foot in the returned info so the self-test can assert the run
   // -up is clear: a stair blocked by dressing is the one mistake that makes a
@@ -731,35 +752,40 @@ function buildHouse(A, rng, spec) {
   const stairZ = -hd + 0.6;
   stairRun(A, pm, stairX, 0, stairZ, 1.9, 16, floorH / 16, 0.27, { key: 'gb_grid', railing: 'right' });
 
-  // ---- gable roof --------------------------------------------------------
-  // Two tilted slabs and a stepped gable end. Not reachable, so the collision is
-  // three stacked boxes rather than the true wedge — cheaper, and nothing can
-  // ever stand on the difference.
-  const over = 0.45;
-  const rise = ridge - eaves;
-  const runX = hw + over;
-  const ang = Math.atan2(rise, runX);
-  const slabLen = Math.hypot(runX, rise);
-  for (const sx of [-1, 1]) {
-    A.add('gb_dark', BOX(A),
-      LL(pm, sx * runX / 2, eaves + rise / 2, 0, 0, slabLen, 0.24, spec.d + over * 2, 0, -sx * ang),
-      { masks: [0.6, 0.45, 0.25] });
-  }
-  for (let i = 0; i < 3; i++) {
-    const f = i / 3;
-    const y = eaves + rise * f;
-    const w = spec.w * (1 - f) + 0.3;
-    A.box('concrete', ...worldOf(pm, 0, y + rise / 6, 0), w, rise / 3, spec.d, ryOf(pm));
-  }
-  // Gable ends: three stacked boxes standing in for the triangle. At this poly
-  // budget the step reads as a chamfer, and a real triangle would need its own
-  // geometry rather than the shared unit box.
+  // ---- flat refinery roof ------------------------------------------------
+  // The old pitched suburban roof was the single strongest "not a refinery"
+  // silhouette in the map. The LOW target uses a flat service roof, parapet,
+  // yellow safety rails and a compact HVAC/duct cluster.
+  A.add('gb_dark', BOX(A), LL(pm, 0, eaves + 0.10, 0, 0, spec.w + 0.55, 0.22, spec.d + 0.55), {
+    masks: [0.58, 0.42, 0.26],
+  });
+
+  // Parapet kerbs.
+  for (const sx of [-1, 1])
+    A.add('gb_grey', BOX_THIN(A), LL(pm, sx * (hw + 0.22), eaves + 0.37, 0, -H, spec.d + 0.35, 0.42, 0.16), null);
   for (const sz of [-1, 1])
-    for (let i = 0; i < 3; i++) {
-      const f = i / 3;
-      const w = spec.w * (1 - f);
-      pbox(A, pm, key, 0, eaves + rise * f + rise / 6, sz * hd, 0, w, rise / 3, t, [0.5, 0.5, 0.3]);
-    }
+    A.add('gb_grey', BOX_THIN(A), LL(pm, 0, eaves + 0.37, sz * (hd + 0.22), 0, spec.w + 0.35, 0.42, 0.16), null);
+
+  // Yellow safety railing on the street edge + one return. Sparse enough to be
+  // cheap, dense enough to give the skyline the same industrial rhythm as the
+  // reference screenshots.
+  const railY = eaves + 0.86;
+  A.add('gb_accent', BOX_THIN(A), LL(pm, hw + 0.31, railY, 0, -H, spec.d - 1.0, 0.06, 0.06), null);
+  A.add('gb_accent', BOX_THIN(A), LL(pm, hw + 0.31, railY - 0.34, 0, -H, spec.d - 1.0, 0.05, 0.05), null);
+  for (let z = -hd + 0.8; z <= hd - 0.8; z += 1.8)
+    A.add('gb_accent', BOX_THIN(A), LL(pm, hw + 0.31, railY - 0.18, z, 0, 0.055, 0.74, 0.055), null);
+
+  // Rooftop HVAC: a box, a darker fan face and two service pipes.
+  A.add('gb_grey', BOX(A), LL(pm, -1.5, eaves + 0.72, 1.35, 0, 1.7, 1.0, 1.25), {
+    masks: [0.66, 0.34, 0.22],
+  });
+  A.add('gb_dark', BOX_THIN(A), LL(pm, -0.62, eaves + 0.72, 1.35, -H, 0.05, 0.72, 0.78), null);
+  for (const dz of [-0.22, 0.22])
+    A.add('gb_grey', BOX_THIN(A), LL(pm, 0.55, eaves + 0.92, 1.35 + dz, 0, 0.13, 1.15, 0.13), null);
+
+  // Keep a simple collision lid: roof is not player-accessible but projectiles
+  // and ray tests should still hit a solid industrial mass.
+  A.box('concrete', ...worldOf(pm, 0, eaves + 0.12, 0), spec.w + 0.4, 0.28, spec.d + 0.4, ryOf(pm));
 
   // ---- porch -------------------------------------------------------------
   // A flat canopy on two posts over the front door. Overhead only: it is 3 m up
@@ -813,7 +839,7 @@ function buildSign(A, rng) {
     A.add('gb_grid', BOX(A), LL(IDENT, sx * poleX, 0.16, SIGN.z, 0, 0.8, 0.32, 0.8), { masks: [0.6, 0.5, 0.3] });
   }
   const span = poleX * 2;
-  A.add('gb_accent', BOX(A), LL(IDENT, 0, boardY + boardH / 2, SIGN.z, 0, span, boardH, boardT), {
+  A.add('gb_red', BOX(A), LL(IDENT, 0, boardY + boardH / 2, SIGN.z, 0, span, boardH, boardT), {
     masks: [0.7, 0.4, 0.2],
   });
   A.box('metal', 0, boardY + boardH / 2, SIGN.z, span, boardH, boardT);
@@ -848,6 +874,7 @@ function buildSheds(A, rng) {
     A.add('gb_dark', BOX(A), LL(IDENT, x, h + 0.14, z, 0, w + 0.3, 0.18, d + 0.3, 0, 0.1), {
       masks: [0.65, 0.45, 0.25],
     });
+    A.add('gb_red', BOX_THIN(A), LL(IDENT, x, h - 0.42, z + d / 2 + 0.03, 0, w - 0.3, 0.16, 0.05), null);
     // A door on the face that looks back at the street.
     A.add('gb_dark', BOX_THIN(A),
       LL(IDENT, x - Math.sign(x) * (w / 2 + 0.02), 1.05, z, 0, 0.06, 2.1, 1.0), { masks: [0.6, 0.5, 0.4] });
@@ -859,6 +886,53 @@ function buildSheds(A, rng) {
  * foliage, no vehicles. Every placement is filtered through `free()` so a crate
  * never lands inside a wall the occupancy tests believe is empty.
  */
+function buildRefinerySkyline(A) {
+  if (A.quality === 'performance') return;
+
+  const stack = A.cache('nuke:ref-stack', () => {
+    const g = new THREE.CylinderGeometry(0.48, 0.58, 1, 10, 1, false);
+    g.computeVertexNormals();
+    return g;
+  });
+  const tank = A.cache('nuke:ref-tank', () => {
+    const g = new THREE.CylinderGeometry(1.55, 1.55, 1, 12, 1, false);
+    g.computeVertexNormals();
+    return g;
+  });
+  const pipe = A.cache('nuke:ref-pipe', () => {
+    const g = new THREE.CylinderGeometry(0.11, 0.11, 1, 8, 1, false);
+    g.computeVertexNormals();
+    return g;
+  });
+
+  // Chimney stacks beyond the playable wall.
+  for (const [x, z, h] of [
+    [-31, -25, 11.5], [-27.8, -24.2, 8.8],
+    [31.5, 24.0, 12.5], [28.3, 23.5, 9.4],
+  ]) {
+    A.add('gb_white', stack, LL(IDENT, x, h / 2, z, 0, 1, h, 1), null);
+    for (const f of [0.72, 0.88])
+      A.add('gb_red', stack, LL(IDENT, x, h * f, z, 0, 1.06, 0.72, 1.06), null);
+  }
+
+  // Two storage tanks with red crown bands.
+  for (const [x, z, h] of [[-32.5, 6.5, 5.2], [32.0, -5.5, 6.0]]) {
+    A.add('gb_white', tank, LL(IDENT, x, h / 2, z, 0, 1, h, 1), null);
+    A.add('gb_red', tank, LL(IDENT, x, h - 0.42, z, 0, 1.03, 0.36, 1.03), null);
+  }
+
+  // Yellow pipe rack / catwalk silhouette across the far skyline.
+  for (const side of [-1, 1]) {
+    const z = side * 27.0;
+    for (const x of [-18, -9, 0, 9, 18])
+      A.add('gb_dark', BOX_THIN(A), LL(IDENT, x, 4.5, z, 0, 0.12, 7.0, 0.12), null);
+    for (const y of [4.0, 5.4, 6.7])
+      A.add('gb_accent', BOX_THIN(A), LL(IDENT, 0, y, z, 0, 38, 0.08, 0.08), null);
+    for (const x of [-12, 12])
+      A.add('gb_grey', pipe, LL(IDENT, x, 5.0, z - side * 0.45, 0, 1, 8.0, 1, 0, Math.PI / 2), null);
+  }
+}
+
 function addIndustrialArtifacts(A) {
   if (A.quality === 'performance') return;
 
@@ -940,7 +1014,7 @@ function addIndustrialArtifacts(A) {
   for (const [x, z] of [
     [-17.2, 8.8], [-16.55, 8.95], [17.4, -8.9],
   ]) {
-    A.add('gb_accent', drum, LL(IDENT, x, 0.41, z, 0, 1, 1, 1), {
+    A.add('gb_dark', drum, LL(IDENT, x, 0.41, z, 0, 1, 1, 1), {
       masks: [0.66, 0.42, 0.28],
     });
     A.add('gb_dark', thin, LL(IDENT, x, 0.22, z, 0, 0.60, 0.035, 0.60), null);
@@ -1035,17 +1109,8 @@ function dress(A, rng, stairFeet) {
   ];
   for (const [x, z, ry] of blocks) if (free(x, z, 0.9)) A.put('gb_block', x, 0.46, z, ry, 1);
 
-  // Parked cars make the street read as a lived-in suburban lane while also
-  // breaking long sightlines. Kept close to the kerbs so the centre route stays
-  // fast and readable.
-  for (const [x, z, ry] of [
-    [-4.35, -9.8, 0.03],
-    [4.30, 9.4, Math.PI - 0.04],
-    [-4.25, 2.0, 0.02],
-  ]) {
-    if (free(x, z, 1.35)) parkedCar(x, z, ry);
-  }
-
+  // The LOW refinery pass intentionally omits suburban parked cars. The
+  // forklift, barriers, crates and service equipment carry cover/readability.
   // ---- crates, on the ground and stacked ---------------------------------
   const crates = [
     [-23.5, -13.0], [-24.2, 7.0],
@@ -1128,6 +1193,7 @@ export function buildNuketown(A, rng) {
   buildWalls(A, rng);
   buildSheds(A, rng);
   buildSign(A, rng);
+  buildRefinerySkyline(A);
 
   const infos = [];
   for (const h of HOUSES) infos.push(buildHouse(A, rng, h));
