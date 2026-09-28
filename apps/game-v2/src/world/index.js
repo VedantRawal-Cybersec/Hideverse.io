@@ -638,11 +638,15 @@ export class WorldSystem {
       const range = this._lightRanges.get(l);
       if (range === undefined) {
         // Not registered for distance culling: its owner drives `visible`.
-        if (l.visible === true) n++;
+        // Zero-intensity pooled lights do not consume a useful shader slot.
+        if (l.visible === true && Math.abs(l.intensity) > 1e-5) n++;
         continue;
       }
-      // The renderer's test, verbatim: fade = 1 - smoothstep(d, .75r, 1.15r),
-      // light.visible = fade > 0.002.
+      // Mirror RenderSystem's active-light test. In particular, idle FX pool
+      // lights are permanently present in the scene but intensity 0; counting
+      // them here used to remove ballast while Render hid them, causing the
+      // shader point-light count to change and compile a new permutation.
+      if (Math.abs(l.intensity) <= 1e-5) continue;
       const d = l.position.distanceTo(this._camPos);
       if (1 - THREE.MathUtils.smoothstep(d, range * 0.75, range * 1.15) > 0.002) n++;
     }
