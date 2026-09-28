@@ -474,6 +474,40 @@ function buildGround(A, rng) {
       masks: [0.7, 0.4, 0.2],
     });
   }
+
+  if (richSurfaces) {
+    // Sparse low-poly palms, matching the clean low-graphics reference style:
+    // one trunk batch + one opaque leaf batch, no alpha cards, no wind shader.
+    const trunk = A.cache('nuke:palm-trunk', () => {
+      const g = new THREE.CylinderGeometry(0.58, 0.82, 1, 7, 1, false);
+      g.computeVertexNormals();
+      return g;
+    });
+    const leaf = BOX_THIN(A);
+    for (const [px, pz, ps, base] of [
+      [-24.0, -15.5, 1.0, 0.2],
+      [23.5, 15.0, 1.05, 1.1],
+      [-22.8, 14.5, 0.88, 2.3],
+      [22.5, -14.0, 0.92, -0.7],
+    ]) {
+      const th = 3.15 * ps;
+      A.add('gb_dark', trunk, LL(IDENT, px, th / 2, pz, 0, 0.34 * ps, th, 0.34 * ps), {
+        masks: [0.45, 0.34, 0.22],
+      });
+      for (let i = 0; i < 7; i++) {
+        const a = base + (i / 7) * Math.PI * 2;
+        const len = (1.65 + (i % 3) * 0.18) * ps;
+        const cx = px + Math.cos(a) * len * 0.45;
+        const cz = pz - Math.sin(a) * len * 0.45;
+        A.add(
+          'leaf_core',
+          leaf,
+          LL(IDENT, cx, th + 0.10 - (i % 2) * 0.10, cz, a, len, 0.055, 0.38 * ps, -0.22, 0),
+          { masks: [0.28, 0.34, 0.18] }
+        );
+      }
+    }
+  }
 }
 
 /**
@@ -583,6 +617,16 @@ function decorateOpenings(A, rng, pm, cx, cz, ry, y0, holes, wallT, floor) {
     A.add(frame, box, LL(panel, x, y - h / 2 + fw / 2, depth, 0, w, fw, 0.075), null);
     A.add(frame, box, LL(panel, x, y, depth, 0, 0.042, h - 0.09, 0.066), null);
     A.add(frame, box, LL(panel, x, y + h * 0.16, depth, 0, w - 0.10, 0.038, 0.066), null);
+
+    // Dark inner reveals: low-graphics games get much of their depth from
+    // value separation, not expensive AO. These four strips sit inside the wall
+    // thickness and make the opening read as a real recessed window instead of
+    // a bright hole cut through a flat box.
+    const rz = wallT * 0.34;
+    A.add(frame, box, LL(panel, x - w / 2 + 0.035, y, rz, 0, 0.035, h - 0.08, wallT * 0.48), null);
+    A.add(frame, box, LL(panel, x + w / 2 - 0.035, y, rz, 0, 0.035, h - 0.08, wallT * 0.48), null);
+    A.add(frame, box, LL(panel, x, y - h / 2 + 0.035, rz, 0, w - 0.08, 0.035, wallT * 0.48), null);
+    A.add(frame, box, LL(panel, x, y + h / 2 - 0.035, rz, 0, w - 0.08, 0.035, wallT * 0.48), null);
 
     // Protruding sill + lintel catch real light and create the missing facade
     // depth without another material or glass pass.
