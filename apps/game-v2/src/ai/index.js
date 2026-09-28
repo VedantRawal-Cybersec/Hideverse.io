@@ -1698,6 +1698,19 @@ export class AiSystem {
     if (this.inspect) return this._stageInspect();
     if (this._navPending) this._buildNav();
 
+    // The capture/perf tableau is a replacement scene, not an additive one.
+    // Previously the six staged soldiers were spawned on top of the normal
+    // six-bot garrison, so the LOW benchmark silently rendered twelve skinned
+    // actors and measured a workload the normal default match never creates.
+    // Clear prior staged bodies and the live garrison before composing the shot.
+    if (this._stagedAgents?.length) {
+      for (const a of [...this._stagedAgents]) {
+        if (this.agents.includes(a)) this.removeAgent(a);
+      }
+      this._stagedAgents.length = 0;
+    }
+    this.clearGarrison();
+
     const cam = this.ctx.camera;
     // A firefight the critic can actually see: drop the sun low enough to rake
     // down the street so the characters are lit, not silhouetted. This shot is
