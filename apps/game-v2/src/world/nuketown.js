@@ -385,6 +385,7 @@ function lowWall(A, key, x, z, ry, len, h, t, masks) {
 /* ─────────────────────────────────────────────────────────────────────────── */
 
 function buildGround(A, rng) {
+  const richSurfaces = !['performance', 'low'].includes(A.quality);
   // ------------------------------------------------------------- desert --
   const S = 190;
   const N = 46;
@@ -399,7 +400,7 @@ function buildGround(A, rng) {
     out[1] = 0.2 + fbm3(x * 0.28, 2.1, z * 0.28, 2) * 0.4;
     out[0] = 0.18;
   });
-  A.add('dirt', terrain, null);
+  A.add(richSurfaces ? 'dirt' : 'gb_grey', terrain, null);
   A.collideGeo('sand', terrain);
   terrain.dispose();
 
@@ -422,7 +423,7 @@ function buildGround(A, rng) {
     out[0] = 0.2 + n * 0.26;
     out[1] = 0.12 + n * 0.2;
   });
-  A.add('floor_concrete', apron, null);
+  A.add(richSurfaces ? 'floor_concrete' : 'gb_grid', apron, null);
   A.box('dirt', 0, -0.25, 0, W, 0.5, D);
   apron.dispose();
 
