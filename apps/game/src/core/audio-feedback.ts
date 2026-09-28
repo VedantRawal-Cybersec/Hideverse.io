@@ -11,15 +11,26 @@ export type AudioCue =
   | 'empty'
   | 'damage';
 
+const sampleFiles: Partial<Record<AudioCue, string>> = {
+  shoot: 'audio/kenney-fps/blaster_repeater.ogg',
+  hit: 'audio/kenney-fps/enemy_hurt.ogg',
+  eliminate: 'audio/kenney-fps/enemy_destroy.ogg',
+  reload: 'audio/kenney-fps/weapon_change.ogg',
+  damage: 'audio/kenney-fps/enemy_hurt.ogg',
+};
+
 export class AudioFeedback {
   private context: AudioContext | null = null;
   private unlocked = false;
   private lastDangerAt = 0;
+  private readonly buffers = new Map<AudioCue, AudioBuffer>();
+  private sampleLoadingStarted = false;
 
   constructor() {
     const unlock = (): void => {
       this.ensureContext();
       this.unlocked = true;
+      this.startSampleLoading();
       window.removeEventListener('pointerdown', unlock);
       window.removeEventListener('keydown', unlock);
     };
@@ -38,6 +49,53 @@ export class AudioFeedback {
       this.lastDangerAt = now;
     }
 
+    const sample = this.buffers.get(type);
+    if (sample) {
+      const source = context.createBufferSource();
+      const gain = context.createGain();
+      source.buffer = sample;
+      gain.gain.value =
+        type === 'shoot'
+          ? 0.2
+          : type === 'hit'
+            ? 0.14
+            : type === 'eliminate'
+              ? 0.2
+              : type === 'damage'
+                ? 0.16
+                : 0.12;
+      source.connect(gain);
+      gain.connect(context.destination);
+      source.start();
+      return;
+    }
+
+    this.playSynthFallback(context, type);
+  }
+
+  private startSampleLoading(): void {
+    if (this.sampleLoadingStarted) return;
+    this.sampleLoadingStarted = true;
+    const context = this.ensureContext();
+    if (!context) return;
+
+    for (const [type, file] of Object.entries(sampleFiles) as Array<[AudioCue, string]>) {
+      void fetch(`${import.meta.env.BASE_URL}${file}`)
+        .then((response) => {
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response.arrayBuffer();
+        })
+        .then((data) => context.decodeAudioData(data))
+        .then((buffer) => {
+          this.buffers.set(type, buffer);
+        })
+        .catch((error) => {
+          console.warn(`[Hideverse audio] ${file} unavailable; synth fallback retained.`, error);
+        });
+    }
+  }
+
+  private playSynthFallback(context: AudioContext, type: AudioCue): void {
     const settings: Record<AudioCue, [number, number, number]> = {
       interact: [420, 0.035, 0.06],
       objective: [660, 0.055, 0.11],
