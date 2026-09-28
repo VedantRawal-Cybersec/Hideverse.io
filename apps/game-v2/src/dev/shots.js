@@ -221,6 +221,13 @@ export function installShotApi(engine, { capture, lockstep = false } = {}) {
   }
 
   window.__RENDER_INFO__ = null;
+  // Browser-performance gate: expose the engine's own rolling timings without
+  // changing simulation or rendering. This is read-only telemetry used by CI
+  // and by manual performance debugging in a live browser.
+  window.__PERF_STATS__ = (frames = 600) => {
+    const n = Math.max(30, Math.min(1200, Number(frames) || 600));
+    return engine.perf.stats(n);
+  };
   engine.events.on('resize', () => {});
   const snapInfo = () => {
     const r = engine.ctx.peek('render');
