@@ -648,7 +648,10 @@ export class WeaponMaterials {
   constructor(ctx) {
     this.ctx = ctx;
     this.lib = ctx.peek('materials');
-    this.fastMode = ctx.config?.q?.prepass === false;
+    // Only the true smoothness tiers use the low-poly weapon proxy.
+    // Desktop Medium keeps the detailed authored weapon now that the world
+    // renderer is structurally cheap enough to afford it.
+    this.fastMode = ['performance', 'low'].includes(ctx.config?.quality);
     this.cache = new Map();
     this.owned = [];
     this.ownedTex = [];
