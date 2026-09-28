@@ -177,9 +177,9 @@ export class RenderSystem {
     // ---- renderer -------------------------------------------------------
     const renderer = new THREE.WebGLRenderer({
       canvas: ctx.canvas,
-      // The direct Medium path never reaches FXAA/TAA, so desktop Medium uses
-      // native backbuffer MSAA. Performance/Low remain single-sample.
-      antialias: cfg.quality === 'medium',
+      // Low-graphics target: single-sample backbuffer. The reference look gets
+      // its clarity from contrast/texture resolution, not expensive MSAA.
+      antialias: false,
       alpha: false,
       depth: true,
       stencil: false,
