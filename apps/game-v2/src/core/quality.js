@@ -31,8 +31,8 @@ const CPU_LIMIT_MS = 15000;
 export const GRAPHICS_STORAGE_KEY = 'cod_graphics_v1';
 export const GRAPHICS_MODES = ['auto', 'low', 'medium', 'high', 'ultra'];
 export const FPS_TARGETS = [30, 60, 90, 120, 144, 165, 240];
-const STORED_VERSIONS = [1, 2, 3, 4, 5];
-const CURRENT_VERSION = 5;
+const STORED_VERSIONS = [1, 2, 3, 4, 5, 6];
+const CURRENT_VERSION = 6;
 
 const DEFAULT_GRAPHICS = Object.freeze({
   version: CURRENT_VERSION,
@@ -81,7 +81,7 @@ export function loadGraphicsSettings(storage = browserStorage()) {
         : Number(raw.targetFps)
       : 60;
   let tier = TIER_ORDER.includes(raw.tier) ? raw.tier : null;
-  const tierCeiling = TIER_ORDER.includes(raw.tierCeiling) ? raw.tierCeiling : null;
+  let tierCeiling = TIER_ORDER.includes(raw.tierCeiling) ? raw.tierCeiling : null;
   let renderScale = Number.isFinite(raw.renderScale)
     ? quantizeScale(Math.min(1, Math.max(0.2, raw.renderScale)))
     : 1;
@@ -107,12 +107,20 @@ export function loadGraphicsSettings(storage = browserStorage()) {
     renderScale = 1;
     calibrated = false;
   }
-  // v5 recalibrates every Auto profile. The initial tier choice is now capped
-  // at a one-step drop below the medium boot pipeline, so old persisted tiers
-  // — especially aggressive falls straight to `performance` — must be re-done.
+  // v5 recalibrated every Auto profile.
   if (raw.version < 5 && mode === 'auto') {
     tier = null;
     renderScale = 1;
+    calibrated = false;
+  }
+  // v6 is the smoothness-first migration. Old Auto profiles may have promoted
+  // into high/ultra before the new mobile/desktop GPU budgets existed. Force
+  // one clean calibration from the light boot tier so an existing localStorage
+  // value cannot keep a device stuck on an expensive renderer.
+  if (raw.version < 6 && mode === 'auto') {
+    tier = null;
+    tierCeiling = null;
+    renderScale = QUALITY_PRESETS.low.renderScale;
     calibrated = false;
   }
   return {
@@ -165,7 +173,7 @@ export function resolveGraphicsBoot({ capture = false, explicitQuality = null, s
   const enabled = !capture && !explicitQuality;
   const quality =
     explicitQuality ??
-    (!enabled ? 'ultra' : settings.mode === 'auto' ? settings.tier ?? 'medium' : settings.mode);
+    (!enabled ? 'ultra' : settings.mode === 'auto' ? settings.tier ?? 'low' : settings.mode);
   return { enabled, quality };
 }
 
@@ -246,9 +254,12 @@ export function chooseCalibrationTier(p95Fps, targetFps) {
   // Calibration is measured while booted on the medium pipeline. Reaching the
   // target there does NOT mean the machine can also hold high or ultra, so the
   // step-up thresholds are intentionally conservative.
-  if (ratio >= 1.45) return 'ultra';
-  if (ratio >= 1.15) return 'high';
-  if (ratio >= 0.95) return 'medium';
+  // Smoothness-first thresholds: a tier only promotes when the measured machine
+  // has substantial headroom, rather than landing on a preset that merely
+  // touches the target and immediately oscillates under combat load.
+  if (ratio >= 1.75) return 'ultra';
+  if (ratio >= 1.35) return 'high';
+  if (ratio >= 1.08) return 'medium';
   // Likewise, missing the target on medium is not enough evidence to jump
   // straight to the ultra-cheap `performance` preset. Land on `low` first and
   // let the live adaptive policy demote again only if low still misses at its
