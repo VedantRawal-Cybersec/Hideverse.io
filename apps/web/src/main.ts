@@ -18,7 +18,7 @@ type AssetSummary = {
 };
 
 const siteBase = import.meta.env.BASE_URL;
-const gameHref = `${siteBase}game/index.html`;
+const gameHref = `${siteBase}game-v2/`;
 const mapHref = (id: string): string => `${gameHref}?map=${encodeURIComponent(id)}`;
 
 const maps = [
@@ -89,8 +89,8 @@ app.innerHTML = `
         <p class="eyebrow">LIVE DEVELOPMENT BUILD</p>
         <h1>HIDE.<br />PLAY.<br /><span>BELONG.</span></h1>
         <p class="lede">
-          Six maps, six game modes, shared objectives, adaptive PC/mobile rendering and realtime
-          room synchronization in one browser-first social-stealth runtime.
+          Eight competitive FPS maps, template-based gunplay, bots, advanced rendering, adaptive PC/mobile
+          graphics and realtime WebSocket rooms in one browser-first multiplayer runtime.
         </p>
         <div class="actions">
           <a class="button primary" href="${mapHref('ravenwood')}">Launch Current Build</a>
@@ -100,15 +100,15 @@ app.innerHTML = `
       <div class="hero-card">
         <div class="signal"><i></i> LIVE PIPELINE</div>
         <div class="card-grid">
-          <div><span>ENGINE</span><strong>PlayCanvas</strong></div>
-          <div><span>PHYSICS</span><strong>Rapier 3D</strong></div>
-          <div><span>MAPS / MODES</span><strong>6 / 6</strong></div>
+          <div><span>ENGINE</span><strong>Three.js / WebGL2</strong></div>
+          <div><span>FPS CORE</span><strong>Workmelt MIT Foundation</strong></div>
+          <div><span>FPS MAPS</span><strong>8 ENABLED</strong></div>
           <div><span>DEPLOY</span><strong>Render Live</strong></div>
         </div>
         <p>
           The public build is generated from the latest verified <code>main</code> commit. The
-          Render deployment provides authoritative rooms, SSE realtime peer updates, shared
-          objectives and replay state, with local room sync retained as a static-host fallback.
+          Render deployment provides the Game V2 WebSocket relay, room-ready flow, synchronized
+          competitive matches, bots, advanced weapon systems and adaptive graphics.
         </p>
       </div>
     </section>
