@@ -116,7 +116,12 @@ export class AiSystem {
     this.materials = new SoldierMaterials();
     // Contact occlusion under every actor. Without it the cast shadow alone
     // leaves them hovering: see grounding.js.
-    this.ground = new GroundShadows(this.root, 16);
+    const lowCostTier = ['performance', 'low'].includes(ctx.config.quality);
+    this.ground = new GroundShadows(this.root, ctx.config.quality === 'performance' ? 8 : lowCostTier ? 12 : 16);
+    // Animation LOD moves closer on smoothness tiers. Full-rate posing remains
+    // inside normal close combat range; distant silhouettes update less often.
+    this._animNear = lowCostTier ? 18 : ANIM_NEAR;
+    this._animFar = lowCostTier ? 34 : ANIM_FAR;
     this._variants = new Map();
     /** `${variant}|${liverySlot}` -> THREE.Material[] */
     this._liveryMats = new Map();
@@ -1338,8 +1343,10 @@ export class AiSystem {
     for (let i = 0; i < this.agents.length; i++) {
       const a = this.agents[i];
       a.syncHitboxes();
-      // Dead men keep their contact: a ragdoll on the floor needs it most.
-      g.addActor(a);
+      // Ground AO is purely visual. If relevance proved the actor cannot reach
+      // a pixel, do not spend bone queries + instance uploads on its contact
+      // patches. Dead visible ragdolls still keep their contact.
+      if (!a.lodIrrelevant) g.addActor(a);
     }
     g.end();
   }
@@ -1422,7 +1429,8 @@ export class AiSystem {
     const floorY = (this.grid ? -6 : -20);
     const sunY = Math.max(0.06, sun.y);
     const eye = this._eye.setFromMatrixPosition(cam.matrixWorld);
-    const shadowCut = this._actorShadowCut(ctx);
+    const shadowsEnabled = ctx.config?.q?.shadows !== false;
+    const shadowCut = shadowsEnabled ? this._actorShadowCut(ctx) : 0;
     const shadowCut2 = shadowCut * shadowCut;
     // Restore a little inside the drop distance, never at it.
     const shadowBack2 = (shadowCut * SHADOW_RESTORE) ** 2;
@@ -1437,7 +1445,7 @@ export class AiSystem {
       const s = this._sphere.copy(bs).applyMatrix4(a.mesh.matrixWorld);
       s.radius += 4;
       let visible = this._frustum.intersectsSphere(s);
-      if (!visible) {
+      if (!visible && shadowsEnabled) {
         const sweep = this._sweep;
         const tMax = Math.min(320, (s.center.y - floorY) / sunY);
         const step = Math.max(2, s.radius * 0.9);
@@ -1463,14 +1471,14 @@ export class AiSystem {
       if (!visible) a.animEvery = 3;
       else {
         const e = a.animEvery;
-        const near2 = (ANIM_NEAR + (e === 1 ? ANIM_BAND : 0)) ** 2;
-        const far2 = (ANIM_FAR + (e <= 2 ? ANIM_BAND : 0)) ** 2;
+        const near2 = (this._animNear + (e === 1 ? ANIM_BAND : 0)) ** 2;
+        const far2 = (this._animFar + (e <= 2 ? ANIM_BAND : 0)) ** 2;
         a.animEvery = d2 <= near2 ? 1 : d2 <= far2 ? 2 : 3;
       }
 
       // ---- sun shadow ----
-      let noShadow = !visible;
-      if (visible) {
+      let noShadow = !visible || !shadowsEnabled;
+      if (visible && shadowsEnabled) {
         const wasOff = a.mesh.userData.owNoShadow === true;
         noShadow = wasOff ? d2 > shadowBack2 : d2 > shadowCut2;
       }
