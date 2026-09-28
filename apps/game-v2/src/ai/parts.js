@@ -344,6 +344,44 @@ export function headMesh(nz, base, p = {}) {
 }
 
 /**
+ * Low-poly facial anatomy for the exposed eye/temple region.
+ *
+ * This deliberately stays tiny: one merged nose bridge/tip plus both ears.
+ * The goal is not close-up facial animation; it is making a combatant read as
+ * a human instead of a coloured mannequin while preserving the shared skinned
+ * geometry and zero-texture character path.
+ */
+export function faceFeatures(base) {
+  const out = emptyMesh();
+  const bx = base[0], by = base[1], bz = base[2];
+
+  const bridge = boxRound(0.018, 0.045, 0.018, {
+    n: 2.6,
+    seg: F(10),
+    rows: R(4),
+    roundY: 0.7,
+  });
+  place(bridge, bx, by + 0.098, bz + 0.094, -0.12, 0, 0);
+  computeNormals(bridge);
+  appendMesh(out, bridge);
+
+  const tip = ellipsoid(0.021, 0.017, 0.018, { seg: F(10), rows: R(6) });
+  place(tip, bx, by + 0.073, bz + 0.107);
+  computeNormals(tip);
+  appendMesh(out, tip);
+
+  for (const side of [-1, 1]) {
+    const ear = ellipsoid(0.012, 0.027, 0.009, { seg: F(8), rows: R(5) });
+    place(ear, bx + side * 0.089, by + 0.108, bz - 0.002, 0, 0, side * 0.1);
+    computeNormals(ear);
+    appendMesh(out, ear);
+  }
+
+  computeNormals(out);
+  return out;
+}
+
+/**
  * Balaclava / shemagh wrap over the lower face and neck.
  *
  * The wrap is not just a dome: the thing that makes a covered face read as a
