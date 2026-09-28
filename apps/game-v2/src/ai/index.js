@@ -54,7 +54,7 @@
  */
 
 import * as THREE from 'three';
-import { SoldierMaterials, liveryFor, liveryCss, BOT_SLOT } from './livery.js';
+import { SoldierMaterials, liveryFor, liveryCss, fastSlotRgb, BOT_SLOT } from './livery.js';
 import { buildSoldier, resolveMaterials, MATERIAL_SLOTS, VARIANTS } from './soldier.js';
 import { RIG } from './rig.js';
 import { NavGrid, CoverMap } from './nav.js';
@@ -132,6 +132,8 @@ export class AiSystem {
     this._variants = new Map();
     /** `${variant}|${liverySlot}` -> THREE.Material[] */
     this._liveryMats = new Map();
+    /** Per-livery one-draw skinned geometry for Low/Performance. */
+    this._singleDrawGeos = new Map();
     /** Livery slots handed to bots. Players' slots come from the relay. */
     this._botSlots = new Set();
     this.agents = [];
@@ -624,6 +626,60 @@ export class AiSystem {
       this._liveryMats.set(key, mats);
     }
     return mats;
+  }
+
+  /**
+   * Geometry for one visual variant/livery.
+   *
+   * Low/Performance still submit ONE skinned draw per soldier, but now bake the
+   * authored material identity into vertex colours: uniform cloth, dark nylon
+   * kit, tinted plate, real skin, black polymer/rubber and steel weapon parts.
+   * This is visual-only; skin indices/weights, hitboxes and animation are
+   * unchanged.
+   */
+  geometryFor(variantName, slot = 0) {
+    const def = this.variant(variantName);
+    if (!this._singleDrawCharacters) return def.geometry;
+
+    const key = `${variantName}|${slot | 0}`;
+    let geo = this._singleDrawGeos.get(key);
+    if (geo) return geo;
+
+    geo = def.geometry.clone();
+    const pos = geo.getAttribute('position');
+    const srcColor = def.geometry.getAttribute('color');
+    let outColor = srcColor?.clone?.();
+    if (!outColor && pos) {
+      const arr = new Float32Array(pos.count * 3);
+      arr.fill(1);
+      outColor = new THREE.BufferAttribute(arr, 3);
+    }
+    if (outColor) geo.setAttribute('color', outColor);
+
+    const index = geo.getIndex();
+    const livery = liveryFor(slot);
+    if (outColor) {
+      for (const group of geo.groups) {
+        const slotName = def.materialNames[group.materialIndex] ?? 'polymer';
+        const rgb = fastSlotRgb(slotName, livery);
+        const end = Math.min(group.start + group.count, index ? index.count : pos.count);
+        for (let p = group.start; p < end; p++) {
+          const vi = index ? index.getX(p) : p;
+          const br = srcColor ? srcColor.getX(vi) : 1;
+          const bg = srcColor ? srcColor.getY(vi) : 1;
+          const bb = srcColor ? srcColor.getZ(vi) : 1;
+          outColor.setXYZ(vi, br * rgb[0], bg * rgb[1], bb * rgb[2]);
+        }
+      }
+      outColor.needsUpdate = true;
+    }
+
+    // A single group guarantees one renderer submission even though the source
+    // geometry was authored as ten material groups.
+    geo.clearGroups();
+    geo.addGroup(0, index ? index.count : pos.count, 0);
+    this._singleDrawGeos.set(key, geo);
+    return geo;
   }
 
   variant(name) {
@@ -1766,6 +1822,8 @@ export class AiSystem {
     this.ground?.dispose();
     for (const v of this._variants.values()) v.geometry.dispose();
     this._variants.clear();
+    for (const g of this._singleDrawGeos.values()) g.dispose();
+    this._singleDrawGeos.clear();
     // The arrays are per (variant, livery) but the materials inside them are
     // owned by `SoldierMaterials`, so dropping the arrays and disposing the
     // owner frees each material exactly once.
