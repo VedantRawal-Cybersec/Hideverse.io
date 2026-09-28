@@ -76,7 +76,7 @@ const chromeProc = spawn(chrome,[
   '--enable-webgl',
   '--window-size=1280,720',
   '--remote-debugging-address=127.0.0.1',
-  '--remote-debugging-port=9222',
+  '--remote-debugging-port=0',
   '--user-data-dir='+userData,
   'about:blank'
 ],{stdio:['ignore','ignore','pipe'],env:chromeEnv});
@@ -85,14 +85,23 @@ chromeProc.stderr.on('data',(d)=>{ stderr += String(d); });
 
 const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
 let version;
-for (let i=0;i<80;i++) {
+let debugPort = null;
+const activePortFile = path.join(userData, 'DevToolsActivePort');
+for (let i=0;i<160;i++) {
   try {
-    const r=await fetch('http://127.0.0.1:9222/json/version');
-    if (r.ok) { version=await r.json(); break; }
+    if (fs.existsSync(activePortFile)) {
+      const first = fs.readFileSync(activePortFile, 'utf8').trim().split(/\r?\n/)[0];
+      const p = Number(first);
+      if (Number.isFinite(p) && p > 0) debugPort = p;
+    }
+    if (debugPort) {
+      const r=await fetch(`http://127.0.0.1:${debugPort}/json/version`);
+      if (r.ok) { version=await r.json(); break; }
+    }
   } catch {}
   await sleep(100);
 }
-if (!version) {
+if (!version || !debugPort) {
   throw new Error(
     'Chrome DevTools endpoint did not start' +
     (chromeProc.exitCode !== null ? ` (exit ${chromeProc.exitCode})` : '') +
@@ -100,7 +109,7 @@ if (!version) {
   );
 }
 
-const targets = await (await fetch('http://127.0.0.1:9222/json')).json();
+const targets = await (await fetch(`http://127.0.0.1:${debugPort}/json`)).json();
 const target = targets.find((x)=>x.type==='page');
 if (!target?.webSocketDebuggerUrl) throw new Error('No Chrome page target');
 
