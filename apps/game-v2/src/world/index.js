@@ -210,7 +210,7 @@ export class WorldSystem {
     materials.setGroundLevel?.(0);
 
     const t0 = performance.now();
-    const A = new Assembler({ materials, rng, render });
+    const A = new Assembler({ materials, rng, render, quality: ctx.config.quality });
     this.A = A;
     A.setTransform(map.transform.yaw, map.transform.tx, map.transform.tz);
 
