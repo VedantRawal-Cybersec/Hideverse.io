@@ -812,3 +812,185 @@ h1 {
     min-height: 48px;
   }
 }
+
+
+.weapon-hud {
+  position: absolute;
+  z-index: 7;
+  left: max(18px, env(safe-area-inset-left));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-areas:
+    'name ammo'
+    'state ammo';
+  align-items: end;
+  gap: 2px 12px;
+  min-width: 220px;
+  padding: 11px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background: rgba(7, 10, 14, 0.72);
+  backdrop-filter: blur(10px);
+  pointer-events: none;
+}
+
+.weapon-hud > span {
+  grid-area: name;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.weapon-hud > i {
+  grid-area: state;
+  color: rgba(141, 240, 168, 0.78);
+  font-size: 7px;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+}
+
+.weapon-ammo {
+  grid-area: ammo;
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  min-width: 90px;
+}
+
+.weapon-ammo b {
+  font-size: 31px;
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+}
+
+.weapon-ammo small {
+  margin-left: 5px;
+  color: rgba(255, 255, 255, 0.46);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.hit-marker {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  top: 50%;
+  width: 28px;
+  height: 28px;
+  transform: translate(-50%, -50%) scale(0.8);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.hit-marker::before,
+.hit-marker::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 19px;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.45);
+}
+
+.hit-marker::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.hit-marker::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.hit-marker.is-visible {
+  animation: hit-marker-pop 150ms ease-out both;
+}
+
+.hit-marker.is-elimination::before,
+.hit-marker.is-elimination::after {
+  background: #ffbf70;
+  box-shadow: 0 0 10px rgba(255, 165, 80, 0.7);
+}
+
+@keyframes hit-marker-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.65);
+  }
+  35% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.88);
+  }
+}
+
+#app.is-ads .crosshair {
+  opacity: 0.2;
+  transform: scale(0.55);
+}
+
+@media (pointer: coarse), (max-width: 780px) {
+  .weapon-hud {
+    left: 12px;
+    bottom: max(164px, calc(env(safe-area-inset-bottom) + 156px));
+    min-width: 155px;
+    padding: 8px 9px;
+    gap: 1px 8px;
+  }
+
+  .weapon-hud > span {
+    max-width: 92px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 6px;
+  }
+
+  .weapon-hud > i {
+    font-size: 6px;
+  }
+
+  .weapon-ammo {
+    min-width: 64px;
+  }
+
+  .weapon-ammo b {
+    font-size: 24px;
+  }
+
+  .weapon-ammo small {
+    font-size: 9px;
+  }
+
+  .mobile-buttons {
+    grid-template-columns: repeat(2, 72px);
+    gap: 7px;
+  }
+
+  .mobile-buttons button {
+    min-height: 48px;
+  }
+
+  .mobile-buttons .combat-touch {
+    min-height: 64px;
+    border-color: rgba(255, 197, 106, 0.52);
+    background: rgba(255, 151, 65, 0.2);
+    color: #ffe0b8;
+  }
+
+  #mobile-ads {
+    border-color: rgba(126, 166, 255, 0.45);
+    color: #c8d8ff;
+  }
+
+  #mobile-reload {
+    border-color: rgba(255, 255, 255, 0.26);
+  }
+}
