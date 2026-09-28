@@ -1,0 +1,205 @@
+name: Temporary V2 Map QA
+
+on:
+  push:
+    branches:
+      - fix/game-v2-map-switching
+
+permissions:
+  contents: read
+
+jobs:
+  map-direct:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        map: [wilmot, fishers, rust, nuketown, bloodgulch, dome, shivam, sitework]
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.23.2
+
+      - name: Build production V2
+        run: |
+          npm install --no-audit --no-fund
+          npm run build:live
+
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Start production server
+        run: |
+          PORT=43993 npm run start --workspace @hideverse/web > /tmp/hideverse-v2.log 2>&1 &
+          for i in {1..100}; do
+            if curl -fsS http://127.0.0.1:43993/game-v2/ >/dev/null; then exit 0; fi
+            sleep 0.2
+          done
+          cat /tmp/hideverse-v2.log
+          exit 1
+
+      - name: Verify map boots
+        env:
+          MAP_ID: ${{ matrix.map }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch({ headless: true });
+          const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+          const page = await context.newPage();
+          const pageErrors = [];
+          const consoleErrors = [];
+          const failedRequests = [];
+          page.on('pageerror', (e) => pageErrors.push(String(e)));
+          page.on('console', (m) => {
+            if (m.type() === 'error') consoleErrors.push(m.text());
+          });
+          page.on('requestfailed', (r) => failedRequests.push({ url: r.url(), error: r.failure()?.errorText }));
+
+          try {
+            const started = Date.now();
+            await page.goto(
+              `http://127.0.0.1:43993/game-v2/?map=${process.env.MAP_ID}&mp=0`,
+              { waitUntil: 'domcontentloaded', timeout: 90000 },
+            );
+            await page.waitForFunction(() => window.__READY__ === true, null, { timeout: 90000 });
+            const result = await page.evaluate(() => {
+              const engine = window.__ENGINE__;
+              let world = null;
+              try { world = engine?.ctx?.get?.('world') ?? null; } catch {}
+              const canvas = document.querySelector('#game')?.getBoundingClientRect();
+              return {
+                ready: window.__READY__ === true,
+                frame: engine?.time?.frame ?? 0,
+                mapId: world?.mapId ?? null,
+                maps: world?.maps?.map?.((m) => m.id) ?? [],
+                canvas: canvas ? { width: canvas.width, height: canvas.height } : null,
+              };
+            });
+            console.log('[v2-map-qa]', JSON.stringify({
+              map: process.env.MAP_ID,
+              elapsedMs: Date.now() - started,
+              result,
+              pageErrors,
+              consoleErrors,
+              failedRequests,
+            }));
+            if (!result.ready || result.frame < 3) throw new Error('V2 did not reach running state');
+            if (result.mapId !== process.env.MAP_ID) {
+              throw new Error(`Expected map ${process.env.MAP_ID}, got ${result.mapId}`);
+            }
+            if (!result.canvas || result.canvas.width < 300 || result.canvas.height < 300) {
+              throw new Error('V2 canvas not playable');
+            }
+            if (pageErrors.length || consoleErrors.length || failedRequests.length) {
+              throw new Error('V2 runtime/network errors detected');
+            }
+          } finally {
+            await context.close();
+            await browser.close();
+          }
+          NODE
+
+  map-switch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.23.2
+      - name: Build production V2
+        run: |
+          npm install --no-audit --no-fund
+          npm run build:live
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start production server
+        run: |
+          PORT=43993 npm run start --workspace @hideverse/web > /tmp/hideverse-v2.log 2>&1 &
+          for i in {1..100}; do
+            if curl -fsS http://127.0.0.1:43993/game-v2/ >/dev/null; then exit 0; fi
+            sleep 0.2
+          done
+          cat /tmp/hideverse-v2.log
+          exit 1
+      - name: Verify lobby map switching
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch({ headless: true });
+          const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+          const page = await context.newPage();
+          const errors = [];
+          page.on('pageerror', (e) => errors.push(String(e)));
+          page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+
+          const mapId = async () => page.evaluate(() => {
+            try { return window.__ENGINE__?.ctx?.get?.('world')?.mapId ?? null; }
+            catch { return null; }
+          });
+
+          try {
+            await page.goto('http://127.0.0.1:43993/game-v2/?map=wilmot&mp=0', {
+              waitUntil: 'domcontentloaded',
+              timeout: 90000,
+            });
+            await page.waitForFunction(() => window.__READY__ === true, null, { timeout: 90000 });
+            if (await mapId() !== 'wilmot') throw new Error('Initial Wilmot map did not load');
+
+            const targets = [
+              ['Rust', 'rust'],
+              ['Nuketown', 'nuketown'],
+              ['Dome', 'dome'],
+              ['Site Work', 'sitework'],
+            ];
+
+            for (const [label, id] of targets) {
+              const started = Date.now();
+              const cards = page.locator('.mapcard');
+              const count = await cards.count();
+              let clicked = false;
+              for (let i = 0; i < count; i += 1) {
+                const card = cards.nth(i);
+                const name = (await card.locator('.nm').textContent())?.trim();
+                if (name === label) {
+                  await card.click();
+                  clicked = true;
+                  break;
+                }
+              }
+              if (!clicked) throw new Error(`Map card missing: ${label}`);
+
+              await page.waitForFunction(
+                (expected) => {
+                  try { return window.__ENGINE__?.ctx?.get?.('world')?.mapId === expected; }
+                  catch { return false; }
+                },
+                id,
+                { timeout: 20000 },
+              );
+
+              const loadingText = await page.locator('[data-map-note]').textContent();
+              console.log('[v2-map-switch]', JSON.stringify({
+                label,
+                id,
+                elapsedMs: Date.now() - started,
+                active: await mapId(),
+                note: loadingText,
+              }));
+              if (await mapId() !== id) throw new Error(`Map switch failed: ${id}`);
+            }
+
+            if (errors.length) throw new Error(`Runtime errors: ${errors.join(' | ')}`);
+          } finally {
+            await context.close();
+            await browser.close();
+          }
+          NODE
