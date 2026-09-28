@@ -117,6 +117,10 @@ export class WorldSystem {
     this.root.matrixAutoUpdate = false;
     ctx.scene.add(this.root);
 
+    // Competitive tiers keep a deliberately small, FIXED point-light count.
+    // The old universal target of 20 made every lit fragment evaluate twenty
+    // point lights even when most slots were black ballast.
+    this._lightSlots = Math.max(0, ctx.config?.q?.maxPointLights ?? LIGHT_SLOTS);
     this._addBallast();
 
     // ONE seed for the level, drawn once. `ctx.rng.fork()` is exactly
@@ -283,7 +287,7 @@ export class WorldSystem {
     // target has to fall back to the budget or a busy map raises it forever.
     this._pointLightsFrame = -1e9;
     this._pointLights.length = 0;
-    this._lightTarget = LIGHT_SLOTS;
+    this._lightTarget = this._lightSlots;
   }
 
   // ----------------------------------------------------------------- spawns --
@@ -575,7 +579,7 @@ export class WorldSystem {
    */
   _addBallast() {
     this._ballast = [];
-    for (let i = 0; i < LIGHT_SLOTS + 4; i++) {
+    for (let i = 0; i < this._lightSlots + 4; i++) {
       const l = new THREE.PointLight(0x000000, 0, 0.01, 2);
       l.name = `world_light_ballast_${i}`;
       l.castShadow = false;
@@ -643,10 +647,10 @@ export class WorldSystem {
       if (1 - THREE.MathUtils.smoothstep(d, range * 0.75, range * 1.15) > 0.002) n++;
     }
 
-    // A subsystem can always out-run the pool; adopting the higher count costs
-    // one compile, once, instead of one per crossing.
-    if (n > this._lightTarget) this._lightTarget = n;
-    const want = this._lightTarget - n;
+    // RenderSystem caps registered point lights to this same quality budget.
+    // Never grow the shader permutation above it: that old behaviour let a busy
+    // street permanently turn a Performance session back into a 20-light shader.
+    const want = Math.max(0, this._lightTarget - Math.min(n, this._lightTarget));
     const pool = this._ballast;
     for (let i = 0; i < pool.length; i++) {
       const v = i < want;
