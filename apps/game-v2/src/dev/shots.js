@@ -228,6 +228,37 @@ export function installShotApi(engine, { capture, lockstep = false } = {}) {
     const n = Math.max(30, Math.min(1200, Number(frames) || 600));
     return engine.perf.stats(n);
   };
+
+  // Approximate visible scene cost by scene. This is intentionally based on
+  // renderer submission rules (material groups + instancing), not mesh count,
+  // so it identifies whether the world or the always-visible viewmodel is the
+  // dominant source of draw/triangle pressure.
+  const sceneCost = (root) => {
+    let meshes = 0, draws = 0, triangles = 0, skinned = 0, instanced = 0;
+    root?.traverseVisible?.((o) => {
+      if (!o?.isMesh || o.material?.visible === false) return;
+      meshes++;
+      if (o.isSkinnedMesh) skinned++;
+      if (o.isInstancedMesh) instanced++;
+      const geo = o.geometry;
+      if (!geo) return;
+      const indexCount = geo.index?.count ?? geo.getAttribute?.('position')?.count ?? 0;
+      const groups = Array.isArray(o.material) && geo.groups?.length ? geo.groups : null;
+      const copies = o.isInstancedMesh ? Math.max(0, o.count ?? 0) : 1;
+      if (groups) {
+        draws += groups.filter((g) => (o.material[g.materialIndex]?.visible ?? true)).length;
+      } else {
+        draws += 1;
+      }
+      triangles += (indexCount / 3) * copies;
+    });
+    return { meshes, draws, triangles: Math.round(triangles), skinned, instanced };
+  };
+  window.__SCENE_STATS__ = () => ({
+    world: sceneCost(engine.ctx.scene),
+    view: sceneCost(engine.ctx.viewScene),
+  });
+
   engine.events.on('resize', () => {});
   const snapInfo = () => {
     const r = engine.ctx.peek('render');
