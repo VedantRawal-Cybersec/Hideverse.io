@@ -1224,7 +1224,7 @@ export class RenderSystem {
       stencilBuffer: false,
     });
 
-    this.gbuffer.setSize(rw, rh);
+    if (this.needsPrepass) this.gbuffer.setSize(rw, rh);
     this.gtao?.setSize(rw, rh);
     this.contact?.setSize(rw, rh);
     this.ssr?.setSize(rw, rh);
@@ -1243,9 +1243,15 @@ export class RenderSystem {
     this.composite.uniforms.uResolution.value.set(rw, rh);
     if (this.fxaa) this.fxaa.uniforms.uTexel.value.set(1 / rw, 1 / rh);
 
-    this.depthTexture = this.gbuffer.depthTexture;
-    this.velocityTexture = this.gbuffer.velocityTexture;
-    this.normalTexture = this.gbuffer.normalTexture;
+    if (this.needsPrepass) {
+      this.depthTexture = this.gbuffer.depthTexture;
+      this.velocityTexture = this.gbuffer.velocityTexture;
+      this.normalTexture = this.gbuffer.normalTexture;
+    } else {
+      this.depthTexture = null;
+      this.velocityTexture = null;
+      this.normalTexture = null;
+    }
 
     for (const p of this.passes) p.resize?.(rw, rh);
     // TAA history is resolution-bound and must always go.
