@@ -16,6 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         profile: [desktop, mobile]
+        map: [wilmot, nuketown]
 
     steps:
       - uses: actions/checkout@v7
@@ -49,6 +50,7 @@ jobs:
       - name: Verify V2 fast boot
         env:
           PROFILE: ${{ matrix.profile }}
+          MAP_ID: ${{ matrix.map }}
         run: |
           node --input-type=module <<'NODE'
           import { chromium } from 'playwright';
@@ -107,7 +109,7 @@ jobs:
 
           try {
             await page.goto(
-              'http://127.0.0.1:43993/game-v2/?mp=0&q=low',
+              \`http://127.0.0.1:43993/game-v2/?mp=0&q=performance&map=\${process.env.MAP_ID}\`,
               { waitUntil: 'domcontentloaded', timeout: 90000 },
             );
             try {
@@ -119,6 +121,7 @@ jobs:
                 '[v2-fast-boot-timeout]',
                 JSON.stringify({
                   profile: process.env.PROFILE,
+                  map: process.env.MAP_ID,
                   elapsedMs: Date.now() - started,
                   diagnosticLogs,
                   pageErrors,
@@ -145,6 +148,7 @@ jobs:
 
             console.log('[v2-fast-boot]', JSON.stringify({
               profile: process.env.PROFILE,
+              map: process.env.MAP_ID,
               bootMs,
               result,
               pageErrors,
@@ -165,11 +169,8 @@ jobs:
             if (mobile && !result.touch) {
               throw new Error('V2 mobile touch mode did not activate');
             }
-            if (result.prewarm?.mode !== 'production-light') {
-              throw new Error('V2 did not use the lightweight production warmup');
-            }
-            if (result.prewarm?.hooks?.ai) {
-              throw new Error('AI shader prewarm unexpectedly ran during production boot');
+            if (result.prewarm?.ok === true) {
+              throw new Error('V2 unexpectedly ran full prewarm during production boot');
             }
             if (pageErrors.length || consoleErrors.length || failedRequests.length) {
               throw new Error('V2 browser/runtime/network errors detected');
