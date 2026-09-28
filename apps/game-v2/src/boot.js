@@ -64,7 +64,7 @@ if (initialBoot.enabled && graphics.mode === 'auto') {
   graphics = saveGraphicsSettings(prepareAutoSettings(graphics, { signature, refreshHz }));
 }
 
-const { enabled: adaptiveEnabled, quality: bootQuality } = resolveGraphicsBoot({
+let { enabled: adaptiveEnabled, quality: bootQuality } = resolveGraphicsBoot({
   capture,
   explicitQuality,
   settings: graphics,
@@ -75,6 +75,27 @@ const controls = capture ? { ...DEFAULT_CONTROLS } : loadControlSettings();
 // Touch mode never applies to a capture: the pixel gate frames a desktop HUD,
 // and an overlay of thumb controls in every baseline would be a visual change.
 const touchMode = !capture && detectTouchMode(params);
+
+// Phones/tablets get a hard Auto safety envelope before WebGL allocates the
+// expensive render targets. High-DPI mobile screens are the worst case for a
+// browser FPS: DPR 3 at 1440x3200 can request more pixels than a desktop 4K
+// monitor while running a much smaller GPU. Start at Performance, allow Auto to
+// prove its way up to Low, and never let a short quiet-scene benchmark promote
+// a touch device into desktop SSR/GTAO/4-cascade territory.
+if (adaptiveEnabled && graphics.mode === 'auto' && touchMode) {
+  const mobileScale = 0.55;
+  const tooHeavy = !graphics.tier || ['medium', 'high', 'ultra'].includes(graphics.tier);
+  graphics = saveGraphicsSettings({
+    ...graphics,
+    tier: tooHeavy ? 'performance' : graphics.tier,
+    tierCeiling: 'low',
+    renderScale: tooHeavy ? mobileScale : Math.min(graphics.renderScale, 0.72),
+    calibrated: true,
+    targetFps: 60,
+  });
+  bootQuality = graphics.tier;
+}
+
 // Menus (the lobby, the pause panel, the net overlay) read this class to grow
 // hit targets and drop keyboard hints; it is set before any UI exists.
 document.body.classList.toggle('wm-touch', touchMode);
