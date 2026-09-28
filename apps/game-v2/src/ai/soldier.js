@@ -23,6 +23,7 @@ const MATERIALS = {
   gear: { tile: 0.26 },
   boot: { tile: 0.26 },
   accent: { tile: 0.20 },
+  skin: { tile: 0.20 },
   polymer: { tile: 0.15 },
   steel: { tile: 0.18 },
   rubber: { tile: 0.11 },
@@ -501,12 +502,20 @@ export function buildSoldier(name, { rng, materials, livery = liveryFor(0) }) {
   /* ---------------- head --------------------------------------------- */
   const wrapped = V.faceWrap;
   B.add(P.headMesh(nz, head, {}), {
-    material: 'accent',
+    material: 'skin',
     bone: 'Head',
     colour: [1, 1, 1],
-    grime: 0.3,
-    dirt: 0.06,
+    grime: 0.18,
+    dirt: 0.04,
     name: 'head',
+  });
+  B.add(P.faceFeatures(head), {
+    material: 'skin',
+    bone: 'Head',
+    colour: [0.96, 0.96, 0.96],
+    grime: 0.16,
+    dirt: 0.03,
+    name: 'faceFeatures',
   });
   // NO FACE. The nose, the ears and the two eyeballs that used to go on here
   // are gone, and `headMesh` no longer warps a brow, sockets, cheekbones or a
@@ -519,7 +528,7 @@ export function buildSoldier(name, { rng, materials, livery = liveryFor(0) }) {
     P.limbTube(nz, [head[0], head[1] - 0.10, head[2] - 0.012], [head[0], head[1] - 0.05, head[2] - 0.008], [head[0], head[1], head[2]],
       [0.058, 0.056, 0.054], { rings: 5, seg: 14, fold: 0.001 }),
     {
-      material: 'accent',
+      material: 'skin',
       bones: ['Neck', 'Head', 'Spine2'],
       bias: [1, 0.7, 0.4],
       grime: 0.5,
@@ -731,7 +740,7 @@ export function buildSoldier(name, { rng, materials, livery = liveryFor(0) }) {
  * the pixel gate. `buildSoldier` asserts the order below still matches.
  */
 export const MATERIAL_SLOTS = Object.freeze([
-  'cloth', 'gear', 'boot', 'rubber', 'plate', 'polymer', 'accent', 'glass', 'steel',
+  'cloth', 'gear', 'boot', 'rubber', 'plate', 'polymer', 'skin', 'accent', 'glass', 'steel',
 ]);
 
 /**

@@ -76,6 +76,13 @@ export const BAND = Object.freeze({
 });
 
 /** Neutral hardware albedos. Helmet shells, optics, weapon, soles, visor. */
+const SKIN_TONES = Object.freeze([
+  [0.42, 0.23, 0.14],
+  [0.30, 0.15, 0.085],
+  [0.52, 0.30, 0.18],
+  [0.20, 0.095, 0.052],
+]);
+
 export const HARDWARE = Object.freeze({
   polymer: [0.020, 0.021, 0.023],
   steel: [0.034, 0.035, 0.038],
@@ -185,6 +192,7 @@ export function liveryFor(slot) {
     carrier: hue.map((c) => c * BAND.carrierHue + BAND.carrierBase),
     kit: [BAND.kit, BAND.kit, BAND.kit],
     trim: [BAND.trim, BAND.trim, BAND.trim],
+    skin: SKIN_TONES[s % SKIN_TONES.length],
   });
   cache.set(s, l);
   return l;
@@ -253,6 +261,7 @@ const SLOTS = {
   plate: { pick: 'carrier', rough: 0.44, metal: 0 },
   polymer: { fixed: HARDWARE.polymer, rough: 0.36, metal: 0 },
   accent: { pick: 'accent', rough: 0.62, metal: 0 },
+  skin: { pick: 'skin', rough: 0.72, metal: 0 },
   glass: { fixed: HARDWARE.glass, rough: 0.11, metal: 0, env: 1.4, rim: 0.5 },
   steel: { fixed: HARDWARE.steel, rough: 0.42, metal: 1 },
 };
