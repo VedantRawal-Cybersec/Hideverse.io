@@ -785,34 +785,71 @@ export const PALETTE = {
    * not a material, it is a blown highlight with a mesh behind it.
    */
   ...(() => {
-    const FLAT = {
-      vertexMasks: false,
-      weather: [0, 0, 0, 0],
-      macro: [0.05, 0, 0, 0],
-      macroBig: [1, 0, 0, 0],
-      patch: [0, 0, 0, 0],
-      detail: [8, 0, 0, 0],
-      parallax: 0,
-      detile: 0,
-      normalStrength: 0,
-      aoStrength: 0,
-      roughness: [0, 0.85, 0.85],
-    };
+    // Nuketown keeps the same compact draw-call footprint, but no longer uses
+    // greybox-only flat materials. These are the resident procedural surface
+    // generators already used by the rest of Game V2, so realism increases
+    // without adding meshes or external texture memory.
     return {
-      /** Every large mass: both houses, the sheds, the porch. */
-      gb_white: { name: 'flat_matte', surface: 'plaster', opts: { ...FLAT, tint: 0xeeebe6 } },
-      /** The perimeter wall, the roofs, the ground outside, the backdrop. */
-      gb_grey: { name: 'flat_matte', surface: 'concrete', opts: { ...FLAT, tint: 0x9a9ca0 } },
-      /** The deck: apron, street, kerbs and every low block. */
-      gb_grid: { name: 'grid', surface: 'concrete', opts: { ...FLAT, scale: 4.0 } },
-      /**
-       * The single accent. Storage Orange from DESIGN.md's world palette — one
-       * dominant environmental accent per map is the rule, so this is the only
-       * saturated colour on Nuketown and it belongs to the barrels and the sign.
-       */
-      gb_accent: { name: 'flat_matte', surface: 'metal', opts: { ...FLAT, tint: 0xc46d2e } },
-      /** Crate bracing and doors — the dark value that keeps the whites apart. */
-      gb_dark: { name: 'flat_matte', surface: 'wood', opts: { ...FLAT, tint: 0x44484e } },
+      /** Warm painted plaster: subtle grain, edge wear and lower-wall grime. */
+      gb_white: {
+        name: 'plaster',
+        surface: 'plaster',
+        opts: {
+          vertexMasks: true,
+          tint: 0xd8d0c2,
+          scale: 1.9,
+          normalStrength: 1.05,
+          weather: [0.25, 0.28, 0.55, 0.38],
+        },
+      },
+      /** Cast concrete for perimeter/roof masses with restrained variation. */
+      gb_grey: {
+        name: 'concrete',
+        surface: 'concrete',
+        opts: {
+          vertexMasks: true,
+          tint: 0x8f9290,
+          scale: 2.2,
+          normalStrength: 1.08,
+          weather: [0.28, 0.3, 0.42, 0.42],
+        },
+      },
+      /** Street/apron: procedural concrete, rough and non-glossy for readability. */
+      gb_grid: {
+        name: 'concrete',
+        surface: 'concrete',
+        opts: {
+          vertexMasks: true,
+          tint: 0x62696b,
+          scale: 1.6,
+          normalStrength: 0.92,
+          weather: [0.22, 0.24, 0.34, 0.36],
+        },
+      },
+      /** Painted orange metal gives the map one saturated industrial accent. */
+      gb_accent: {
+        name: 'metal_painted',
+        surface: 'metal',
+        opts: {
+          vertexMasks: true,
+          tint: 0xb96930,
+          scale: 1.15,
+          normalStrength: 0.95,
+          weather: [0.2, 0.22, 0.3, 0.3],
+        },
+      },
+      /** Real timber grain on crates and door elements. */
+      gb_dark: {
+        name: 'wood',
+        surface: 'wood',
+        opts: {
+          vertexMasks: true,
+          tint: 0x6d5845,
+          scale: 0.72,
+          normalStrength: 1.05,
+          weather: [0.25, 0.2, 0.25, 0.34],
+        },
+      },
     };
   })(),
 
