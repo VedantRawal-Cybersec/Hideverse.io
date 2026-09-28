@@ -206,4 +206,4 @@ export function installBrandFont() {
  * The wordmark as markup: `WORKMEL` + a wrapped `T` that carries the drip.
  * Static string, no interpolation — safe to assign through innerHTML.
  */
-export const WORDMARK_HTML = 'WORKMEL<span class="t">T</span>';
+export const WORDMARK_HTML = 'HIDEVERS<span class="t">E</span>';
