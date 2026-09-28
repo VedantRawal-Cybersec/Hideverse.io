@@ -648,10 +648,12 @@ export class WeaponMaterials {
   constructor(ctx) {
     this.ctx = ctx;
     this.lib = ctx.peek('materials');
-    // Only the true smoothness tiers use the low-poly weapon proxy.
-    // Desktop Medium keeps the detailed authored weapon now that the world
-    // renderer is structurally cheap enough to afford it.
+    // Performance/Low use the aggressive low-poly proxy. Medium keeps the
+    // original authored rifle geometry but merges material buckets into a tiny
+    // number of draws/textures, matching the "low graphics but still real"
+    // reference style. High/Ultra retain the full cinematic material stack.
     this.fastMode = ['performance', 'low'].includes(ctx.config?.quality);
+    this.mergedMode = ctx.config?.quality === 'medium';
     this.cache = new Map();
     this.owned = [];
     this.ownedTex = [];
