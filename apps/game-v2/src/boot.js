@@ -149,21 +149,25 @@ BOOT FAILURE\n\n${err.stack ?? err.message}</pre>`
 
 const shotApi = installShotApi(engine, { capture, lockstep });
 
-// Compile every shader permutation before the frame loop starts. Measured: without
-// this, 86 programs compile lazily during play, up to 30 on one frame, producing
-// 3.1-3.9 SECOND stalls. See src/core/prewarm.js.
+// Full shader/material pre-warming is extremely expensive on software-rendered,
+// mobile and lower-end WebGL implementations. Production QA measured 65-77 second
+// boots because AI/material prewarm compiled hundreds of permutations before the
+// first playable frame. Never block normal players on that work.
 //
-// ON BY DEFAULT since the capture path was made frame-deterministic; opt out with
-// `?prewarm=0`. It is now PROVEN pixel-neutral: `tools/baseline.mjs` with
-// `--query=prewarm=0` vs `--query=prewarm=1` reports identical:true on all 11
-// shots (0 changed pixels, maxDelta 0). The two things that previously made the
-// ~1.4 s pre-warm spend look like a visual change were both boot-duration
-// couplings OUTSIDE the subsystems: (1) the shutter frame index was latency-bound
-// because the engine kept stepping through the driver's round trips — fixed by
-// lockstep in src/dev/shots.js; (2) `will-change: transform` on the compass strip
-// cached a composited-layer raster taken at a wall-clock-dependent moment — fixed
-// in src/ui/style.js.
-const warmup = params.get('prewarm') === '0' ? { ok: false, reason: 'disabled by ?prewarm=0' } : await prewarm(engine);
+// Keep full prewarm available for capture/perf tooling and explicit diagnostics
+// with ?prewarm=1. Normal /game-v2/ starts immediately; Three.js compiles only the
+// permutations actually encountered during play.
+const requestedPrewarm = params.get('prewarm');
+const shouldPrewarm = capture || requestedPrewarm === '1';
+const warmup = shouldPrewarm
+  ? await prewarm(engine)
+  : {
+      ok: false,
+      reason:
+        requestedPrewarm === '0'
+          ? 'disabled by ?prewarm=0'
+          : 'production fast boot — full prewarm is opt-in with ?prewarm=1',
+    };
 console.info('[boot] prewarm', warmup);
 window.__PREWARM__ = warmup;
 
