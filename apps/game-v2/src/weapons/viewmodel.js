@@ -482,12 +482,8 @@ export class Viewmodel {
         const opaque = [];
         const separate = [];
         for (const [matKey, geo] of map) {
-          // Keep only the optic glass separate. Decorative rings/vignette masks
-          // are unnecessary on the Medium direct renderer.
-          if (matKey === 'glass') {
-            separate.push([matKey, geo]);
-            continue;
-          }
+          // Medium keeps the detailed optic BODY and reticle, but skips the
+          // decorative glass/vignette surfaces just like the reference Low mode.
           if (FAST_SKIP_MATERIALS.has(matKey)) {
             geo.dispose();
             continue;
