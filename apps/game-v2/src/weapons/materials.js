@@ -652,8 +652,8 @@ export class WeaponMaterials {
     // original authored rifle geometry but merges material buckets into a tiny
     // number of draws/textures, matching the "low graphics but still real"
     // reference style. High/Ultra retain the full cinematic material stack.
-    this.fastMode = ['performance', 'low'].includes(ctx.config?.quality);
-    this.mergedMode = ctx.config?.quality === 'medium';
+    this.fastMode = ctx.config?.quality === 'performance';
+    this.mergedMode = ['low', 'medium'].includes(ctx.config?.quality);
     this.cache = new Map();
     this.owned = [];
     this.ownedTex = [];
