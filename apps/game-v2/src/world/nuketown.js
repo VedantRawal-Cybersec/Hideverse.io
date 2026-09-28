@@ -385,7 +385,7 @@ function lowWall(A, key, x, z, ry, len, h, t, masks) {
 /* ─────────────────────────────────────────────────────────────────────────── */
 
 function buildGround(A, rng) {
-  const richSurfaces = !['performance', 'low'].includes(A.quality);
+  const richSurfaces = A.quality !== 'performance';
   // ------------------------------------------------------------- desert --
   const S = 190;
   const N = 46;
@@ -890,7 +890,7 @@ function dress(A, rng, stairFeet) {
     A.put('gb_car', x, 0.62, z, ry, 1, [0.9, 1.05, 1]);
     // Unlike loose dressing, cars are meaningful cover and must match visuals.
     A.box('metal', x, 0.52, z, 1.82, 0.95, 4.0, ry);
-    if (!['performance', 'low'].includes(A.quality)) {
+    if (A.quality !== 'performance') {
       A.add(
         'gb_dark',
         BOX_THIN(A),
