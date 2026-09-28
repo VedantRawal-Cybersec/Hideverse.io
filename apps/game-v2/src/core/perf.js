@@ -49,10 +49,15 @@ const CAP = 900;
 const GPU_QUEUE_MAX = 6;
 
 export class Perf {
-  constructor({ capacity = CAP, deterministic = false } = {}) {
+  constructor({ capacity = CAP, deterministic = false, gpuEnabled = true } = {}) {
     this.cap = capacity;
-    /** Capture/pixel-gate runs must not issue extra GL calls of any kind. */
-    this.gpuEnabled = !deterministic;
+    /**
+     * Capture/pixel-gate runs must not issue extra GL calls. Touch devices also
+     * opt out in Engine: timer queries are diagnostic work, not gameplay, and
+     * some mobile WebGL drivers pay a measurable cost for creating/polling one
+     * every frame.
+     */
+    this.gpuEnabled = !deterministic && gpuEnabled;
 
     // ---- ring buffers ----------------------------------------------------
     const f = () => new Float32Array(capacity);
