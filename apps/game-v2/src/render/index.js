@@ -253,7 +253,10 @@ export class RenderSystem {
     this.exposure = new AutoExposure();
     // Metering is five small GPU passes. Reusing the result for a few frames is
     // visually indistinguishable but removes recurring GPU work on low tiers.
-    this._exposureEvery = cfg.quality === 'performance' ? 4 : cfg.quality === 'low' ? 2 : 1;
+    this._exposureEvery =
+      cfg.quality === 'performance' ? 30 :
+      cfg.quality === 'low' ? 20 :
+      cfg.quality === 'medium' ? 12 : 1;
     // Headroom for a physically-scaled sky (sunlit scenes reach ~5000 cd/m2).
     // The lower limit is the night exposure lock: a moonlit street meters at
     // EV100 -5.2, and letting the meter chase that turns night into an overcast
