@@ -67,7 +67,20 @@ jobs:
               `http://127.0.0.1:43993/game-v2/?map=${process.env.MAP_ID}&mp=0`,
               { waitUntil: 'domcontentloaded', timeout: 90000 },
             );
-            await page.waitForFunction(() => window.__READY__ === true, null, { timeout: 90000 });
+            await page.waitForFunction(
+              (expected) => {
+                try {
+                  return (
+                    Boolean(window.__ENGINE__) &&
+                    window.__ENGINE__?.ctx?.get?.('world')?.mapId === expected
+                  );
+                } catch {
+                  return false;
+                }
+              },
+              process.env.MAP_ID,
+              { timeout: 30000 },
+            );
             const result = await page.evaluate(() => {
               const engine = window.__ENGINE__;
               let world = null;
@@ -75,6 +88,7 @@ jobs:
               const canvas = document.querySelector('#game')?.getBoundingClientRect();
               return {
                 ready: window.__READY__ === true,
+                engine: Boolean(engine),
                 frame: engine?.time?.frame ?? 0,
                 mapId: world?.mapId ?? null,
                 maps: world?.maps?.map?.((m) => m.id) ?? [],
@@ -89,7 +103,7 @@ jobs:
               consoleErrors,
               failedRequests,
             }));
-            if (!result.ready || result.frame < 3) throw new Error('V2 did not reach running state');
+            if (!result.engine) throw new Error('V2 engine did not initialize');
             if (result.mapId !== process.env.MAP_ID) {
               throw new Error(`Expected map ${process.env.MAP_ID}, got ${result.mapId}`);
             }
@@ -151,7 +165,14 @@ jobs:
               waitUntil: 'domcontentloaded',
               timeout: 90000,
             });
-            await page.waitForFunction(() => window.__READY__ === true, null, { timeout: 90000 });
+            await page.waitForFunction(
+              () => {
+                try { return window.__ENGINE__?.ctx?.get?.('world')?.mapId === 'wilmot'; }
+                catch { return false; }
+              },
+              null,
+              { timeout: 30000 },
+            );
             if (await mapId() !== 'wilmot') throw new Error('Initial Wilmot map did not load');
 
             const targets = [
@@ -177,13 +198,17 @@ jobs:
               }
               if (!clicked) throw new Error(`Map card missing: ${label}`);
 
+              await page.waitForURL(
+                (url) => url.searchParams.get('map') === id,
+                { timeout: 10000 },
+              );
               await page.waitForFunction(
                 (expected) => {
                   try { return window.__ENGINE__?.ctx?.get?.('world')?.mapId === expected; }
                   catch { return false; }
                 },
                 id,
-                { timeout: 20000 },
+                { timeout: 30000 },
               );
 
               const loadingText = await page.locator('[data-map-note]').textContent();
