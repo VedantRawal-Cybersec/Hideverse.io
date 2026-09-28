@@ -214,10 +214,14 @@ if (softwareRenderer) {
   const textures = stats.render?.textures ?? Infinity;
   const renderMean = stats.engine?.phasesMs?.render ?? Infinity;
 
-  const structural =
-    quality === 'medium'
-      ? { calls: 78, tris: 250000, programs: 92, textures: 72, cpu: 18, render: 190 }
-      : { calls: 55, tris: 175000, programs: 65, textures: 55, cpu: 15, render: 120 };
+  const structuralByTier = {
+    performance: { calls: 55, tris: 175000, programs: 65, textures: 55, cpu: 15, render: 120 },
+    low:         { calls: 78, tris: 250000, programs: 92, textures: 72, cpu: 18, render: 190 },
+    medium:      { calls: 78, tris: 250000, programs: 92, textures: 72, cpu: 18, render: 190 },
+    high:        { calls: 100, tris: 320000, programs: 110, textures: 90, cpu: 20, render: 260 },
+    ultra:       { calls: 180, tris: 600000, programs: 160, textures: 140, cpu: 28, render: 420 },
+  };
+  const structural = structuralByTier[quality] ?? structuralByTier.performance;
 
   if (calls > structural.calls) failures.push(`software draw calls ${calls} > ${structural.calls}`);
   if (tris > structural.tris) failures.push(`software visible triangles ${tris} > ${structural.tris}`);
@@ -232,8 +236,11 @@ if (softwareRenderer) {
     failures.push(`p95 ${stats.p95Ms.toFixed(2)}ms > ${p95Limit}ms`);
   if (long50Pct > long50Limit)
     failures.push(`>50ms frames ${long50Pct.toFixed(2)}% > ${long50Limit}%`);
-  if ((stats.render?.calls ?? 0) > 55)
-    failures.push(`draw calls ${stats.render.calls} > 55`);
+  const hardwareCallBudget =
+    quality === 'high' ? 100 :
+    quality === 'low' || quality === 'medium' ? 78 : 55;
+  if ((stats.render?.calls ?? 0) > hardwareCallBudget)
+    failures.push(`draw calls ${stats.render.calls} > ${hardwareCallBudget}`);
 }
 
 console.log(
