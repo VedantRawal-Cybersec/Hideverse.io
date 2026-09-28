@@ -194,21 +194,23 @@ window.__PREWARM__ = warmup;
 
 engine.start();
 
-// Capture harness handshake: only flag ready once a frame has actually landed.
-//
-// BOOT_FRAMES is deliberately a frame COUNT, not a rAF race. In lockstep mode the
-// engine has no loop of its own, so we hand-pump exactly this many frames and only
-// then raise __READY__; the shot is therefore always applied at engine frame 3, no
-// matter how long boot (or pre-warm) took in wall-clock terms.
-const BOOT_FRAMES = 3;
+// Capture harness handshake: deterministic capture still waits for exactly
+// three hand-pumped frames so screenshots remain reproducible. Production only
+// needs one painted frame before the loading state can be dismissed. Waiting for
+// three here was disproportionately expensive on software/mobile WebGL: subsystem
+// init had already finished, but the readiness flag remained blocked behind two
+// additional cold shader frames.
+const CAPTURE_READY_FRAMES = 3;
+const PRODUCTION_READY_FRAMES = 1;
 if (lockstep) {
-  await shotApi.pump(BOOT_FRAMES);
+  await shotApi.pump(CAPTURE_READY_FRAMES);
   window.__READY__ = true;
 } else {
-  let warm = 0;
+  let renderedFrames = 0;
   const readyProbe = () => {
-    if (++warm >= BOOT_FRAMES) {
+    if (++renderedFrames >= PRODUCTION_READY_FRAMES) {
       window.__READY__ = true;
+      console.info('[boot] ready after first rendered frame');
       return;
     }
     requestAnimationFrame(readyProbe);
