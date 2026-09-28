@@ -318,6 +318,28 @@ export class SoldierMaterials {
     return m;
   }
 
+  /**
+   * One-draw competitive material. The soldier geometry already carries baked
+   * AO/value variation in vertex colours, so a single Lambert material retains
+   * readable body form while collapsing ~10 material groups to one draw.
+   * It deliberately opts out of MaterialPatcher's cinematic shader injection.
+   */
+  fast(livery) {
+    const key = `fast|${livery.id}`;
+    let m = this.materials.get(key);
+    if (m) return m;
+    m = new THREE.MeshLambertMaterial({
+      color: col(livery.suit),
+      vertexColors: true,
+      flatShading: true,
+      dithering: false,
+    });
+    m.name = `ai_fast_${livery.id}`;
+    m.userData.owNoPatch = true;
+    this.materials.set(key, m);
+    return m;
+  }
+
   /** Flat material for goggle lenses / optic glass. */
   glass() {
     return this.get('glass', LIVERIES[0]);
