@@ -90,17 +90,14 @@ if (adaptiveEnabled && graphics.mode === 'auto') {
       targetFps: 60,
     });
   } else {
-    const safeTier =
-      graphics.tier && ['performance', 'low', 'medium'].includes(graphics.tier)
-        ? graphics.tier
-        : 'low';
+    const safeTier = 'medium';
     graphics = saveGraphicsSettings({
       ...graphics,
       tier: safeTier,
       tierCeiling: 'medium',
       renderScale: Math.min(
         graphics.renderScale || 1,
-        QUALITY_PRESETS[safeTier]?.renderScale ?? 0.6
+        QUALITY_PRESETS.medium.renderScale
       ),
       calibrated: true,
       targetFps: 60,
