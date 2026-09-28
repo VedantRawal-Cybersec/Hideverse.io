@@ -218,7 +218,11 @@ export class AiSystem {
     this._bootNav(ctx);
     this.roo = null;
     this._syncCritter();
-    await this.prewarmMaterials();
+
+    // Do not compile every skinned-character shader during normal boot.
+    // Production QA measured this single await at 13-20 seconds on software/
+    // mobile WebGL. The explicit core ?prewarm=1 path still calls
+    // prewarmMaterials() for capture/performance diagnostics.
   }
 
   /**

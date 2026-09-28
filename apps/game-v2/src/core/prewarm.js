@@ -97,7 +97,16 @@ const SELF_WARMING = new Set(['fx']);
  */
 const RENDER_SHADOW_WARM = false;
 
-export async function prewarm(engine, { onProgress = () => {}, transients = false, drawFrames = false } = {}) {
+export async function prewarm(
+  engine,
+  {
+    onProgress = () => {},
+    transients = false,
+    drawFrames = false,
+    poseLimit = WARM_POSES.length,
+    skipHookIds = [],
+  } = {}
+) {
   const t0 = performance.now();
   const render = engine.ctx.peek('render');
   const renderer = render?.renderer;
@@ -171,13 +180,14 @@ export async function prewarm(engine, { onProgress = () => {}, transients = fals
   const yieldFrame = () => new Promise((r) => requestAnimationFrame(r));
 
   try {
+    const poses = WARM_POSES.slice(0, Math.max(0, Math.min(WARM_POSES.length, poseLimit)));
+    const skippedHooks = new Set(skipHookIds);
     let step = 0;
-    const totalSteps = WARM_POSES.length * 2 + (transients ? transientStages.length : 0) + 1;
-    const tick = () => onProgress(Math.min(1, ++step / totalSteps));
+    const totalSteps = poses.length * 2 + (transients ? transientStages.length : 0) + 1;
+    const tick = () => onProgress(Math.min(1, ++step / Math.max(1, totalSteps)));
 
-    // Pass 1: compile the static world from each pose, with the depth/shadow
-    // variants reached by drawing a real frame at that pose.
-    for (const p of WARM_POSES) {
+    // Pass 1: compile the static world from representative poses.
+    for (const p of poses) {
       cam.position.set(...p.pos);
       cam.lookAt(...p.look);
       cam.updateMatrixWorld(true);
@@ -233,7 +243,8 @@ export async function prewarm(engine, { onProgress = () => {}, transients = fals
     if (renderSys && typeof renderSys.prewarmMaterials === 'function') hooks.push(renderSys);
     for (const sys of engine.registry.ordered ?? []) {
       if (sys === renderSys) continue;
-      if (SELF_WARMING.has(sys.constructor?.id)) continue;
+      const id = sys.constructor?.id;
+      if (SELF_WARMING.has(id) || skippedHooks.has(id)) continue;
       if (typeof sys.prewarmMaterials === 'function') hooks.push(sys);
     }
     const hookResults = {};

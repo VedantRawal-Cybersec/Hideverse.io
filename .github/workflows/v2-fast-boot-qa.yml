@@ -1,0 +1,182 @@
+name: Temporary Game V2 Fast Boot QA
+
+on:
+  push:
+    branches:
+      - fix/game-v2-fast-boot
+
+permissions:
+  contents: read
+
+jobs:
+  fast-boot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [desktop, mobile]
+        map: [wilmot, nuketown]
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.23.2
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production V2
+        run: npm run build:live
+
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Start local production server
+        run: |
+          PORT=43993 npm run start --workspace @hideverse/web > /tmp/hideverse-v2.log 2>&1 &
+          for i in {1..100}; do
+            if curl -fsS http://127.0.0.1:43993/game-v2/ >/dev/null; then
+              exit 0
+            fi
+            sleep 0.2
+          done
+          cat /tmp/hideverse-v2.log
+          exit 1
+
+      - name: Verify V2 fast boot
+        env:
+          PROFILE: ${{ matrix.profile }}
+          MAP_ID: ${{ matrix.map }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+
+          const mobile = process.env.PROFILE === 'mobile';
+          const browser = await chromium.launch({ headless: true });
+          const context = await browser.newContext(
+            mobile
+              ? {
+                  viewport: { width: 390, height: 844 },
+                  hasTouch: true,
+                  isMobile: true,
+                  deviceScaleFactor: 2,
+                }
+              : {
+                  viewport: { width: 1280, height: 720 },
+                  deviceScaleFactor: 1,
+                },
+          );
+          const page = await context.newPage();
+          const started = Date.now();
+          const pageErrors = [];
+          const consoleErrors = [];
+          const diagnosticLogs = [];
+          const failedRequests = [];
+
+          page.on('pageerror', (error) => pageErrors.push(String(error)));
+          page.on('console', (message) => {
+            const value = message.text();
+            if (message.type() === 'error') consoleErrors.push(value);
+            if (
+              value.startsWith('[engine]') ||
+              value.startsWith('[boot]') ||
+              value.startsWith('[world]') ||
+              value.startsWith('[render]') ||
+              value.startsWith('[materials]') ||
+              value.startsWith('[sky]') ||
+              value.startsWith('[physics]') ||
+              value.startsWith('[ai]') ||
+              value.startsWith('[ui]') ||
+              value.startsWith('[quality]')
+            ) {
+              diagnosticLogs.push({
+                atMs: Date.now() - started,
+                value,
+              });
+              console.log('[v2-init-trace]', Date.now() - started, value);
+            }
+          });
+          page.on('requestfailed', (request) => {
+            failedRequests.push({
+              url: request.url(),
+              error: request.failure()?.errorText ?? 'unknown',
+            });
+          });
+
+          try {
+            await page.goto(
+              `http://127.0.0.1:43993/game-v2/?mp=0&q=performance&map=${process.env.MAP_ID}`,
+              { waitUntil: 'domcontentloaded', timeout: 90000 },
+            );
+            try {
+              await page.waitForFunction(() => window.__READY__ === true, null, {
+                timeout: 70000,
+              });
+            } catch (error) {
+              console.log(
+                '[v2-fast-boot-timeout]',
+                JSON.stringify({
+                  profile: process.env.PROFILE,
+                  map: process.env.MAP_ID,
+                  elapsedMs: Date.now() - started,
+                  diagnosticLogs,
+                  pageErrors,
+                  consoleErrors,
+                  failedRequests,
+                }),
+              );
+              throw error;
+            }
+            const bootMs = Date.now() - started;
+            await page.waitForTimeout(1200);
+
+            const result = await page.evaluate(() => ({
+              ready: window.__READY__ === true,
+              engine: Boolean(window.__ENGINE__),
+              frame: window.__ENGINE__?.time?.frame ?? 0,
+              prewarm: window.__PREWARM__ ?? null,
+              canvas: (() => {
+                const rect = document.querySelector('#game')?.getBoundingClientRect();
+                return rect ? { width: rect.width, height: rect.height } : null;
+              })(),
+              touch: document.body.classList.contains('wm-touch'),
+            }));
+
+            console.log('[v2-fast-boot]', JSON.stringify({
+              profile: process.env.PROFILE,
+              map: process.env.MAP_ID,
+              bootMs,
+              result,
+              pageErrors,
+              consoleErrors,
+              failedRequests,
+              diagnosticLogs,
+            }));
+
+            if (!result.ready || !result.engine || result.frame < 3) {
+              throw new Error('V2 did not reach running state');
+            }
+            if (bootMs > 30000) {
+              throw new Error(`V2 production-path boot remained too slow: ${bootMs}ms`);
+            }
+            if (!result.canvas || result.canvas.width < 300 || result.canvas.height < 300) {
+              throw new Error('V2 canvas is not playable');
+            }
+            if (mobile && !result.touch) {
+              throw new Error('V2 mobile touch mode did not activate');
+            }
+            if (result.prewarm?.ok === true) {
+              throw new Error('V2 unexpectedly ran full prewarm during production boot');
+            }
+            if (pageErrors.length || consoleErrors.length || failedRequests.length) {
+              throw new Error('V2 browser/runtime/network errors detected');
+            }
+          } finally {
+            await context.close();
+            await browser.close();
+          }
+          NODE
