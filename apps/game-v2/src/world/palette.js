@@ -796,10 +796,10 @@ export const PALETTE = {
         surface: 'plaster',
         opts: {
           vertexMasks: true,
-          tint: 0xd8d0c2,
-          scale: 1.9,
+          tint: 0xc9b79d,
+          scale: 1.55,
           normalStrength: 1.05,
-          weather: [0.25, 0.28, 0.55, 0.38],
+          weather: [0.34, 0.30, 0.62, 0.42],
         },
       },
       /** Cast concrete for perimeter/roof masses with restrained variation. */
@@ -808,10 +808,10 @@ export const PALETTE = {
         surface: 'concrete',
         opts: {
           vertexMasks: true,
-          tint: 0x8f9290,
-          scale: 2.2,
+          tint: 0x817d75,
+          scale: 1.85,
           normalStrength: 1.08,
-          weather: [0.28, 0.3, 0.42, 0.42],
+          weather: [0.34, 0.34, 0.48, 0.46],
         },
       },
       /** Street/apron: procedural concrete, rough and non-glossy for readability. */
@@ -820,8 +820,8 @@ export const PALETTE = {
         surface: 'concrete',
         opts: {
           vertexMasks: true,
-          tint: 0x62696b,
-          scale: 1.6,
+          tint: 0x6d6962,
+          scale: 1.45,
           normalStrength: 0.92,
           weather: [0.22, 0.24, 0.34, 0.36],
         },
@@ -832,7 +832,7 @@ export const PALETTE = {
         surface: 'metal',
         opts: {
           vertexMasks: true,
-          tint: 0xb96930,
+          tint: 0xa85c2c,
           scale: 1.15,
           normalStrength: 0.95,
           weather: [0.2, 0.22, 0.3, 0.3],
@@ -844,8 +844,8 @@ export const PALETTE = {
         surface: 'wood',
         opts: {
           vertexMasks: true,
-          tint: 0x6d5845,
-          scale: 0.72,
+          tint: 0x4f3c2c,
+          scale: 0.62,
           normalStrength: 1.05,
           weather: [0.25, 0.2, 0.25, 0.34],
         },
