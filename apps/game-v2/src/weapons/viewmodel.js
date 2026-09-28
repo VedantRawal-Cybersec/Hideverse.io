@@ -138,6 +138,7 @@ export class Viewmodel {
     const handMats = {
       glove: mats.armGlove(),
       sleeve: mats.armSleeve(),
+      fast: !!mats.fastMode,
     };
     // Shoulder joints in CAMERA space: ~200 mm lateral, ~210 mm below the eye
     // and only just behind it. Nothing renders at the shoulder, but its place
