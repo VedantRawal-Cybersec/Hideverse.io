@@ -34,7 +34,15 @@ jobs:
       - name: Build portable live bundle
         run: npm run build:static
 
-      - name: V2 browser performance gate
+      - name: V2 browser performance gate — mobile/performance
+        env:
+          V2_PERF_QUALITY: performance
+        run: node tools/v2-perf-gate.mjs
+
+      - name: V2 browser performance gate — desktop/medium
+        env:
+          V2_PERF_QUALITY: medium
+          V2_PERF_PORT: 4174
         run: node tools/v2-perf-gate.mjs
 
       - name: Verify published files
