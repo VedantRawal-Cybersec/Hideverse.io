@@ -453,7 +453,7 @@ function buildGround(A, rng) {
     A.add(
       richSurfaces ? 'gb_marking' : 'gb_white',
       BOX_THIN(A),
-      LL(IDENT, 0, 0.095, z, 0, 0.10, 0.012, 2.2),
+      LL(IDENT, 0, 0.095, z, 0, 0.12, 0.012, 2.35),
       { masks: [0.2, 0.18, 0.08] }
     );
   }
@@ -461,7 +461,7 @@ function buildGround(A, rng) {
     A.add(
       richSurfaces ? 'gb_marking' : 'gb_white',
       BOX_THIN(A),
-      LL(IDENT, sx * (NUKE.streetHalf - 0.35), 0.088, 0, 0, 0.07, 0.01, D - 2.5),
+      LL(IDENT, sx * (NUKE.streetHalf - 0.35), 0.088, 0, 0, 0.09, 0.01, D - 2.5),
       { masks: [0.25, 0.2, 0.1] }
     );
 
@@ -473,6 +473,19 @@ function buildGround(A, rng) {
     A.add('gb_grid', BOX(A), LL(IDENT, sx * (NUKE.streetHalf + 0.7), 0.07, 0, 0, 1.4, 0.14, D), {
       masks: [0.7, 0.4, 0.2],
     });
+  }
+
+  if (richSurfaces) {
+    // Sparse safety-yellow curb tabs: strong refinery cue, no extra material
+    // family because they merge into the existing gb_accent batch.
+    for (const sx of [-1, 1])
+      for (let z = -16.5; z <= 16.5; z += 5.5)
+        A.add(
+          'gb_accent',
+          BOX_THIN(A),
+          LL(IDENT, sx * (NUKE.streetHalf + 0.68), 0.148, z, 0, 1.15, 0.025, 0.62),
+          null
+        );
   }
 
   if (richSurfaces) {
