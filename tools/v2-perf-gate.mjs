@@ -6,6 +6,7 @@ import { spawn } from 'node:child_process';
 
 const root = path.resolve('apps/web/dist');
 const port = Number(process.env.V2_PERF_PORT || 4173);
+const quality = process.env.V2_PERF_QUALITY || 'performance';
 const p95Limit = Number(process.env.V2_PERF_P95_MS || 24);
 const long50Limit = Number(process.env.V2_PERF_LONG50_PCT || 1);
 
@@ -135,7 +136,7 @@ const cdp=(method,params={})=>new Promise((resolve,reject)=>{
 await cdp('Page.enable');
 await cdp('Runtime.enable');
 await cdp('Emulation.setDeviceMetricsOverride',{width:1280,height:720,deviceScaleFactor:1,mobile:false});
-await cdp('Page.navigate',{url:`http://127.0.0.1:${port}/game-v2/?match=0&mp=0&q=performance`});
+await cdp('Page.navigate',{url:`http://127.0.0.1:${port}/game-v2/?match=0&mp=0&q=${encodeURIComponent(quality)}`});
 
 for (let i=0;i<240;i++) {
   const r=await cdp('Runtime.evaluate',{expression:'window.__READY__ === true',returnByValue:true});
@@ -213,12 +214,17 @@ if (softwareRenderer) {
   const textures = stats.render?.textures ?? Infinity;
   const renderMean = stats.engine?.phasesMs?.render ?? Infinity;
 
-  if (calls > 55) failures.push(`software draw calls ${calls} > 55`);
-  if (tris > 175000) failures.push(`software visible triangles ${tris} > 175000`);
-  if (programs > 65) failures.push(`software programs ${programs} > 65`);
-  if (textures > 55) failures.push(`software textures ${textures} > 55`);
-  if (gameplayCpuMs > 15) failures.push(`gameplay CPU ${gameplayCpuMs.toFixed(2)}ms > 15ms`);
-  if (renderMean > 120) failures.push(`SwiftShader render mean ${renderMean.toFixed(2)}ms > 120ms`);
+  const structural =
+    quality === 'medium'
+      ? { calls: 78, tris: 250000, programs: 92, textures: 72, cpu: 18, render: 190 }
+      : { calls: 55, tris: 175000, programs: 65, textures: 55, cpu: 15, render: 120 };
+
+  if (calls > structural.calls) failures.push(`software draw calls ${calls} > ${structural.calls}`);
+  if (tris > structural.tris) failures.push(`software visible triangles ${tris} > ${structural.tris}`);
+  if (programs > structural.programs) failures.push(`software programs ${programs} > ${structural.programs}`);
+  if (textures > structural.textures) failures.push(`software textures ${textures} > ${structural.textures}`);
+  if (gameplayCpuMs > structural.cpu) failures.push(`gameplay CPU ${gameplayCpuMs.toFixed(2)}ms > ${structural.cpu}ms`);
+  if (renderMean > structural.render) failures.push(`SwiftShader render mean ${renderMean.toFixed(2)}ms > ${structural.render}ms`);
 } else {
   // On a hardware-backed browser the gate is genuine frame pacing: p95 must
   // stay under 24 ms (~42 fps floor at p95) and severe >50 ms frames under 1%.
@@ -231,7 +237,7 @@ if (softwareRenderer) {
 }
 
 console.log(
-  '[v2-perf] gate=' + (softwareRenderer ? 'software-structural' : 'hardware-frame-pacing') +
+  '[v2-perf] quality=' + quality + ' gate=' + (softwareRenderer ? 'software-structural' : 'hardware-frame-pacing') +
   ' renderer=' + (stats.gpuRenderer || 'unknown') +
   ' gameplayCpuMs=' + gameplayCpuMs.toFixed(2)
 );
