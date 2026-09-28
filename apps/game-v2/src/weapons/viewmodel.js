@@ -478,6 +478,50 @@ export class Viewmodel {
         return;
       }
 
+      if (this.mats.mergedMode) {
+        const opaque = [];
+        const separate = [];
+        for (const [matKey, geo] of map) {
+          // Keep only the optic glass separate. Decorative rings/vignette masks
+          // are unnecessary on the Medium direct renderer.
+          if (matKey === 'glass') {
+            separate.push([matKey, geo]);
+            continue;
+          }
+          if (FAST_SKIP_MATERIALS.has(matKey)) {
+            geo.dispose();
+            continue;
+          }
+          bakeFastColour(geo, this.mats.fastColor(matKey));
+          opaque.push(geo);
+        }
+
+        const merged = mergeAll(opaque);
+        for (const g of opaque) if (g !== merged) g.dispose?.();
+        if (merged) {
+          const mesh = new THREE.Mesh(merged, this.mats.fastMaterial());
+          mesh.name = `${asm.name}-medium-merged`;
+          mesh.castShadow = false;
+          mesh.receiveShadow = false;
+          mesh.frustumCulled = false;
+          parent.add(mesh);
+          meshes.push(mesh);
+          tris += triCount(merged);
+        }
+
+        for (const [matKey, geo] of separate) {
+          const mesh = new THREE.Mesh(geo, this.mats.get(matKey));
+          mesh.name = `${asm.name}-${matKey}`;
+          mesh.castShadow = false;
+          mesh.receiveShadow = false;
+          mesh.frustumCulled = false;
+          parent.add(mesh);
+          meshes.push(mesh);
+          tris += triCount(geo);
+        }
+        return;
+      }
+
       for (const [matKey, geo] of map) {
         // Curvature masks are valuable on the cinematic path, but Auto's
         // one-material path intentionally skips this CPU bake and the shader
