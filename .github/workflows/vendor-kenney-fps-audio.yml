@@ -21,7 +21,7 @@ jobs:
       - name: Download pinned Kenney FPS starter CC0 audio
         run: |
           set -euo pipefail
-          COMMIT="1bd8de76252015265639328210071394779ae6c6"
+          COMMIT="185fd2326d74a5cf858cffc616f87cf9696f9cc0"
           BASE="https://raw.githubusercontent.com/KenneyNL/Starter-Kit-FPS/$COMMIT"
           DEST="assets/runtime/audio/kenney-fps"
           mkdir -p "$DEST"
