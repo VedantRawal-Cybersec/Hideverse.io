@@ -307,7 +307,23 @@ export class SkySystem {
     // cascades beat three's single shadow frustum by a mile.
     this.sunLight = new THREE.DirectionalLight(0xffffff, 4.0);
     this.sunLight.name = 'sky-sun';
-    this.sunLight.castShadow = false;
+    // Medium's direct renderer uses one ordinary directional shadow map.
+    // Performance/Low remain shadow-free; High/Ultra keep the renderer's CSM.
+    const nativeLeanShadow = q.prepass === false && q.shadows === true;
+    this.sunLight.castShadow = nativeLeanShadow;
+    if (nativeLeanShadow) {
+      const sh = this.sunLight.shadow;
+      sh.mapSize.set(q.shadowMapSize ?? 768, q.shadowMapSize ?? 768);
+      sh.camera.left = -34;
+      sh.camera.right = 34;
+      sh.camera.top = 30;
+      sh.camera.bottom = -30;
+      sh.camera.near = 0.5;
+      sh.camera.far = Math.max(70, q.shadowDistance ?? 48);
+      sh.bias = -0.00035;
+      sh.normalBias = 0.035;
+      sh.radius = 1.0;
+    }
     this.sunLight.target.name = 'sky-sun-target';
     ctx.scene.add(this.sunLight, this.sunLight.target);
     r.addLight(this.sunLight, { range: 1e9, priority: 10 });
