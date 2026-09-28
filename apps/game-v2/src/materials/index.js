@@ -58,6 +58,10 @@ export class MaterialSystem {
     // so "Texture Quality: Ultra" is one number in one place.
     this._quality = q?.textureScale ?? 1;
     this._lean = q?.prepass === false;
+    // Medium keeps the direct/fast renderer but uses Standard lighting so
+    // concrete/metal/wood read as physical materials. Performance/Low retain
+    // Lambert for minimum mobile cost.
+    this._leanPbr = this._lean && ctx?.config?.quality === 'medium';
     /** Multiplier on per-surface parallax depth; 0 turns the POM march off. */
     this._parallax = q?.parallaxScale ?? 1;
     /** Multiplier on the shared micro-detail layer's strength and fade range. */
@@ -235,12 +239,24 @@ export class MaterialSystem {
     delete threeProps.physical;
 
     const Ctor = this._lean
-      ? THREE.MeshLambertMaterial
+      ? (this._leanPbr ? THREE.MeshStandardMaterial : THREE.MeshLambertMaterial)
       : usePhysical
         ? THREE.MeshPhysicalMaterial
         : THREE.MeshStandardMaterial;
     const mat = this._lean
-      ? new Ctor({ color: p.tint ?? 0xffffff, dithering: false })
+      ? new Ctor({
+          color: p.tint ?? 0xffffff,
+          ...(this._leanPbr
+            ? {
+                // One-sample fast PBR: no normal/ORM/POM/macro stack, but the
+                // surface still responds to light as plaster/metal/wood rather
+                // than a flat diffuse toy.
+                roughness: Array.isArray(p.roughness) ? p.roughness[0] : 0.82,
+                metalness: def.surface === 'metal' ? 0.48 : 0.02,
+              }
+            : {}),
+          dithering: this._leanPbr,
+        })
       : new Ctor({
           color: 0xffffff,
           roughness: 1,
@@ -266,7 +282,7 @@ export class MaterialSystem {
     applyProps(mat, threeProps);
 
     if (set) {
-      if (this._lean) extendFastProjectedMaterial(mat, p);
+      if (this._lean) extendFastProjectedMaterial(mat, p, { pbr: this._leanPbr });
       else extendMaterial(mat, p, this._shared);
     }
 
@@ -352,14 +368,17 @@ export class MaterialSystem {
  * It keeps real albedo textures on UV-less architecture without the detailed
  * PBR extension's normal/ORM/micro/macro/weathering work.
  */
-function extendFastProjectedMaterial(material, p) {
+function extendFastProjectedMaterial(material, p, opts = {}) {
   const tileScale = p.uvMode === 'mesh' ? p.scale : 1 / Math.max(0.01, p.scale);
   const u = { owFastTile: { value: new THREE.Vector4(tileScale, tileScale, p.offset[0], p.offset[1]) } };
   material.userData.owNoPatch = true;
   material.userData.owFastUniforms = u;
   const meshUv = p.uvMode === 'mesh';
   const alphaMask = !!p.alphaMask;
-  material.customProgramCacheKey = () => 'ow-fast-' + (meshUv ? 'mesh' : 'projected') + '-' + (alphaMask ? 'alpha' : 'opaque');
+  const fastPbr = opts.pbr === true;
+  material.customProgramCacheKey = () =>
+    'ow-fast-' + (fastPbr ? 'pbr-' : 'lambert-') +
+    (meshUv ? 'mesh' : 'projected') + '-' + (alphaMask ? 'alpha' : 'opaque');
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, u);
     shader.vertexShader = shader.vertexShader
@@ -372,7 +391,11 @@ function extendFastProjectedMaterial(material, p) {
         (meshUv
           ? '  vec2 owUv = vMapUv * owFastTile.xy + owFastTile.zw;\n'
           : '  vec3 owN = abs( normalize( vOwFastWNrm ) );\n  vec2 owUv;\n  if ( owN.x > owN.y && owN.x > owN.z ) owUv = vec2( -vOwFastWPos.z * sign( vOwFastWNrm.x ), vOwFastWPos.y );\n  else if ( owN.y > owN.z ) owUv = vec2( vOwFastWPos.x, -vOwFastWPos.z * sign( vOwFastWNrm.y ) );\n  else owUv = vec2( vOwFastWPos.x * sign( vOwFastWNrm.z ), vOwFastWPos.y );\n  owUv = owUv * owFastTile.xy + owFastTile.zw;\n') +
-        '  vec4 owTexel = texture2D( map, owUv );\n  diffuseColor.rgb *= owTexel.rgb;\n' +
+        '  vec4 owTexel = texture2D( map, owUv );\n' +
+        '  diffuseColor.rgb *= owTexel.rgb;\n' +
+        (fastPbr
+          ? '  float owMacro = 0.94 + 0.06 * sin(vOwFastWPos.x * 0.37 + vOwFastWPos.z * 0.29);\n  diffuseColor.rgb *= owMacro;\n'
+          : '') +
         (alphaMask ? '  diffuseColor.a *= owTexel.a;\n' : '') +
         '}\n#endif');
   };
