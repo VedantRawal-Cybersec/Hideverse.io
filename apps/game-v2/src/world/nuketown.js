@@ -859,6 +859,125 @@ function buildSheds(A, rng) {
  * foliage, no vehicles. Every placement is filtered through `free()` so a crate
  * never lands inside a wall the occupancy tests believe is empty.
  */
+function addIndustrialArtifacts(A) {
+  if (A.quality === 'performance') return;
+
+  const box = BOX(A);
+  const thin = BOX_THIN(A);
+  const wheel = A.cache('nuke:artifact-wheel', () => {
+    const g = new THREE.CylinderGeometry(0.34, 0.34, 0.18, 8, 1, false);
+    g.rotateZ(Math.PI / 2);
+    g.computeVertexNormals();
+    return g;
+  });
+  const pipe = A.cache('nuke:artifact-pipe', () => {
+    const g = new THREE.CylinderGeometry(0.075, 0.075, 1, 8, 1, false);
+    g.computeVertexNormals();
+    return g;
+  });
+  const drum = A.cache('nuke:artifact-drum', () => {
+    const g = new THREE.CylinderGeometry(0.28, 0.28, 0.82, 12, 1, false);
+    g.computeVertexNormals();
+    return g;
+  });
+  const cone = A.cache('nuke:artifact-cone', () => {
+    const g = new THREE.ConeGeometry(0.24, 0.62, 8, 1, false);
+    g.computeVertexNormals();
+    return g;
+  });
+
+  // ------------------------------------------------------ forklift / loader
+  // One strong hero prop like the reference screenshots. Every piece uses an
+  // existing map batch, so this changes geometry density without adding shader
+  // or material families.
+  const fx = -13.4, fz = 5.9, fry = Math.PI * 0.5;
+  const fm = LL(IDENT, fx, 0, fz, fry);
+
+  // chassis + counterweight
+  A.add('gb_accent', box, LL(fm, 0, 0.50, 0.10, 0, 1.35, 0.62, 1.75), {
+    masks: [0.7, 0.42, 0.22],
+  });
+  A.add('gb_accent', box, LL(fm, 0, 0.82, 0.62, 0, 1.18, 0.36, 0.68), {
+    masks: [0.72, 0.36, 0.20],
+  });
+  // cabin / seat / roof
+  A.add('gb_dark', box, LL(fm, 0, 1.12, -0.12, 0, 0.78, 0.38, 0.66), null);
+  A.add('gb_dark', thin, LL(fm, 0, 1.77, 0.02, 0, 1.28, 0.10, 1.22), null);
+  for (const sx of [-1, 1])
+    for (const sz of [-1, 1])
+      A.add('gb_dark', thin, LL(fm, sx * 0.52, 1.32, sz * 0.45, 0, 0.07, 0.95, 0.07), null);
+
+  // mast + forks
+  for (const sx of [-1, 1])
+    A.add('gb_dark', thin, LL(fm, sx * 0.42, 1.10, -1.05, 0, 0.10, 1.85, 0.10), null);
+  for (const sx of [-1, 1])
+    A.add('gb_grey', thin, LL(fm, sx * 0.34, 0.18, -1.72, 0, 0.10, 0.08, 1.55), null);
+  A.add('gb_dark', thin, LL(fm, 0, 0.72, -1.06, 0, 0.92, 0.12, 0.10), null);
+
+  // four wheels
+  for (const sx of [-1, 1])
+    for (const sz of [-1, 1])
+      A.add('gb_dark', wheel, LL(fm, sx * 0.70, 0.34, sz * 0.63, 0, 1, 1, 1), null);
+
+  // coarse cover proxy for player collision
+  A.box('metal', fx, 0.80, fz, 2.0, 1.60, 2.55, fry);
+
+  // -------------------------------------------------------- safety cones
+  for (const [x, z, ry] of [
+    [-10.8, 7.0, 0.0],
+    [-9.6, 6.35, 0.1],
+    [10.3, -7.0, -0.08],
+    [18.0, 11.7, 0.06],
+  ]) {
+    A.add('gb_accent', cone, LL(IDENT, x, 0.31, z, ry, 1, 1, 1), {
+      masks: [0.78, 0.28, 0.16],
+    });
+    A.add('gb_white', thin, LL(IDENT, x, 0.37, z, ry, 0.31, 0.07, 0.31), null);
+    A.add('gb_dark', thin, LL(IDENT, x, 0.025, z, ry, 0.56, 0.05, 0.56), null);
+  }
+
+  // ------------------------------------------------------------- drums
+  for (const [x, z] of [
+    [-17.2, 8.8], [-16.55, 8.95], [17.4, -8.9],
+  ]) {
+    A.add('gb_accent', drum, LL(IDENT, x, 0.41, z, 0, 1, 1, 1), {
+      masks: [0.66, 0.42, 0.28],
+    });
+    A.add('gb_dark', thin, LL(IDENT, x, 0.22, z, 0, 0.60, 0.035, 0.60), null);
+    A.add('gb_dark', thin, LL(IDENT, x, 0.62, z, 0, 0.60, 0.035, 0.60), null);
+  }
+
+  // ------------------------------------------------ utility-wall details
+  // External pipes, service boxes and louvred vent panels: these are the cheap
+  // industrial cues that make a low-graphics wall read as "built", not as a
+  // blank block.
+  for (const sx of [-1, 1]) {
+    const x = sx * 17.05;
+    const z0 = sx > 0 ? 5.0 : -5.0;
+
+    // two vertical service pipes + horizontal header
+    for (let i = 0; i < 2; i++) {
+      A.add('gb_grey', pipe, LL(IDENT, x, 1.55, z0 + i * 0.34, 0, 1, 2.6, 1), {
+        masks: [0.72, 0.34, 0.18],
+      });
+    }
+    A.add('gb_grey', pipe, LL(IDENT, x, 2.72, z0 + 0.17, 0, 1, 0.80, 1, 0, Math.PI / 2), null);
+
+    // electrical service cabinet + small warning plate
+    A.add('gb_grey', box, LL(IDENT, x - sx * 0.04, 1.05, z0 + 1.05, 0, 0.26, 0.72, 0.62), {
+      masks: [0.62, 0.28, 0.16],
+    });
+    A.add('gb_accent', thin, LL(IDENT, x - sx * 0.19, 1.23, z0 + 1.05, 0, 0.03, 0.22, 0.25), null);
+
+    // louvred vent panel: outer frame + four dark blades
+    A.add('gb_grey', thin, LL(IDENT, x - sx * 0.16, 1.92, z0 - 0.95, 0, 0.04, 0.92, 1.12), {
+      masks: [0.7, 0.32, 0.2],
+    });
+    for (let i = 0; i < 4; i++)
+      A.add('gb_dark', thin, LL(IDENT, x - sx * 0.20, 1.62 + i * 0.20, z0 - 0.95, 0, 0.03, 0.08, 0.90), null);
+  }
+}
+
 function dress(A, rng, stairFeet) {
   const free = (x, z, m = 0.5) => {
     if (!isOpenNuketown(x, z, m)) return false;
@@ -880,6 +999,11 @@ function dress(A, rng, stairFeet) {
   // invisible exactly that way, and only a scaled-up prop that STILL did not
   // appear on screen gave it away.
   const turn = () => Math.floor(rng.float() * 4) * H;
+
+  // Industrial low-graphics dressing inspired by the target reference: forklift,
+  // cones, drums, service pipes, vent panels and electrical boxes. All merge
+  // into existing material batches.
+  addIndustrialArtifacts(A);
 
   /** One merged timber crate: body, posts, slats and lid in one draw. */
   const crate = (x, y, z, ry) => {
