@@ -392,6 +392,8 @@ export class RenderSystem {
     // ---- bookkeeping ------------------------------------------------------
     this.passes = [];
     this.lights = [];
+    this._pointLightBudget = Math.max(0, q.maxPointLights ?? 24);
+    this._pointLightCandidates = [];
     this._draw = [];
     this._nDraw = 0;
     this._hide = [];
@@ -1674,6 +1676,10 @@ export class RenderSystem {
 
   _cullLights(camPos) {
     const s = this.settings;
+    const lean = this._leanForward;
+    const candidates = this._pointLightCandidates;
+    candidates.length = 0;
+
     for (let i = 0; i < this.lights.length; i++) {
       const e = this.lights[i];
       // If the owner animated the intensity since we last wrote it, adopt the
@@ -1683,15 +1689,30 @@ export class RenderSystem {
       }
       const d = e.light.position.distanceTo(camPos);
       const fade = 1 - THREE.MathUtils.smoothstep(d, e.range * 0.75, e.range * 1.15);
-      // Practicals are held against the sun by the renderer, because the
-      // renderer is what owns the key:fill ratio. A "practical" here is a light
-      // that asked to be distance-culled inside a room-or-street radius; the FX
-      // flash pool deliberately registers at 90 m so the fade never bites it,
-      // and a muzzle flash must not be dimmed by a room-lighting control.
       const gain = e.range <= PRACTICAL_RANGE ? s.practicalGain : 1;
       e.applied = e.baseIntensity * fade * gain;
       e.light.intensity = e.applied;
-      e.light.visible = fade > 0.002;
+
+      if (!lean || e.light.isPointLight !== true) {
+        e.light.visible = fade > 0.002;
+        continue;
+      }
+
+      // On the competitive path, point-light count is a hard shader budget.
+      // Collect visible candidates, then keep only the most useful ones:
+      // authored priority first (FX / street lamps beat bulbs), then actual
+      // contribution at the camera. The array is reused every frame.
+      e.light.visible = false;
+      if (fade > 0.002 && Math.abs(e.applied) > 1e-5) {
+        e._score = (e.priority ?? 1) * 1e6 + Math.abs(e.applied) * fade;
+        candidates.push(e);
+      }
+    }
+
+    if (lean && candidates.length) {
+      candidates.sort((a, b) => b._score - a._score);
+      const n = Math.min(this._pointLightBudget, candidates.length);
+      for (let i = 0; i < n; i++) candidates[i].light.visible = true;
     }
   }
 
