@@ -850,6 +850,24 @@ export const PALETTE = {
           weather: [0.25, 0.2, 0.25, 0.34],
         },
       },
+      /** Cheap merged grounding shadow used only by desktop Medium dressing. */
+      gb_shadow: {
+        name: 'flat_matte',
+        surface: 'concrete',
+        opts: {
+          vertexMasks: false,
+          tint: 0x2c2925,
+          scale: 1,
+          three: {
+            transparent: true,
+            opacity: 0.24,
+            depthWrite: false,
+            polygonOffset: true,
+            polygonOffsetFactor: -1,
+            polygonOffsetUnits: -1,
+          },
+        },
+      },
     };
   })(),
 
