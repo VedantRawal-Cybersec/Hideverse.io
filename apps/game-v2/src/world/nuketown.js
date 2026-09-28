@@ -1111,6 +1111,42 @@ function addIndustrialArtifacts(A) {
     for (let i = 0; i < 4; i++)
       A.add('gb_dark', thin, LL(IDENT, x - sx * 0.20, 1.62 + i * 0.20, z0 - 0.95, 0, 0.03, 0.08, 0.90), null);
   }
+
+  // ------------------------------------------------ overhead pipe gantry
+  // A clean refinery silhouette across the street, safely above player height.
+  // Two uprights sit outside the drivable lane, and three coloured process
+  // pipes bridge the road. This is one of the strongest cues in the reference.
+  const gz = -10.2;
+  for (const sx of [-1, 1]) {
+    const gx = sx * 6.75;
+    A.add('gb_dark', box, LL(IDENT, gx, 2.30, gz, 0, 0.20, 4.60, 0.20), null);
+    A.add('gb_accent', thin, LL(IDENT, gx, 4.55, gz, 0, 0.78, 0.08, 0.36), null);
+  }
+  for (const [y, key] of [[4.10, 'gb_grey'], [4.42, 'gb_red'], [4.74, 'gb_grey']]) {
+    A.add(key, pipe, LL(IDENT, 0, y, gz, 0, 1, 13.4, 1, 0, Math.PI / 2), null);
+  }
+
+  // ------------------------------------------------ loading/service bay
+  // Pallet stack, dark drums and a safety rail grouped as one believable work
+  // zone rather than randomly scattered clutter.
+  const bayX = 12.8;
+  const bayZ = -12.4;
+  for (let i = 0; i < 3; i++) {
+    A.add(
+      'wood_prop',
+      thin,
+      LL(IDENT, bayX + i * 0.34, 0.13 + i * 0.16, bayZ + i * 0.08, -0.05, 1.55, 0.12, 0.82),
+      null
+    );
+  }
+  for (const dz of [-0.72, -0.08, 0.56]) {
+    A.add('gb_dark', drum, LL(IDENT, bayX + 1.45, 0.41, bayZ + dz, 0, 1, 1, 1), null);
+  }
+  for (const x of [bayX - 1.25, bayX + 2.35]) {
+    A.add('gb_accent', thin, LL(IDENT, x, 0.72, bayZ + 1.10, 0, 0.07, 1.22, 0.07), null);
+  }
+  A.add('gb_accent', thin, LL(IDENT, bayX + 0.55, 1.26, bayZ + 1.10, 0, 3.65, 0.07, 0.07), null);
+  A.add('gb_accent', thin, LL(IDENT, bayX + 0.55, 0.78, bayZ + 1.10, 0, 3.65, 0.055, 0.055), null);
 }
 
 function dress(A, rng, stairFeet) {
@@ -1143,20 +1179,6 @@ function dress(A, rng, stairFeet) {
   /** One merged timber crate: body, posts, slats and lid in one draw. */
   const crate = (x, y, z, ry) => {
     A.put('gb_crate', x, y, z, ry, 1, [1, rng.range(0.85, 1.2), 1]);
-  };
-
-  const parkedCar = (x, z, ry) => {
-    A.put('gb_car', x, 0.62, z, ry, 1, [0.9, 1.05, 1]);
-    // Unlike loose dressing, cars are meaningful cover and must match visuals.
-    A.box('metal', x, 0.52, z, 1.82, 0.95, 4.0, ry);
-    if (A.quality !== 'performance') {
-      A.add(
-        'gb_dark',
-        BOX_THIN(A),
-        LL(IDENT, x + 0.34, 0.086, z + 0.32, ry - 0.10, 1.72, 0.012, 3.72),
-        null
-      );
-    }
   };
 
   // ---- poured road barriers: sidewalk line and alley cover --------------
