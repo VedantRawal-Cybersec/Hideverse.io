@@ -79,7 +79,7 @@ export const QUALITY_PRESETS = {
     // neon) is mostly its halo, and cutting it made a tier drop read as the
     // power going out on a fully powered map. The perf-visibility goal's V4
     // says it directly: a cheap tier may be softer, not darker.
-    bloom: true,
+    bloom: false,
     contactShadows: false,
     dof: false,
     viewSamples: 0,
