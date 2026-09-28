@@ -194,7 +194,12 @@ export class RenderSystem {
     renderer.autoClearDepth = false;
     renderer.info.autoReset = false;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.NoToneMapping; // we tonemap in the composite
+    // Competitive Auto renders straight to the scaled canvas and uses Three's
+    // built-in filmic operator. High/Ultra keep the custom HDR/AgX pipeline.
+    renderer.toneMapping = this._leanForward
+      ? THREE.ACESFilmicToneMapping
+      : THREE.NoToneMapping;
+    renderer.toneMappingExposure = 1.0;
     // Low smoothness tiers disable every dynamic shadow path, including
     // Three.js spot/point-light shadow maps owned by other systems.
     renderer.shadowMap.enabled = q.shadows !== false;
@@ -1155,6 +1160,10 @@ export class RenderSystem {
   resize(w, h, ctx) {
     const limits = this._limits();
     let pr = Math.min(globalThis.devicePixelRatio || 1, this._pixelRatioCap ?? 1.5);
+    // On the direct Auto path the CANVAS is the resolution-scaled target. This
+    // preserves the adaptive scaler without an extra HDR target + fullscreen
+    // upsample. CSS size is unchanged; the browser scales the smaller backbuffer.
+    if (this._leanForward) pr *= this._renderScale;
 
     // THE BACKBUFFER comes first, because it is not free either: at 5K it is
     // 14.7 MP of RGBA8 + depth that every composite writes end to end, and the
@@ -1173,7 +1182,8 @@ export class RenderSystem {
     // the same ceiling. Beyond the backbuffer clamp this only binds when
     // `renderScale` is above 1 — i.e. the menu's 150-200% supersampling, which
     // is otherwise a 4x pixel multiplier with nothing above it.
-    const fit = fitToBudget(dw * this._renderScale, dh * this._renderScale, limits);
+    const targetScale = this._leanForward ? 1 : this._renderScale;
+    const fit = fitToBudget(dw * targetScale, dh * targetScale, limits);
     const rw = fit.width;
     const rh = fit.height;
 
@@ -1197,7 +1207,11 @@ export class RenderSystem {
       this._budgetNote = '';
     }
 
-    if (this.screenSize.width === rw && this.screenSize.height === rh && this.hdrRt) return;
+    if (
+      this.screenSize.width === rw &&
+      this.screenSize.height === rh &&
+      (this._leanForward || this.hdrRt)
+    ) return;
     // How much the frame area actually moved, before screenSize is overwritten.
     // Auto-exposure adaptation is content-referred, not resolution-referred, so
     // it only needs re-seeding when the frame is genuinely a different picture.
@@ -1207,6 +1221,26 @@ export class RenderSystem {
     this.screenSize.height = rh;
 
     this.hdrRt?.dispose();
+    this.hdrRt = null;
+
+    if (this._leanForward) {
+      // Direct framebuffer mode: no HDR colour target, no ping-pong buffers,
+      // no viewmodel target and no LDR intermediate. The canvas backbuffer above
+      // is already resolution-scaled, so these would only duplicate bandwidth.
+      this.viewRt?.dispose();
+      this.viewRt = null;
+      this.pingRt[0]?.dispose();
+      this.pingRt[1]?.dispose();
+      this.pingRt[0] = null;
+      this.pingRt[1] = null;
+      this.ldrRt?.dispose();
+      this.ldrRt = null;
+      this.depthTexture = null;
+      this.velocityTexture = null;
+      this.normalTexture = null;
+      return;
+    }
+
     this.hdrRt = hdrTarget(rw, rh, { depthBuffer: true, name: 'hdr' });
     // The viewmodel gets its own colour+depth buffer with 4x MSAA, cleared to
     // TRANSPARENT black so the composite has real coverage to work with.
@@ -1743,8 +1777,10 @@ export class RenderSystem {
     if (!leanForward || this.frame <= 3 || this.frame % 6 === 0) this._collect(scene);
     this._ensureProbe(ctx);
     if (!leanForward || this.frame <= 3 || this.frame % 6 === 0) this._syncSun(camera);
-    this._updateRooms();
-    this._updateBounceFill();
+    if (!leanForward) {
+      this._updateRooms();
+      this._updateBounceFill();
+    }
     this._updateViewRig(viewCamera);
     this._camPos.setFromMatrixPosition(camera.matrixWorld);
     this._cullLights(this._camPos);
@@ -1764,6 +1800,25 @@ export class RenderSystem {
     ) {
       ctx.viewScene.environment = ctx.scene.environment;
       this._assignedViewEnv = ctx.scene.environment;
+    }
+
+    // ---- competitive direct framebuffer path ------------------------------
+    // No HDR target, no MRT, no ping-pong passes, no exposure reduction and no
+    // fullscreen tone-map/composite. The canvas itself is resolution-scaled in
+    // resize(), then ACES tone-mapping happens inside the ordinary material draw.
+    if (this._leanForward) {
+      renderer.setRenderTarget(null);
+      renderer.clear(true, true, false);
+      renderer.render(scene, camera);
+
+      this._viewVisible = viewScene.children.length > this._viewRigChildren;
+      if (this._viewVisible) {
+        renderer.clearDepth();
+        renderer.render(viewScene, viewCamera);
+      }
+
+      this._firstFrame = false;
+      return;
     }
 
     // ---- unjittered matrices for velocity + reprojection ------------------
