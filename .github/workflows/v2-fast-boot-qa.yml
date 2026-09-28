@@ -165,8 +165,11 @@ jobs:
             if (mobile && !result.touch) {
               throw new Error('V2 mobile touch mode did not activate');
             }
-            if (result.prewarm?.ok === true) {
-              throw new Error('Full prewarm unexpectedly blocked normal production boot');
+            if (result.prewarm?.mode !== 'production-light') {
+              throw new Error('V2 did not use the lightweight production warmup');
+            }
+            if (result.prewarm?.hooks?.ai) {
+              throw new Error('AI shader prewarm unexpectedly ran during production boot');
             }
             if (pageErrors.length || consoleErrors.length || failedRequests.length) {
               throw new Error('V2 browser/runtime/network errors detected');
