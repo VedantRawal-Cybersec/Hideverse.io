@@ -39,6 +39,12 @@ jobs:
           V2_PERF_QUALITY: performance
         run: node tools/v2-perf-gate.mjs
 
+      - name: V2 browser performance gate — low/reference
+        env:
+          V2_PERF_QUALITY: low
+          V2_PERF_PORT: 4175
+        run: node tools/v2-perf-gate.mjs
+
       - name: V2 browser performance gate — desktop/medium
         env:
           V2_PERF_QUALITY: medium
