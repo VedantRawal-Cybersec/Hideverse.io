@@ -61,7 +61,8 @@ export class MaterialSystem {
     // Medium keeps the same cheap Lambert lighting as Performance/Low, but
     // enables richer texture resolution and macro value variation. This matches
     // the clean "Low graphics" reference look far better than expensive PBR.
-    this._leanRich = this._lean && ctx?.config?.quality === 'medium';
+    this._leanRich = this._lean && ['low', 'medium'].includes(ctx?.config?.quality);
+    this._leanHigh = this._lean && ctx?.config?.quality === 'high';
     /** Multiplier on per-surface parallax depth; 0 turns the POM march off. */
     this._parallax = q?.parallaxScale ?? 1;
     /** Multiplier on the shared micro-detail layer's strength and fade range. */
@@ -239,14 +240,20 @@ export class MaterialSystem {
     delete threeProps.physical;
 
     const Ctor = this._lean
-      ? THREE.MeshLambertMaterial
+      ? (this._leanHigh ? THREE.MeshStandardMaterial : THREE.MeshLambertMaterial)
       : usePhysical
         ? THREE.MeshPhysicalMaterial
         : THREE.MeshStandardMaterial;
     const mat = this._lean
       ? new Ctor({
           color: p.tint ?? 0xffffff,
-          dithering: this._leanRich,
+          ...(this._leanHigh
+            ? {
+                roughness: Array.isArray(p.roughness) ? p.roughness[0] : 0.78,
+                metalness: def.surface === 'metal' ? 0.34 : 0.015,
+              }
+            : {}),
+          dithering: this._leanRich || this._leanHigh,
         })
       : new Ctor({
           color: 0xffffff,
@@ -273,7 +280,7 @@ export class MaterialSystem {
     applyProps(mat, threeProps);
 
     if (set) {
-      if (this._lean) extendFastProjectedMaterial(mat, p, { rich: this._leanRich });
+      if (this._lean) extendFastProjectedMaterial(mat, p, { rich: this._leanRich || this._leanHigh });
       else extendMaterial(mat, p, this._shared);
     }
 
