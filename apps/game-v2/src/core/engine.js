@@ -51,7 +51,12 @@ export class Engine {
     };
 
     /** Frame instrumentation. Always present; see src/core/perf.js. */
-    this.perf = new Perf({ deterministic: !!config.deterministic });
+    this.perf = new Perf({
+      deterministic: !!config.deterministic,
+      // Preserve GPU timing on desktop for adaptive diagnostics; skip it on
+      // touch/mobile where the query traffic itself can contribute to jitter.
+      gpuEnabled: !config.touchMode,
+    });
 
     this.ctx = {
       engine: this,
