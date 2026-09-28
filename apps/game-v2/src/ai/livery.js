@@ -275,9 +275,36 @@ const SLOTS = {
  * material submissions per actor.
  */
 export function fastSlotRgb(slotName, livery) {
-  const spec = SLOTS[slotName] ?? SLOTS.polymer;
-  const c = spec.fixed ?? livery[spec.pick];
-  return c ?? [1, 1, 1];
+  // LOW/PERFORMANCE use a dark tactical base with the livery colour reserved for
+  // readable identity zones. The old one-draw path painted most cloth in the
+  // full neon suit hue, which made the soldier look like a toy and flattened
+  // helmet/armour/limb separation.
+  switch (slotName) {
+    case 'cloth':
+      return livery.suit.map((v, i) => [0.030, 0.032, 0.035][i] + v * 0.42);
+    case 'plate':
+      return livery.suit.map((v, i) => [0.040, 0.042, 0.045][i] + v * 0.26);
+    case 'accent':
+      return livery.accent.map((v) => v * 0.72);
+    case 'gear':
+      return [0.018, 0.019, 0.021];
+    case 'boot':
+      return [0.008, 0.0085, 0.009];
+    case 'rubber':
+      return [0.012, 0.0125, 0.0135];
+    case 'polymer':
+      return [0.021, 0.022, 0.025];
+    case 'steel':
+      return [0.042, 0.043, 0.047];
+    case 'glass':
+      return [0.007, 0.009, 0.012];
+    case 'skin':
+      return livery.skin;
+    default: {
+      const spec = SLOTS[slotName] ?? SLOTS.polymer;
+      return spec.fixed ?? livery[spec.pick] ?? [1, 1, 1];
+    }
+  }
 }
 
 /**
