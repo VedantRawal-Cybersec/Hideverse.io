@@ -848,15 +848,11 @@ function dress(A, rng, stairFeet) {
 
   // ---- crates, on the ground and stacked ---------------------------------
   const crates = [
-    // In the OPEN ends of each alley: the west house spans z -10..5 and the
-    // east house z -5..10, so anything inside those bands is culled by `free()`
-    // and places nothing at all.
-    [-23.5, -13.0], [-23.5, -14.2], [-24.2, 7.0], [-22.9, 8.4],
-    [23.5, 13.0], [23.5, 14.2], [24.2, -7.0], [22.9, -8.4],
-    [-9.8, -13.5], [-13.0, -14.5], [-16.5, -13.0], [-20.5, -12.5],
-    [9.8, 13.5], [13.0, 14.5], [16.5, 13.0], [20.5, 12.5],
-    [-11.5, 10.5], [-15.0, 11.5], [11.5, -10.5], [15.0, -11.5],
-    [-2.0, -19.2], [2.4, -19.6], [-2.4, 19.6], [2.0, 19.2],
+    [-23.5, -13.0], [-24.2, 7.0],
+    [23.5, 13.0], [24.2, -7.0],
+    [-10.2, -13.5], [-16.5, -13.0], [-20.5, -12.5],
+    [10.2, 13.5], [16.5, 13.0], [20.5, 12.5],
+    [-12.0, 10.5], [12.0, -10.5],
   ];
   const S = 0.92;
   for (let i = 0; i < crates.length; i++) {
@@ -865,19 +861,12 @@ function dress(A, rng, stairFeet) {
     crate(x, S / 2 + 0.02, z, turn());
     // Every third one carries a second tier. A stack is what gives a blockout
     // its only vertical rhythm, and it is free: the same prototype again.
-    if (i % 3 === 0) crate(x, S * 1.5 + 0.03, z, turn());
+    if (i % 4 === 0) crate(x, S * 1.5 + 0.03, z, turn());
   }
 
-  // ---- weathered oil drums ------------------------------------------------
-  const barrels = [
-    [-9.0, -10.0], [-9.6, -9.2], [-10.4, 5.5], [9.0, 10.0], [9.6, 9.2], [10.4, -5.5],
-    [-22.0, -13.5], [22.0, 13.5], [-13.5, 16.5], [13.5, -16.5],
-    [-4.8, -10.5], [4.8, 10.5], [-5.4, 11.2], [5.4, -11.2],
-    [-23.8, 0.0], [23.8, 0.0], [-18.0, 18.5], [18.0, -18.5],
-    [-21.5, 8.0], [21.5, -8.0], [-7.5, -19.5], [7.5, 19.5],
-    [-4.6, -18.6], [4.6, 18.6],
-  ];
-  for (const [x, z] of barrels) if (free(x, z, 0.5)) A.put('gb_barrel', x, 0.46, z, turn(), 1);
+  // Oil-drum clutter was removed from the competitive layout. Cars, barriers
+  // and timber crates already provide the silhouette rhythm; another repeated
+  // instanced prototype cost a draw/program for little spatial value.
 
   /**
    * Crate piles: a 3-2-1 pyramid in each yard and each far lot.
@@ -888,12 +877,12 @@ function dress(A, rng, stairFeet) {
    * point: `buildSpawnPoints` culls a spawn against real collision, so a pile
    * dropped on one does not fail anything, it just quietly ships a point short.
    */
-  for (const [cx, cz] of [[-10.3, -2.5], [10.3, 2.5], [-20.0, 18.0], [20.0, -18.0]]) {
+  for (const [cx, cz] of [[-10.3, -2.5], [10.3, 2.5]]) {
     const ry = turn();
     const cos = Math.cos(ry);
     const sin = Math.sin(ry);
-    for (let row = 0; row < 3; row++) {
-      const n = 3 - row;
+    for (let row = 0; row < 2; row++) {
+      const n = 2 - row;
       for (let i = 0; i < n; i++) {
         const u = (i - (n - 1) / 2) * (S + 0.03);
         const x = cx + cos * u;
@@ -902,6 +891,22 @@ function dress(A, rng, stairFeet) {
         crate(x, S / 2 + 0.02 + row * S, z, ry);
       }
     }
+  }
+
+  // Small grounded debris replaces some of the removed prop repetition. These
+  // pieces merge into existing wood/concrete batches, so they cost no new draw.
+  for (const [x, z, ry, key] of [
+    [-8.8, -15.2, 0.22, 'gb_dark'],
+    [-18.4, 9.8, -0.34, 'gb_dark'],
+    [8.6, 15.0, -0.18, 'gb_grey'],
+    [18.0, -10.0, 0.31, 'gb_grey'],
+    [-3.8, 17.6, 0.10, 'gb_dark'],
+    [3.6, -17.8, -0.12, 'gb_grey'],
+  ]) {
+    if (!free(x, z, 0.25)) continue;
+    A.add(key, BOX_THIN(A), LL(IDENT, x, 0.055, z, ry, 0.72, 0.09, 0.18), {
+      masks: [0.82, 0.62, 0.38],
+    });
   }
 
   // Vegetation is intentionally omitted from the competitive path: alpha-cut
