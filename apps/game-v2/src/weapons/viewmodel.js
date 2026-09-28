@@ -53,7 +53,9 @@ const _q2 = new THREE.Quaternion();
 const _e = new THREE.Euler(0, 0, 0, 'XYZ');
 const _m = new THREE.Matrix4();
 
-const FAST_SEPARATE_MATERIALS = new Set([
+const FAST_SKIP_MATERIALS = new Set([
+  // Auto uses an open optic aperture: the collimated reticle logic stays, but
+  // these decorative optical surfaces are omitted to save three draws/programs.
   'glass',
   'lens_ring',
   'lens_vig',
@@ -71,6 +73,62 @@ function bakeFastColour(geo, colour) {
   }
   geo.setAttribute('color', new THREE.BufferAttribute(a, 3));
   return geo;
+}
+
+/**
+ * Build a competitive low-poly proxy directly from an Assembly's authored
+ * parts before its material buckets are merged.
+ *
+ * Each original part already carries its final local transform. Expensive
+ * pieces are replaced by their own tight bounding box, preserving the rifle's
+ * authored proportions and moving-part pivots instead of replacing the whole
+ * weapon with one crude box. Small parts are kept verbatim. Everything is then
+ * merged to one geometry per assembly and shaded with vertex colours.
+ *
+ * High/Ultra never call this path and keep the original detailed geometry.
+ */
+function buildFastAssemblyProxy(asm, mats) {
+  const out = [];
+  const size = new THREE.Vector3();
+  const center = new THREE.Vector3();
+
+  for (const [matKey, list] of asm.buckets) {
+    if (FAST_SKIP_MATERIALS.has(matKey)) {
+      for (const g of list) g.dispose();
+      continue;
+    }
+
+    const colour = mats.fastColor(matKey);
+    for (const g of list) {
+      const tris = triCount(g);
+      let use = g;
+
+      // Detailed receiver/rail/tube parts dominate the Auto triangle budget.
+      // Above this threshold their tight box is visually equivalent at normal
+      // viewmodel distance once shaded/coloured, but costs only 12 triangles.
+      if (tris > 96) {
+        g.computeBoundingBox();
+        const bb = g.boundingBox;
+        if (bb && !bb.isEmpty()) {
+          bb.getSize(size);
+          bb.getCenter(center);
+          // Reject degenerate proxy dimensions; keep the original tiny planar
+          // element rather than creating invalid zero-volume geometry.
+          if (size.x > 1e-5 && size.y > 1e-5 && size.z > 1e-5) {
+            use = new THREE.BoxGeometry(size.x, size.y, size.z);
+            use.translate(center.x, center.y, center.z);
+            g.dispose();
+          }
+        }
+      }
+
+      bakeFastColour(use, colour);
+      out.push(use);
+    }
+  }
+
+  asm.buckets.clear();
+  return mergeAll(out);
 }
 const _axisX = new THREE.Vector3(1, 0, 0);
 const _axisY = new THREE.Vector3(0, 1, 0);
@@ -399,21 +457,14 @@ export class Viewmodel {
     const bake = this.mats.lib?.bakeMasks?.bind(this.mats.lib) ?? null;
 
     const build = (asm, parent, wearScale = 1) => {
-      const map = asm.build();
+      // Cinematic tiers merge the authored buckets normally. Auto must retain
+      // the individual authored parts long enough to construct low-poly proxies.
+      const map = this.mats.fastMode ? new Map() : asm.build();
 
       if (this.mats.fastMode) {
-        const opaque = [];
-        const separate = [];
-        for (const [matKey, geo] of map) {
-          if (FAST_SEPARATE_MATERIALS.has(matKey)) {
-            separate.push([matKey, geo]);
-            continue;
-          }
-          bakeFastColour(geo, this.mats.fastColor(matKey));
-          opaque.push(geo);
-        }
-
-        const merged = mergeAll(opaque);
+        // Do not call asm.build(): that would first create the original 50k+
+        // triangle merged rifle. Proxy the authored pieces directly instead.
+        const merged = buildFastAssemblyProxy(asm, this.mats);
         if (merged) {
           const mesh = new THREE.Mesh(merged, this.mats.fastMaterial());
           mesh.name = `${asm.name}-fast`;
@@ -423,18 +474,6 @@ export class Viewmodel {
           parent.add(mesh);
           meshes.push(mesh);
           tris += triCount(merged);
-        }
-
-        // Keep only the few genuinely transparent / optical materials separate.
-        for (const [matKey, geo] of separate) {
-          const mesh = new THREE.Mesh(geo, this.mats.get(matKey));
-          mesh.name = `${asm.name}-${matKey}`;
-          mesh.castShadow = false;
-          mesh.receiveShadow = false;
-          mesh.frustumCulled = false;
-          parent.add(mesh);
-          meshes.push(mesh);
-          tris += triCount(geo);
         }
         return;
       }
