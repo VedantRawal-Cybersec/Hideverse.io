@@ -54,6 +54,7 @@ const SHARED = {
 export const QUALITY_PRESETS = {
   performance: {
     ...SHARED,
+    prepass: false,
     // Competitive smoothness floor. This is intentionally aggressive: Auto
     // uses it on phones and weak GPUs so frame pacing wins over decoration.
     renderScale: 0.45,
@@ -85,6 +86,7 @@ export const QUALITY_PRESETS = {
   },
   low: {
     ...SHARED,
+    prepass: false,
     renderScale: 0.6,
     minRenderScale: 0.45,
     maxRenderScale: 0.72,
@@ -114,6 +116,7 @@ export const QUALITY_PRESETS = {
   },
   medium: {
     ...SHARED,
+    prepass: false,
     // Auto's desktop ceiling: keeps the competitive look while avoiding the
     // heavy temporal/AO/volumetric stack that causes intermittent frame spikes.
     renderScale: 0.72,
