@@ -50,6 +50,10 @@ export class FxSystem {
     const q = ctx.config.q;
     const budget = q.particleBudget ?? 6000;
     const big = budget >= 10000;
+    // Auto's Performance/Low/Medium tiers use the lean forward renderer. Keep
+    // particles, impacts and tracers, but remove depth-fade/refraction so the
+    // renderer can skip its full depth/normal/velocity prepass entirely.
+    this._leanFx = q.prepass === false;
 
     const t0 = performance.now();
     const atlasSize = big ? 1024 : 512;
@@ -77,6 +81,7 @@ export class FxSystem {
         atlas: particleAtlas.texture,
         cols: particleAtlas.cols,
         renderOrder,
+        soft: !this._leanFx,
       });
 
     this.lit = mk(litCap, 'lit', 10);
@@ -104,12 +109,14 @@ export class FxSystem {
     });
     ctx.scene.add(this.decals.mesh);
 
-    this.hazeSys = new HazeSystem({
-      capacity: hazeCap,
-      atlas: particleAtlas.texture,
-      cols: particleAtlas.cols,
-    });
-    this._hazeOff = this.render?.registerPass?.(this.hazeSys.pass) ?? null;
+    this.hazeSys = this._leanFx
+      ? null
+      : new HazeSystem({
+          capacity: hazeCap,
+          atlas: particleAtlas.texture,
+          cols: particleAtlas.cols,
+        });
+    this._hazeOff = this.hazeSys ? this.render?.registerPass?.(this.hazeSys.pass) ?? null : null;
 
     this.lights = new LightPool(ctx.scene, 4);
     if (this.render?.addLight) this.lights.register(this.render);
@@ -340,7 +347,7 @@ export class FxSystem {
       }
       // The refraction sprites and the warp pass live in the haze system's own
       // private scenes, which no scene-graph walk from outside can reach.
-      this.hazeSys.prewarm(renderer);
+      this.hazeSys?.prewarm(renderer);
     } finally {
       renderer.setRenderTarget(prevRt, prevFace, prevMip);
       rt.dispose();
@@ -638,12 +645,12 @@ export class FxSystem {
 
   /** Refraction sprite (hot gas, shimmer). */
   haze(x, y, z, radius, grow, life, strength, tile = P.SMOKE_A) {
-    this.hazeSys.emit(this.now, x, y, z, radius, grow, life, strength, tile, this.rng.float());
+    this.hazeSys?.emit(this.now, x, y, z, radius, grow, life, strength, tile, this.rng.float());
   }
 
   /** Expanding shockwave ring in the refraction buffer. */
   hazeRing(x, y, z, radius, grow, life, strength) {
-    this.hazeSys.emit(this.now, x, y, z, radius, grow, life, strength, P.RING, this.rng.float());
+    this.hazeSys?.emit(this.now, x, y, z, radius, grow, life, strength, P.RING, this.rng.float());
   }
 
   addSmokeColumn(x, y, z, o) {
@@ -866,7 +873,7 @@ export class FxSystem {
     const h = r?.screenSize?.height ?? 1080;
     for (const l of this.layers) {
       l.uniforms.uDepth.value = depth;
-      l.uniforms.uSoftEnable.value.x = depth ? 1 : 0;
+      l.uniforms.uSoftEnable.value.x = !this._leanFx && depth ? 1 : 0;
       l.uniforms.uRes.value.set(w, h);
       l.flush(this.now);
     }
@@ -875,7 +882,7 @@ export class FxSystem {
       this.viewLit.flush(this.now);
     }
     this.decals.flush(this.now);
-    this.hazeSys.update(this.now, depth, ctx.camera);
+    this.hazeSys?.update(this.now, depth, ctx.camera);
     this.stats.live = this.add.spawned + this.lit.spawned;
 
     // Self-scheduled pre-warm, on the second frame.
@@ -1348,7 +1355,7 @@ export class FxSystem {
     this.shells.mesh.parent?.remove(this.shells.mesh);
     this.shells.dispose();
     this.designatorBeam.dispose();
-    this.hazeSys.dispose();
+    this.hazeSys?.dispose();
     this.lights.dispose();
     this.viewLights?.dispose();
     this.viewLights = null;
