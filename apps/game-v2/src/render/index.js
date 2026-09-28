@@ -198,15 +198,16 @@ export class RenderSystem {
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     // Competitive Auto renders straight to the scaled canvas and uses Three's
     // built-in filmic operator. High/Ultra keep the custom HDR/AgX pipeline.
-    renderer.toneMapping = this._leanForward
-      ? THREE.ACESFilmicToneMapping
-      : THREE.NoToneMapping;
-    renderer.toneMappingExposure =
-      this._leanForward && cfg.quality === 'low'
-        ? 0.88
-        : this._leanForward && cfg.quality === 'medium'
-          ? 0.82
-          : 1.0;
+    // Competitive LOW/PERFORMANCE render directly. ACES was crushing the
+    // already-dark Lambert shadow side of the scene into black, which is the
+    // opposite of the clean readable low-graphics target.
+    renderer.toneMapping =
+      this._leanForward && ['performance', 'low'].includes(cfg.quality)
+        ? THREE.NoToneMapping
+        : this._leanForward
+          ? THREE.ACESFilmicToneMapping
+          : THREE.NoToneMapping;
+    renderer.toneMappingExposure = 1.0;
     // Low smoothness tiers disable every dynamic shadow path, including
     // Three.js spot/point-light shadow maps owned by other systems.
     renderer.shadowMap.enabled = q.shadows !== false;
@@ -363,13 +364,18 @@ export class RenderSystem {
     // rig instead, with every direction fixed in VIEW space so the weapon reads
     // identically at any world sun azimuth — which is what every shipped FPS
     // does, and the reason their guns are always legible.
-    this.viewSun = new THREE.DirectionalLight(0xffe8c4, 2.0);
+    const lowReadable = cfg.quality === 'low';
+    this.viewSun = new THREE.DirectionalLight(0xfff1d8, lowReadable ? 2.6 : 2.0);
     this.viewSun.name = 'ow-viewmodel-key';
-    this.viewKeyFill = new THREE.DirectionalLight(0x9ec4ff, 0.6);
+    this.viewKeyFill = new THREE.DirectionalLight(0xc4dcff, lowReadable ? 1.15 : 0.6);
     this.viewKeyFill.name = 'ow-viewmodel-fill';
-    this.viewRim = new THREE.DirectionalLight(0xffd7a8, 1.0);
+    this.viewRim = new THREE.DirectionalLight(0xffe2bf, lowReadable ? 1.25 : 1.0);
     this.viewRim.name = 'ow-viewmodel-rim';
-    this.viewFill = new THREE.HemisphereLight(0x8fb6ff, 0x36302a, 0.35);
+    this.viewFill = new THREE.HemisphereLight(
+      0xcfe2ff,
+      0x817a6e,
+      lowReadable ? 0.85 : 0.35
+    );
     // Warm bounce off the ground/street, arriving from BELOW. Without it, any
     // part of the weapon or hands that sits in the gun's own cast shadow — the
     // support glove under the handguard is the worst case — is lit by nothing
