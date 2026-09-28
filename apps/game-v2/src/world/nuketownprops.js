@@ -16,44 +16,27 @@ function fieldCrate(size = 0.92) {
   const p = new PB();
   const s = size;
 
-  // Recessed timber body.
-  p.box(s * 0.9, s * 0.78, s * 0.86, 0, 0, 0, {
+  // One recessed body, four corner posts and two lid/batten pieces. The old
+  // realism pass used dozens of slats; repeated across ~50 instances that was
+  // visually redundant and far too expensive.
+  p.box(s * 0.90, s * 0.78, s * 0.86, 0, 0, 0, {
     bevel: 0.012,
-    grime: 0.2,
+    grime: 0.22,
   });
-
-  // Corner posts.
   for (const sx of [-1, 1])
     for (const sz of [-1, 1])
-      p.box(0.07, s * 0.9, 0.07, sx * s * 0.46, 0, sz * s * 0.43, {
-        bevel: 0.006,
+      p.box(0.07, s * 0.88, 0.07, sx * s * 0.46, 0, sz * s * 0.43, {
+        bevel: 0.005,
         wear: 1,
       });
 
-  // Slats on all four visible sides.
-  for (let i = 0; i < 4; i++) {
-    const y = -s * 0.29 + i * s * 0.19;
-    p.box(s * 0.96, 0.11, 0.025, 0, y, s * 0.44, {
-      bevel: 0.004,
-      grime: i === 0 ? 0.28 : 0.12,
-    });
-    p.box(s * 0.96, 0.11, 0.025, 0, y, -s * 0.44, {
-      bevel: 0.004,
-      grime: i === 0 ? 0.28 : 0.12,
-    });
-    p.box(0.025, 0.11, s * 0.88, s * 0.47, y, 0, { bevel: 0.004 });
-    p.box(0.025, 0.11, s * 0.88, -s * 0.47, y, 0, { bevel: 0.004 });
-  }
-
-  // Lid boards with small gaps and one raised batten.
-  for (let i = 0; i < 5; i++) {
-    const z = -s * 0.42 + i * s * 0.21;
-    p.box(s * 0.93, 0.028, s * 0.17, 0, s * 0.405, z, {
-      bevel: 0.004,
-      wear: 1,
-    });
-  }
-  p.box(s * 0.98, 0.035, 0.07, 0, s * 0.435, s * 0.18, {
+  // A raised lid and one cross-batten are enough to establish real timber
+  // construction at gameplay distance.
+  p.box(s * 0.94, 0.035, s * 0.84, 0, s * 0.41, 0, {
+    bevel: 0.005,
+    wear: 1,
+  });
+  p.box(s * 0.98, 0.04, 0.075, 0, s * 0.445, s * 0.18, {
     bevel: 0.004,
     wear: 1,
   });
@@ -63,30 +46,26 @@ function fieldCrate(size = 0.92) {
 
 function oilDrum(r = 0.30, h = 0.88) {
   const p = new PB();
+  p.cyl(r, h, 0, 0, 0, { radial: 12, grime: 0.18 });
 
-  // Main shell.
-  p.cyl(r, h, 0, 0, 0, { radial: 16, grime: 0.18 });
-
-  // Rolled strengthening ribs.
-  for (const y of [-h * 0.31, 0, h * 0.31])
-    p.cyl(r * 1.045, 0.055, 0, y, 0, {
-      radial: 16,
+  // Two strengthening ribs plus top/bottom rims. Twelve sides are enough for a
+  // 60 cm drum at combat distance and save a large repeated triangle cost.
+  for (const y of [-h * 0.28, h * 0.28])
+    p.cyl(r * 1.04, 0.052, 0, y, 0, {
+      radial: 12,
       wear: 1,
-      grime: 0.25,
+      grime: 0.24,
     });
-
-  // Top/bottom rims and bung.
   for (const sy of [-1, 1])
-    p.cyl(r * 1.02, 0.036, 0, sy * (h / 2 - 0.018), 0, {
-      radial: 16,
+    p.cyl(r * 1.015, 0.034, 0, sy * (h / 2 - 0.017), 0, {
+      radial: 12,
       wear: 1,
       grime: sy < 0 ? 0.45 : 0.1,
     });
-  p.cyl(0.045, 0.025, r * 0.42, h / 2 + 0.01, 0, {
-    radial: 8,
+  p.cyl(0.042, 0.022, r * 0.42, h / 2 + 0.01, 0, {
+    radial: 6,
     wear: 1,
   });
-
   return p.build();
 }
 
@@ -110,14 +89,6 @@ function roadBarrier(w = 1.5, h = 0.88, d = 0.72) {
     bevel: 0.025,
     wear: 1,
   });
-
-  // Lifting slots / construction recesses represented as shallow dark relief.
-  for (const x of [-w * 0.26, w * 0.26])
-    p.box(w * 0.17, 0.11, 0.035, x, -h * 0.08, d * 0.36, {
-      bevel: 0.006,
-      grime: 0.8,
-      ao: 0.45,
-    });
 
   return p.build();
 }
@@ -163,7 +134,7 @@ function compactCar() {
   for (const x of [-0.86, 0.86])
     for (const z of [-1.28, 1.28])
       p.cyl(0.31, 0.18, x, -0.29, z, {
-        radial: 10,
+        radial: 8,
         rz: Math.PI / 2,
         grime: 0.65,
       });
