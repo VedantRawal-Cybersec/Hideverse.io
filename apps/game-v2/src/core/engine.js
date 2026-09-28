@@ -40,11 +40,20 @@ export class Engine {
     this.viewScene = new THREE.Scene();
     this.viewCamera = new THREE.PerspectiveCamera(60, 1, 0.005, 12);
 
+    // Performance/Low run gameplay physics at 60 Hz. Rendering and input still
+    // happen every browser frame, but halving fixed simulation work removes the
+    // largest recurring CPU cost on phones and weak PCs. Medium+ retain 120 Hz.
+    this._fixedDt =
+      config.touchMode || config.quality === 'performance' || config.quality === 'low'
+        ? 1 / 60
+        : FIXED_DT;
+    this._maxSubsteps = this._fixedDt === FIXED_DT ? MAX_SUBSTEPS : 4;
+
     this.time = {
       /** Seconds since start, scaled. */ elapsed: 0,
       /** Unscaled wall-clock seconds since start. */ raw: 0,
       /** Last frame delta, scaled and clamped. */ dt: 0,
-      /** Fixed step. */ fixed: FIXED_DT,
+      /** Fixed step. */ fixed: this._fixedDt,
       /** Interpolation alpha between the last two physics steps, 0..1. */ alpha: 0,
       scale: 1,
       frame: 0,
@@ -234,13 +243,15 @@ export class Engine {
     this._accum += t.dt;
     let steps = 0;
     const fixedSystems = this.registry.with('fixedUpdate');
-    while (this._accum >= FIXED_DT && steps < MAX_SUBSTEPS) {
-      for (const sys of fixedSystems) sys.fixedUpdate(FIXED_DT, this.ctx);
-      this._accum -= FIXED_DT;
+    const fixedDt = this._fixedDt;
+    const maxSubsteps = this._maxSubsteps;
+    while (this._accum >= fixedDt && steps < maxSubsteps) {
+      for (const sys of fixedSystems) sys.fixedUpdate(fixedDt, this.ctx);
+      this._accum -= fixedDt;
       steps++;
     }
-    if (steps === MAX_SUBSTEPS) this._accum = 0; // shed backlog rather than spiral
-    t.alpha = this._accum / FIXED_DT;
+    if (steps === maxSubsteps) this._accum = 0; // shed backlog rather than spiral
+    t.alpha = this._accum / fixedDt;
     perf.mark(PHASE_FIXED);
 
     for (const sys of this.registry.with('update')) sys.update(t.dt, this.ctx);
