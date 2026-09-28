@@ -334,6 +334,20 @@ export class SkySystem {
     ctx.scene.add(this.moonLight, this.moonLight.target);
     r.addLight(this.moonLight, { range: 1e9, priority: 9 });
 
+    // LOW/PERFORMANCE world materials are Lambert and therefore do not receive
+    // the PBR environment fill. A single hemisphere light is the cheapest way
+    // to stop every face turned away from the sun becoming pitch black.
+    const leanFillI =
+      ctx.config?.quality === 'low' ? 1.10 :
+      ctx.config?.quality === 'performance' ? 0.72 : 0;
+    this.leanFill = leanFillI > 0
+      ? new THREE.HemisphereLight(0xcfe3ff, 0x817a6f, leanFillI)
+      : null;
+    if (this.leanFill) {
+      this.leanFill.name = 'sky-lean-fill';
+      ctx.scene.add(this.leanFill);
+    }
+
     this.keyLight = this.sunLight;
 
     // ---- IBL --------------------------------------------------------------
@@ -965,9 +979,11 @@ export class SkySystem {
     this.pmrem.dispose();
     this.ctx.scene.remove(this.sunLight, this.sunLight.target);
     this.ctx.scene.remove(this.moonLight, this.moonLight.target);
+    if (this.leanFill) this.ctx.scene.remove(this.leanFill);
     this.render.removeLight?.(this.sunLight);
     this.render.removeLight?.(this.moonLight);
     this.sunLight.dispose();
     this.moonLight.dispose();
+    this.leanFill?.dispose?.();
   }
 }
