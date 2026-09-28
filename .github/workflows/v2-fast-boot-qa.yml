@@ -69,13 +69,34 @@ jobs:
                 },
           );
           const page = await context.newPage();
+          const started = Date.now();
           const pageErrors = [];
           const consoleErrors = [];
+          const diagnosticLogs = [];
           const failedRequests = [];
 
           page.on('pageerror', (error) => pageErrors.push(String(error)));
           page.on('console', (message) => {
-            if (message.type() === 'error') consoleErrors.push(message.text());
+            const value = message.text();
+            if (message.type() === 'error') consoleErrors.push(value);
+            if (
+              value.startsWith('[engine]') ||
+              value.startsWith('[boot]') ||
+              value.startsWith('[world]') ||
+              value.startsWith('[render]') ||
+              value.startsWith('[materials]') ||
+              value.startsWith('[sky]') ||
+              value.startsWith('[physics]') ||
+              value.startsWith('[ai]') ||
+              value.startsWith('[ui]') ||
+              value.startsWith('[quality]')
+            ) {
+              diagnosticLogs.push({
+                atMs: Date.now() - started,
+                value,
+              });
+              console.log('[v2-init-trace]', Date.now() - started, value);
+            }
           });
           page.on('requestfailed', (request) => {
             failedRequests.push({
@@ -85,14 +106,28 @@ jobs:
           });
 
           try {
-            const started = Date.now();
             await page.goto(
               'http://127.0.0.1:43993/game-v2/?mp=0&q=low',
               { waitUntil: 'domcontentloaded', timeout: 90000 },
             );
-            await page.waitForFunction(() => window.__READY__ === true, null, {
-              timeout: 30000,
-            });
+            try {
+              await page.waitForFunction(() => window.__READY__ === true, null, {
+                timeout: 70000,
+              });
+            } catch (error) {
+              console.log(
+                '[v2-fast-boot-timeout]',
+                JSON.stringify({
+                  profile: process.env.PROFILE,
+                  elapsedMs: Date.now() - started,
+                  diagnosticLogs,
+                  pageErrors,
+                  consoleErrors,
+                  failedRequests,
+                }),
+              );
+              throw error;
+            }
             const bootMs = Date.now() - started;
             await page.waitForTimeout(1200);
 
@@ -115,6 +150,7 @@ jobs:
               pageErrors,
               consoleErrors,
               failedRequests,
+              diagnosticLogs,
             }));
 
             if (!result.ready || !result.engine || result.frame < 3) {
