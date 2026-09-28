@@ -267,6 +267,20 @@ const SLOTS = {
 };
 
 /**
+ * Linear RGB for one authored character material slot.
+ *
+ * LOW/PERFORMANCE keep the entire soldier in one draw, so the slot colour is
+ * baked into the geometry's vertex colours by AiSystem.geometryFor(). This
+ * preserves cloth / armour / skin / boot / weapon identity without paying ten
+ * material submissions per actor.
+ */
+export function fastSlotRgb(slotName, livery) {
+  const spec = SLOTS[slotName] ?? SLOTS.polymer;
+  const c = spec.fixed ?? livery[spec.pick];
+  return c ?? [1, 1, 1];
+}
+
+/**
  * Flat material set for the characters. One `MeshStandardMaterial` per
  * (slot, livery) pair, cached — they are untextured, so a set costs a few
  * hundred bytes and no GPU memory at all.
@@ -329,10 +343,13 @@ export class SoldierMaterials {
     let m = this.materials.get(key);
     if (m) return m;
     m = new THREE.MeshLambertMaterial({
-      color: col(livery.suit),
+      // Slot identity is baked into the geometry vertex colours. Keep the
+      // material white so skin/armour/weapon hues are not multiplied back into
+      // the uniform colour of the suit.
+      color: 0xffffff,
       vertexColors: true,
       flatShading: true,
-      dithering: false,
+      dithering: true,
     });
     m.name = `ai_fast_${livery.id}`;
     m.userData.owNoPatch = true;
