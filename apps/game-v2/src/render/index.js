@@ -202,9 +202,11 @@ export class RenderSystem {
       ? THREE.ACESFilmicToneMapping
       : THREE.NoToneMapping;
     renderer.toneMappingExposure =
-      this._leanForward && cfg.quality === 'medium'
-        ? 0.82
-        : 1.0;
+      this._leanForward && cfg.quality === 'low'
+        ? 0.88
+        : this._leanForward && cfg.quality === 'medium'
+          ? 0.82
+          : 1.0;
     // Low smoothness tiers disable every dynamic shadow path, including
     // Three.js spot/point-light shadow maps owned by other systems.
     renderer.shadowMap.enabled = q.shadows !== false;
