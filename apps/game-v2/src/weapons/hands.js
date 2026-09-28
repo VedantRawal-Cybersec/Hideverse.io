@@ -75,15 +75,42 @@ function buildFinger(materials, spec) {
   const root = new THREE.Object3D();
   const joints = [];
   let parent = root;
+
+  // Performance/Low/Medium keep the exact three-joint logical chain used by
+  // trigger posing and the build-time contact solver, but render a single
+  // tapered finger instead of three separately submitted segment meshes.
+  // The first joint still drives the visible curl; distal joints remain fully
+  // available to gameplay/contact maths without costing draw calls.
+  if (materials.fast) {
+    for (let i = 0; i < 3; i++) {
+      const j = new THREE.Object3D();
+      j.rotation.x = -curl[i];
+      parent.add(j);
+      const next = new THREE.Object3D();
+      next.position.z = -lengths[i];
+      j.add(next);
+      if (i === 0) {
+        const total = lengths[0] + lengths[1] + lengths[2];
+        j.add(
+          new THREE.Mesh(
+            prism(total, radii[0], radii[3] * 0.62, {
+              rear: radii[0] * 0.8,
+              sides: 5,
+            }),
+            materials.glove
+          )
+        );
+      }
+      parent = next;
+      joints.push(j);
+    }
+    return { root, joints };
+  }
+
   for (let i = 0; i < 3; i++) {
     const j = new THREE.Object3D();
     j.rotation.x = -curl[i];
     parent.add(j);
-    // The tip narrows and the base overlaps backwards into the parent segment
-    // so the chain stays closed through the full curl range. Six flats, not
-    // four: a curled square prism presents its 45-degree corner to the camera
-    // and the whole hand reads as a claw of boxes; hexagonal segments keep the
-    // faceted flat-shaded read without the square silhouette.
     const geo = prism(lengths[i], radii[i], radii[i + 1] * (i === 2 ? 0.66 : 0.9), {
       rear: radii[i] * 0.9,
       sides: 6,
@@ -126,27 +153,43 @@ function buildThumb(materials, scale = 1, spec = THUMB) {
   const root = new THREE.Object3D();
   const j1 = new THREE.Object3D();
   root.add(j1);
-  j1.add(
-    new THREE.Mesh(
-      prism(spec.l0 * scale, spec.r0 * scale, spec.r1 * scale * 0.95, {
-        rear: spec.r0 * scale,
-        sides: 6,
-      }),
-      materials.glove
-    )
-  );
+
+  if (materials.fast) {
+    j1.add(
+      new THREE.Mesh(
+        prism((spec.l0 + spec.l1) * scale, spec.r0 * scale, spec.r2 * scale * 0.72, {
+          rear: spec.r0 * scale * 0.8,
+          sides: 5,
+        }),
+        materials.glove
+      )
+    );
+  } else {
+    j1.add(
+      new THREE.Mesh(
+        prism(spec.l0 * scale, spec.r0 * scale, spec.r1 * scale * 0.95, {
+          rear: spec.r0 * scale,
+          sides: 6,
+        }),
+        materials.glove
+      )
+    );
+  }
+
   const j2 = new THREE.Object3D();
   j2.position.z = -spec.l0 * scale;
   j1.add(j2);
-  j2.add(
-    new THREE.Mesh(
-      prism(spec.l1 * scale, spec.r1 * scale, spec.r2 * scale * 0.7, {
-        rear: spec.r1 * scale * 0.9,
-        sides: 6,
-      }),
-      materials.glove
-    )
-  );
+  if (!materials.fast) {
+    j2.add(
+      new THREE.Mesh(
+        prism(spec.l1 * scale, spec.r1 * scale, spec.r2 * scale * 0.7, {
+          rear: spec.r1 * scale * 0.9,
+          sides: 6,
+        }),
+        materials.glove
+      )
+    );
+  }
   return { root, joints: [j1, j2] };
 }
 
