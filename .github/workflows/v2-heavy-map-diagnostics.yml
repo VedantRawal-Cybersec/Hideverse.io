@@ -1,0 +1,91 @@
+name: V2 Heavy Map Diagnostics
+
+on:
+  push:
+    branches:
+      - qa/v2-heavy-map-diagnostics
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        map: [dome, shivam]
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.23.2
+      - run: |
+          npm install --no-audit --no-fund
+          npm run build:live
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start local production server
+        run: |
+          PORT=43993 npm run start --workspace @hideverse/web > /tmp/server.log 2>&1 &
+          for i in {1..100}; do
+            if curl -fsS http://127.0.0.1:43993/game-v2/ >/dev/null; then exit 0; fi
+            sleep 0.2
+          done
+          cat /tmp/server.log
+          exit 1
+      - name: Trace heavy map
+        env:
+          MAP_ID: ${{ matrix.map }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch({ headless: true });
+          const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+          const page = await context.newPage();
+          const started = Date.now();
+          const lines = [];
+          page.on('console', (m) => {
+            const line = `${Date.now()-started}ms [${m.type()}] ${m.text()}`;
+            lines.push(line);
+            console.log('[browser]', line);
+          });
+          page.on('pageerror', (e) => console.log('[pageerror]', String(e)));
+          page.on('requestfailed', (r) => console.log('[requestfailed]', r.url(), r.failure()?.errorText));
+
+          try {
+            await page.goto(
+              `http://127.0.0.1:43993/game-v2/?map=${process.env.MAP_ID}&mp=0&prewarm=0`,
+              { waitUntil: 'domcontentloaded', timeout: 90000 },
+            );
+
+            let ready = false;
+            for (let i = 0; i < 24; i++) {
+              try {
+                const state = await page.evaluate(() => ({
+                  ready: window.__READY__ === true,
+                  engine: Boolean(window.__ENGINE__),
+                  frame: window.__ENGINE__?.time?.frame ?? 0,
+                  bootFailure: document.body.textContent?.includes('BOOT FAILURE') ?? false,
+                }));
+                console.log('[probe]', JSON.stringify({ atMs: Date.now()-started, ...state }));
+                if (state.ready) { ready = true; break; }
+                if (state.bootFailure) break;
+              } catch (error) {
+                console.log('[probe-error]', String(error));
+              }
+              await page.waitForTimeout(5000);
+            }
+            console.log('[final]', JSON.stringify({
+              map: process.env.MAP_ID,
+              elapsedMs: Date.now()-started,
+              ready,
+              lastLogs: lines.slice(-40),
+            }));
+          } finally {
+            await context.close();
+            await browser.close();
+          }
+          NODE
