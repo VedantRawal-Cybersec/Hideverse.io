@@ -51,6 +51,12 @@ jobs:
           V2_PERF_PORT: 4174
         run: node tools/v2-perf-gate.mjs
 
+      - name: V2 browser performance gate — high/optimized
+        env:
+          V2_PERF_QUALITY: high
+          V2_PERF_PORT: 4176
+        run: node tools/v2-perf-gate.mjs
+
       - name: Verify published files
         run: |
           test -f apps/web/dist/index.html
