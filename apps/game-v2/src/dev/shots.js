@@ -235,6 +235,7 @@ export function installShotApi(engine, { capture, lockstep = false } = {}) {
   // dominant source of draw/triangle pressure.
   const sceneCost = (root) => {
     let meshes = 0, draws = 0, triangles = 0, skinned = 0, instanced = 0;
+    const items = [];
     root?.traverseVisible?.((o) => {
       if (!o?.isMesh || o.material?.visible === false) return;
       meshes++;
@@ -245,14 +246,30 @@ export function installShotApi(engine, { capture, lockstep = false } = {}) {
       const indexCount = geo.index?.count ?? geo.getAttribute?.('position')?.count ?? 0;
       const groups = Array.isArray(o.material) && geo.groups?.length ? geo.groups : null;
       const copies = o.isInstancedMesh ? Math.max(0, o.count ?? 0) : 1;
-      if (groups) {
-        draws += groups.filter((g) => (o.material[g.materialIndex]?.visible ?? true)).length;
-      } else {
-        draws += 1;
-      }
-      triangles += (indexCount / 3) * copies;
+      const itemDraws = groups
+        ? groups.filter((g) => (o.material[g.materialIndex]?.visible ?? true)).length
+        : 1;
+      const itemTris = (indexCount / 3) * copies;
+      draws += itemDraws;
+      triangles += itemTris;
+      items.push({
+        name: o.name || '(unnamed)',
+        draws: itemDraws,
+        triangles: Math.round(itemTris),
+        copies,
+        skinned: !!o.isSkinnedMesh,
+        instanced: !!o.isInstancedMesh,
+      });
     });
-    return { meshes, draws, triangles: Math.round(triangles), skinned, instanced };
+    items.sort((a,b)=>b.triangles-a.triangles || b.draws-a.draws);
+    return {
+      meshes,
+      draws,
+      triangles: Math.round(triangles),
+      skinned,
+      instanced,
+      top: items.slice(0, 20),
+    };
   };
   window.__SCENE_STATS__ = () => ({
     world: sceneCost(engine.ctx.scene),
