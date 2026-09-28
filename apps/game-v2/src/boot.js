@@ -207,6 +207,31 @@ window.__PREWARM__ = warmup;
 
 engine.start();
 
+// Opportunistic non-blocking shader warm-up. Full prewarm remains disabled for
+// production because software/mobile WebGL can spend tens of seconds there.
+// KHR_parallel_shader_compile is different: Three can enqueue compilation
+// without stalling the main thread. Run only when that extension exists and
+// only after the first playable frame, so startup and input remain responsive.
+if (!capture) {
+  const warmRenderer = engine.ctx.peek('render')?.renderer;
+  const warmGl = warmRenderer?.getContext?.();
+  const parallelCompile = warmGl?.getExtension?.('KHR_parallel_shader_compile');
+  if (parallelCompile && typeof warmRenderer?.compileAsync === 'function') {
+    const compileVisiblePrograms = async () => {
+      try {
+        await warmRenderer.compileAsync(engine.scene, engine.camera);
+        await warmRenderer.compileAsync(engine.viewScene, engine.viewCamera);
+        console.info('[boot] background shader compile complete');
+      } catch (err) {
+        console.warn('[boot] background shader compile skipped:', err?.message ?? err);
+      }
+    };
+    if (typeof requestIdleCallback === 'function')
+      requestIdleCallback(() => void compileVisiblePrograms(), { timeout: 1500 });
+    else setTimeout(() => void compileVisiblePrograms(), 250);
+  }
+}
+
 // Capture harness handshake: deterministic capture still waits for exactly
 // three hand-pumped frames so screenshots remain reproducible. Production only
 // needs one painted frame before the loading state can be dismissed. Waiting for
