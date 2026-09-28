@@ -870,17 +870,20 @@ export const NUKETOWN_MAP = {
    * whites bright without blowing them.
    */
   environment: {
-    hour: 13.5,
-    exposureBias: -0.5,
+    // Bright competitive-FPS daylight: clean blue sky, warm directional key,
+    // crisp readable shadows and very little distance wash.
+    hour: 14.25,
+    exposureBias: -0.22,
     weather: {
-      cloudCoverage: 0.05,
-      cloudDensity: 1.0,
-      turbidity: 3.0,
-      cirrusCoverage: 0.0,
-      cirrusOpacity: 0.0,
-      horizonMurk: 0.35,
-      fogDensity: 0.9,
-      fogHeight: 20,
+      cloudCoverage: 0.12,
+      cloudDensity: 1.35,
+      turbidity: 1.3,
+      cirrusCoverage: 0.06,
+      cirrusOpacity: 0.12,
+      horizonMurk: 0.08,
+      fogDensity: 0.46,
+      fogHeight: 14,
+      shaftGain: 1.7,
     },
   },
 };
