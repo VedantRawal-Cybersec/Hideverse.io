@@ -39,8 +39,9 @@ const _UP = new THREE.Vector3(0, 1, 0);
 const CHUNK = 64;
 
 export class Assembler {
-  constructor({ materials, rng, render }) {
+  constructor({ materials, rng, render, quality = 'medium' }) {
     this.materials = materials;
+    this.quality = quality;
     this.rng = rng;
     this.render = render;
     this._mats = new Map(); // palette key -> THREE.Material
