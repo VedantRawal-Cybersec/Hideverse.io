@@ -215,8 +215,10 @@ export class RenderSystem {
     // scenes so a subsystem baking a texture through its own scene is untouched.
     const rawCompile = renderer.compile.bind(renderer);
     renderer.compile = (target, cam, targetScene) => {
-      if (target === ctx.scene) this._patchLikeFrame(ctx.scene, false);
-      else if (target === ctx.viewScene) this._patchLikeFrame(ctx.viewScene, true);
+      if (!this._leanForward) {
+        if (target === ctx.scene) this._patchLikeFrame(ctx.scene, false);
+        else if (target === ctx.viewScene) this._patchLikeFrame(ctx.viewScene, true);
+      }
       return rawCompile(target, cam, targetScene);
     };
 
@@ -1284,11 +1286,11 @@ export class RenderSystem {
       let transparent = false;
       if (Array.isArray(mat)) {
         for (let i = 0; i < mat.length; i++) {
-          this.patcher.patch(mat[i]);
+          if (!this._leanForward) this.patcher.patch(mat[i]);
           if (mat[i] && mat[i].transparent === true) transparent = true;
         }
       } else if (mat) {
-        this.patcher.patch(mat);
+        if (!this._leanForward) this.patcher.patch(mat);
         transparent = mat.transparent === true;
       }
 
@@ -2037,6 +2039,7 @@ export class RenderSystem {
    * remembered for a velocity difference.
    */
   _visitView(o) {
+    if (this._leanForward) return;
     if (o.isMesh === true) {
       const m = o.material;
       if (Array.isArray(m)) for (let i = 0; i < m.length; i++) this.patcher.patch(m[i]);
