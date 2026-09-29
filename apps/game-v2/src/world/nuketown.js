@@ -990,20 +990,10 @@ function buildRefinerySkyline(A) {
   // Real CC0 industrial shells beyond the playable wall. They are scenery only,
   // so no collision is generated and the competitive layout remains identical.
   if (online.building) {
-    for (const [x, z, ry, sc] of [
-      [-33.5, -12.0, 0.20, 8.8],
-      [33.0, 13.0, Math.PI + 0.12, 8.2],
-    ]) {
-      A.add('gb_white', online.building, LL(IDENT, x, 0, z, ry, sc, sc, sc), null);
-    }
+    A.add('gb_white', online.building, LL(IDENT, -33.5, 0, -12.0, 0.20, 8.8, 8.8, 8.8), null);
   }
   if (online.buildingAlt) {
-    for (const [x, z, ry, sc] of [
-      [-27.5, 19.0, -0.08, 7.6],
-      [27.0, -18.5, Math.PI + 0.06, 7.4],
-    ]) {
-      A.add('gb_grey', online.buildingAlt, LL(IDENT, x, 0, z, ry, sc, sc, sc), null);
-    }
+    A.add('gb_grey', online.buildingAlt, LL(IDENT, 27.0, 0, -18.5, Math.PI + 0.06, 7.4, 7.4, 7.4), null);
   }
   if (online.chimneyLarge) {
     A.add('gb_white', online.chimneyLarge, LL(IDENT, 23.8, 0, 28.5, 0, 11.0, 11.0, 11.0), null);
@@ -1211,21 +1201,11 @@ function addIndustrialArtifacts(A) {
   }
 
   if (online.machineWindow) {
-    for (const [x, z, ry, sc] of [
-      [-13.8, 12.4, 0.1, 2.15],
-      [13.6, -12.0, Math.PI - 0.12, 2.05],
-    ]) {
-      A.add('gb_grey', online.machineWindow, LL(IDENT, x, 0.02, z, ry, sc, sc, sc), null);
-    }
+    A.add('gb_grey', online.machineWindow, LL(IDENT, -13.8, 0.02, 12.4, 0.1, 2.15, 2.15, 2.15), null);
   }
 
   if (online.catwalkStairs) {
-    for (const [x, z, ry] of [
-      [-18.1, 9.6, 0],
-      [18.1, -9.6, Math.PI],
-    ]) {
-      A.add('gb_accent', online.catwalkStairs, LL(IDENT, x, 0.02, z, ry, 3.7, 3.7, 3.7), null);
-    }
+    A.add('gb_accent', online.catwalkStairs, LL(IDENT, 18.1, 0.02, -9.6, Math.PI, 3.7, 3.7, 3.7), null);
   }
 
   if (online.pipeLong) {
@@ -1248,12 +1228,7 @@ function addIndustrialArtifacts(A) {
   }
 
   if (online.conveyor) {
-    for (const [x, y, z, ry] of [
-      [-9.6, 1.10, 14.6, 0],
-      [9.4, 1.10, -14.3, Math.PI],
-    ]) {
-      A.add('gb_dark', online.conveyor, LL(IDENT, x, y, z, ry, 3.6, 3.6, 3.6), null);
-    }
+    A.add('gb_dark', online.conveyor, LL(IDENT, 9.4, 1.10, -14.3, Math.PI, 3.6, 3.6, 3.6), null);
   }
 
   // ------------------------------------------------ overhead pipe gantry
