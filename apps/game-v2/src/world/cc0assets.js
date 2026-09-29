@@ -16,29 +16,38 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
  *   https://kenney.nl/assets/factory-kit
  *   https://kenney.nl/assets/city-kit-industrial
  */
-const ROOT = 'https://raw.githubusercontent.com/shorepine/kenney/main/3d';
+const REMOTE_ROOT = 'https://raw.githubusercontent.com/shorepine/kenney/main/3d';
+const LOCAL_ROOT = `${import.meta.env.BASE_URL}models/cc0-industrial`;
 
-export const LOW_CC0_SOURCES = Object.freeze({
-  cone: `${ROOT}/factory/cone.glb`,
-  machine: `${ROOT}/factory/machine.glb`,
-  machineWindow: `${ROOT}/factory/machine-window.glb`,
-  catwalk: `${ROOT}/factory/catwalk-straight.glb`,
-  catwalkStairs: `${ROOT}/factory/catwalk-stairs.glb`,
-  factoryDoor: `${ROOT}/factory/door.glb`,
-  pipeValve: `${ROOT}/factory/pipe-large-valve.glb`,
-  pipeLong: `${ROOT}/factory/pipe-large-long.glb`,
-  pipeBend: `${ROOT}/factory/pipe-large-bend.glb`,
-  conveyor: `${ROOT}/factory/conveyor-long-stripe-sides.glb`,
-  tank: `${ROOT}/city-industrial/detail-tank.glb`,
-  chimney: `${ROOT}/city-industrial/chimney-medium.glb`,
-  chimneyLarge: `${ROOT}/city-industrial/chimney-large.glb`,
-  building: `${ROOT}/city-industrial/building-h.glb`,
-  buildingAlt: `${ROOT}/city-industrial/building-k.glb`,
-  treyLoadingBay:
-    'https://raw.githubusercontent.com/AetherRadar/operation-steel-tide/main/assets/models/trey_modular_industrial/loading-bay.glb',
-  treyElevatedWalkway:
-    'https://raw.githubusercontent.com/AetherRadar/operation-steel-tide/main/assets/models/trey_modular_industrial/elevated-walkway.glb',
+const SOURCE_DEFS = Object.freeze({
+  cone: ['cone.glb', 'factory/cone.glb'],
+  machine: ['machine.glb', 'factory/machine.glb'],
+  machineWindow: ['machine-window.glb', 'factory/machine-window.glb'],
+  catwalk: ['catwalk-straight.glb', 'factory/catwalk-straight.glb'],
+  catwalkStairs: ['catwalk-stairs.glb', 'factory/catwalk-stairs.glb'],
+  factoryDoor: ['door.glb', 'factory/door.glb'],
+  pipeValve: ['pipe-large-valve.glb', 'factory/pipe-large-valve.glb'],
+  pipeLong: ['pipe-large-long.glb', 'factory/pipe-large-long.glb'],
+  pipeBend: ['pipe-large-bend.glb', 'factory/pipe-large-bend.glb'],
+  conveyor: ['conveyor-long-stripe-sides.glb', 'factory/conveyor-long-stripe-sides.glb'],
+  tank: ['detail-tank.glb', 'city-industrial/detail-tank.glb'],
+  chimney: ['chimney-medium.glb', 'city-industrial/chimney-medium.glb'],
+  chimneyLarge: ['chimney-large.glb', 'city-industrial/chimney-large.glb'],
+  building: ['building-h.glb', 'city-industrial/building-h.glb'],
+  buildingAlt: ['building-k.glb', 'city-industrial/building-k.glb'],
 });
+
+export const LOW_CC0_SOURCES = Object.freeze(
+  Object.fromEntries(
+    Object.entries(SOURCE_DEFS).map(([key, [localName, remotePath]]) => [
+      key,
+      {
+        local: `${LOCAL_ROOT}/${localName}`,
+        remote: `${REMOTE_ROOT}/${remotePath}`,
+      },
+    ])
+  )
+);
 
 // GLBs in the Kenney mirror can point at a shared colormap. We discard source
 // materials anyway, so redirect those image fetches to one 1x1 white PNG.
@@ -123,16 +132,23 @@ export async function loadLowIndustrialAssets({ timeoutMs = 2600 } = {}) {
     loader.crossOrigin = 'anonymous';
 
     const entries = await Promise.all(
-      Object.entries(LOW_CC0_SOURCES).map(async ([key, url]) => {
-        try {
-          const gltf = await timeout(loader.loadAsync(url), timeoutMs);
-          const geo = flattenScene(gltf.scene);
-          if (!geo) throw new Error('no mesh geometry');
-          return [key, geo];
-        } catch (err) {
-          console.warn(`[world] optional CC0 asset "${key}" unavailable:`, err?.message ?? err);
-          return [key, null];
+      Object.entries(LOW_CC0_SOURCES).map(async ([key, source]) => {
+        let lastErr = null;
+        for (const url of [source.local, source.remote]) {
+          try {
+            const gltf = await timeout(loader.loadAsync(url), timeoutMs);
+            const geo = flattenScene(gltf.scene);
+            if (!geo) throw new Error('no mesh geometry');
+            return [key, geo];
+          } catch (err) {
+            lastErr = err;
+          }
         }
+        console.warn(
+          `[world] optional CC0 asset "${key}" unavailable locally and remotely:`,
+          lastErr?.message ?? lastErr
+        );
+        return [key, null];
       })
     );
 
