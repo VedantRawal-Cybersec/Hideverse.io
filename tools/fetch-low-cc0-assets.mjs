@@ -12,6 +12,16 @@ import { fileURLToPath } from 'node:url';
  */
 
 const ROOT = 'https://raw.githubusercontent.com/shorepine/kenney/main/3d';
+const SURFACE_ROOT =
+  'https://raw.githubusercontent.com/petroulacl/fps-buildings-env-kit/main/environment/ground-textures/ambientcg';
+
+const SURFACE_TEXTURES = Object.freeze([
+  ['Asphalt021_2K-JPG/Asphalt021.png', 'asphalt.png'],
+  ['Concrete012_2K-JPG/Concrete012.png', 'concrete.png'],
+  ['Bricks066_2K-JPG/Bricks066.png', 'brick.png'],
+  ['Metal063_2K-JPG/Metal063.png', 'metal.png'],
+  ['Road001_2K-JPG/Road001.png', 'road.png'],
+]);
 
 const ASSETS = Object.freeze([
   ['factory/cone.glb', 'cone.glb'],
@@ -39,6 +49,7 @@ const ASSETS = Object.freeze([
 
 const here = dirname(fileURLToPath(import.meta.url));
 const outDir = join(here, '..', 'apps', 'game-v2', 'public', 'models', 'cc0-industrial');
+const texDir = join(here, '..', 'apps', 'game-v2', 'public', 'textures', 'cc0-low');
 
 async function fetchWithRetry(url, attempts = 3) {
   let last;
@@ -63,6 +74,7 @@ async function fetchWithRetry(url, attempts = 3) {
 }
 
 await mkdir(outDir, { recursive: true });
+await mkdir(texDir, { recursive: true });
 
 let ok = 0;
 const failed = [];
@@ -83,6 +95,35 @@ console.log(`[cc0] vendored ${ok}/${ASSETS.length} LOW industrial models`);
 if (ok === 0) {
   console.warn('[cc0] no local models downloaded; runtime remote fallback remains available');
 }
+
+let texOk = 0;
+const texFailed = [];
+for (const [src, name] of SURFACE_TEXTURES) {
+  const url = `${SURFACE_ROOT}/${src}`;
+  try {
+    const bytes = await fetchWithRetry(url);
+    await writeFile(join(texDir, name), bytes);
+    texOk++;
+    console.log(`[cc0] surface ${name} ${bytes.byteLength} bytes`);
+  } catch (err) {
+    texFailed.push(name);
+    console.warn(`[cc0] failed surface ${name}: ${err?.message ?? err}`);
+  }
+}
+console.log(`[cc0] vendored ${texOk}/${SURFACE_TEXTURES.length} LOW surface maps`);
+
+await writeFile(
+  join(texDir, 'README.txt'),
+  [
+    'Hideverse V2 LOW surface diffuse cache',
+    'Source bundle: petroulacl/fps-buildings-env-kit',
+    'Original assets: ambientCG',
+    'License: CC0 1.0',
+    'Only low-cost color previews are used; no normal/AO/displacement maps.',
+    texFailed.length ? `Missing this build: ${texFailed.join(', ')}` : 'All curated maps present.',
+    '',
+  ].join('\n')
+);
 
 await writeFile(
   join(outDir, 'README.txt'),
