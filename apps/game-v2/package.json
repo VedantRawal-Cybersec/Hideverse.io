@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "vite",
-    "build": "vite build --base=/game-v2/",
-    "build:static": "vite build --base=/game-v2/",
+    "build": "node ../../tools/fetch-low-cc0-assets.mjs && vite build --base=/game-v2/",
+    "build:static": "node ../../tools/fetch-low-cc0-assets.mjs && vite build --base=/game-v2/",
     "verify": "npm run build"
   },
   "author": "",
