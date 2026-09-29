@@ -20,17 +20,26 @@ LOW refinery presentation.
   - storage tank
   - refinery chimney
   - industrial building shell
+  - catwalk stairs
+  - personnel/factory door
+  - windowed machine module
+  - straight and bent process-pipe modules
+  - conveyor/service-rack segment
+  - second industrial building shell
+  - large chimney
 
 Hideverse discards the source materials for these models and merges their
 geometry into its existing LOW material batches.
 
 ## Poly Haven textures
 
-The LOW refinery uses two optional diffuse maps originally published by Poly
+The LOW refinery uses four optional diffuse maps originally published by Poly
 Haven under CC0 1.0:
 
 - Asphalt 03 diffuse, 1K
 - Concrete Floor diffuse, 1K
+- Rusty Painted Metal diffuse, 1K
+- Corrugated Iron diffuse, 1K
 
 Runtime mirror:
 https://github.com/AetherRadar/operation-steel-tide/tree/main/assets/textures
