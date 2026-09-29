@@ -22,3 +22,16 @@ CC-BY, the credit below ships with the build and has to stay with it.
 > (https://sketchfab.com/3d-models/low-poly-g31-competition-19f87c1c07b64c4cad194c6bc880d0eb)
 > by Kaan (https://sketchfab.com/swagmasterkaan) licensed under CC-BY-4.0
 > (http://creativecommons.org/licenses/by/4.0/)
+
+
+## Kenney Factory Kit + City Kit - Industrial
+
+- **Author:** Kenney (https://kenney.nl/)
+- **License:** CC0 1.0 — public domain dedication, attribution not required
+- **Mirror used by the build:** https://github.com/shorepine/kenney
+- **Source packs:** Factory Kit; City Kit - Industrial
+- **Used for:** LOW-mode industrial silhouettes including machinery, catwalks,
+  pipes, doors, cones, tanks, chimneys and distant factory buildings.
+- **Integration:** build-time vendored GLB geometry. Source materials and
+  textures are discarded; geometry is merged into Hideverse's existing LOW
+  material batches to preserve performance.
