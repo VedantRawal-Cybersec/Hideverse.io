@@ -50,6 +50,12 @@ jobs:
           test -f apps/web/dist/index.html
           test -f apps/web/dist/game/index.html
           test -f apps/web/dist/game/ravenwood/map/ravenwood_mansion_victorian.glb
+          test -f apps/web/dist/game-v2/models/cc0-industrial/machine.glb
+          test -f apps/web/dist/game-v2/models/cc0-industrial/catwalk-straight.glb
+          test -f apps/web/dist/game-v2/models/cc0-industrial/pipe-large-valve.glb
+          test -f apps/web/dist/game-v2/models/cc0-industrial/detail-tank.glb
+          test -f apps/web/dist/game-v2/models/cc0-industrial/chimney-medium.glb
+          test -f apps/web/dist/game-v2/models/cc0-industrial/building-h.glb
           test -f apps/web/dist/data/asset-summary.json
 
       - name: Publish live-static branch
