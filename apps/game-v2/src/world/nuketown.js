@@ -1010,6 +1010,33 @@ function buildRefinerySkyline(A) {
     A.add('gb_red', online.chimneyLarge, LL(IDENT, 23.8, 8.6, 28.5, 0, 11.2, 1.2, 11.2), null);
   }
 
+  // Higher-detail CC0 hero building. It sits beyond the playable wall and uses
+  // Hideverse's own light concrete, so it adds authored industrial silhouette
+  // without changing collision or material cost.
+  if (online.treyLoadingBay) {
+    A.add(
+      'gb_white',
+      online.treyLoadingBay,
+      LL(IDENT, -27.5, 0.02, -17.8, 0.08, 10.5, 10.5, 10.5),
+      null
+    );
+    A.add(
+      'gb_white',
+      online.treyLoadingBay,
+      LL(IDENT, 27.2, 0.02, 17.5, Math.PI + 0.06, 9.8, 9.8, 9.8),
+      null
+    );
+  }
+
+  if (online.treyElevatedWalkway) {
+    A.add(
+      'gb_accent',
+      online.treyElevatedWalkway,
+      LL(IDENT, 0, 2.15, 23.8, 0, 11.5, 11.5, 11.5),
+      null
+    );
+  }
+
   // Yellow pipe rack / catwalk silhouette across the far skyline.
   for (const side of [-1, 1]) {
     const z = side * 27.0;
