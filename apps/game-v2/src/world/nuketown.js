@@ -997,6 +997,18 @@ function buildRefinerySkyline(A) {
       A.add('gb_white', online.building, LL(IDENT, x, 0, z, ry, sc, sc, sc), null);
     }
   }
+  if (online.buildingAlt) {
+    for (const [x, z, ry, sc] of [
+      [-27.5, 19.0, -0.08, 7.6],
+      [27.0, -18.5, Math.PI + 0.06, 7.4],
+    ]) {
+      A.add('gb_grey', online.buildingAlt, LL(IDENT, x, 0, z, ry, sc, sc, sc), null);
+    }
+  }
+  if (online.chimneyLarge) {
+    A.add('gb_white', online.chimneyLarge, LL(IDENT, 23.8, 0, 28.5, 0, 11.0, 11.0, 11.0), null);
+    A.add('gb_red', online.chimneyLarge, LL(IDENT, 23.8, 8.6, 28.5, 0, 11.2, 1.2, 11.2), null);
+  }
 
   // Yellow pipe rack / catwalk silhouette across the far skyline.
   for (const side of [-1, 1]) {
@@ -1159,6 +1171,61 @@ function addIndustrialArtifacts(A) {
       [16.95, -1.7, -Math.PI / 2],
     ]) {
       A.add('gb_grey', online.pipeValve, LL(IDENT, x, 1.35, z, ry, 1.35, 1.35, 1.35), null);
+    }
+  }
+
+  if (online.factoryDoor) {
+    for (const [x, z, ry] of [
+      [-16.82, -5.6, Math.PI / 2],
+      [16.82, 5.8, -Math.PI / 2],
+    ]) {
+      A.add('gb_dark', online.factoryDoor, LL(IDENT, x, 0.02, z, ry, 2.35, 2.35, 2.35), null);
+    }
+  }
+
+  if (online.machineWindow) {
+    for (const [x, z, ry, sc] of [
+      [-13.8, 12.4, 0.1, 2.15],
+      [13.6, -12.0, Math.PI - 0.12, 2.05],
+    ]) {
+      A.add('gb_grey', online.machineWindow, LL(IDENT, x, 0.02, z, ry, sc, sc, sc), null);
+    }
+  }
+
+  if (online.catwalkStairs) {
+    for (const [x, z, ry] of [
+      [-18.1, 9.6, 0],
+      [18.1, -9.6, Math.PI],
+    ]) {
+      A.add('gb_accent', online.catwalkStairs, LL(IDENT, x, 0.02, z, ry, 3.7, 3.7, 3.7), null);
+    }
+  }
+
+  if (online.pipeLong) {
+    for (const [x, y, z, ry, sc] of [
+      [-15.7, 3.55, -2.2, 0, 4.2],
+      [15.7, 3.85, 2.0, Math.PI, 4.0],
+      [0.0, 5.10, 17.6, Math.PI / 2, 5.2],
+    ]) {
+      A.add('gb_grey', online.pipeLong, LL(IDENT, x, y, z, ry, sc, sc, sc), null);
+    }
+  }
+
+  if (online.pipeBend) {
+    for (const [x, y, z, ry, sc] of [
+      [-15.7, 3.55, 1.2, 0, 2.2],
+      [15.7, 3.85, -1.0, Math.PI, 2.2],
+    ]) {
+      A.add('gb_grey', online.pipeBend, LL(IDENT, x, y, z, ry, sc, sc, sc), null);
+    }
+  }
+
+  if (online.conveyor) {
+    for (const [x, y, z, ry] of [
+      [-9.6, 1.10, 14.6, 0],
+      [9.4, 1.10, -14.3, Math.PI],
+    ]) {
+      A.add('gb_dark', online.conveyor, LL(IDENT, x, y, z, ry, 3.6, 3.6, 3.6), null);
     }
   }
 
