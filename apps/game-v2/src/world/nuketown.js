@@ -1231,6 +1231,27 @@ function addIndustrialArtifacts(A) {
     A.add('gb_dark', online.conveyor, LL(IDENT, 9.4, 1.10, -14.3, Math.PI, 3.6, 3.6, 3.6), null);
   }
 
+  // Second-wave geometry: each model is unique and used sparingly so LOW gains
+  // authored industrial silhouette without duplicating large meshes.
+  if (online.machineFortified) {
+    A.add('gb_grey', online.machineFortified, LL(IDENT, -10.6, 0.02, -14.6, 0.12, 2.7, 2.7, 2.7), null);
+  }
+  if (online.catwalkCorner) {
+    A.add('gb_accent', online.catwalkCorner, LL(IDENT, -8.8, 2.6, 13.3, Math.PI / 2, 3.9, 3.9, 3.9), null);
+  }
+  if (online.pipeCross) {
+    A.add('gb_grey', online.pipeCross, LL(IDENT, 15.7, 1.55, 2.7, -Math.PI / 2, 1.55, 1.55, 1.55), null);
+  }
+  if (online.pipeJunction) {
+    A.add('gb_grey', online.pipeJunction, LL(IDENT, -15.8, 1.42, -2.8, Math.PI / 2, 1.45, 1.45, 1.45), null);
+  }
+  if (online.wideDoor) {
+    A.add('gb_dark', online.wideDoor, LL(IDENT, -16.80, 0.02, 5.8, Math.PI / 2, 2.65, 2.65, 2.65), null);
+  }
+  if (online.conveyorFence) {
+    A.add('gb_accent', online.conveyorFence, LL(IDENT, -9.3, 1.05, 14.4, 0, 3.1, 3.1, 3.1), null);
+  }
+
   // ------------------------------------------------ overhead pipe gantry
   // A clean refinery silhouette across the street, safely above player height.
   // Two uprights sit outside the drivable lane, and three coloured process
