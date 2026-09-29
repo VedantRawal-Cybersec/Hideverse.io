@@ -34,6 +34,10 @@ export const LOW_CC0_SOURCES = Object.freeze({
   chimneyLarge: `${ROOT}/city-industrial/chimney-large.glb`,
   building: `${ROOT}/city-industrial/building-h.glb`,
   buildingAlt: `${ROOT}/city-industrial/building-k.glb`,
+  treyLoadingBay:
+    'https://raw.githubusercontent.com/AetherRadar/operation-steel-tide/main/assets/models/trey_modular_industrial/loading-bay.glb',
+  treyElevatedWalkway:
+    'https://raw.githubusercontent.com/AetherRadar/operation-steel-tide/main/assets/models/trey_modular_industrial/elevated-walkway.glb',
 });
 
 // GLBs in the Kenney mirror can point at a shared colormap. We discard source
@@ -108,8 +112,12 @@ export async function loadLowIndustrialAssets({ timeoutMs = 2600 } = {}) {
 
   _promise = (async () => {
     const manager = new THREE.LoadingManager();
+    // Every curated model is used GEOMETRY-ONLY. Redirect source image
+    // dependencies (Kenney colormaps and Trey Ramm's gradient atlas) to one
+    // white pixel so richer meshes do not drag megabytes of unused textures
+    // through the LOW boot path.
     manager.setURLModifier((url) =>
-      /(?:^|\/)Textures\/colormap\.png(?:\?|$)/i.test(url) ? WHITE_PNG : url
+      /\.(?:png|jpe?g|webp)(?:\?|$)/i.test(url) ? WHITE_PNG : url
     );
     const loader = new GLTFLoader(manager);
     loader.crossOrigin = 'anonymous';
