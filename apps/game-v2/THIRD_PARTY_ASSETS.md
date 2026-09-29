@@ -27,9 +27,26 @@ LOW refinery presentation.
   - conveyor/service-rack segment
   - second industrial building shell
   - large chimney
+  - Trey Ramm CC0 modular-industrial loading bay
+  - Trey Ramm CC0 elevated walkway
 
 Hideverse discards the source materials for these models and merges their
 geometry into its existing LOW material batches.
+
+### Trey Ramm Modular Industrial Pieces
+
+- Creator: Trey Ramm / OpenGameArt user `minime453`
+- License: CC0 1.0 Universal
+- Official source: https://opengameart.org/content/modular-industrial-kit
+- Runtime GLB mirror / deterministic conversions:
+  https://github.com/AetherRadar/operation-steel-tide/tree/main/assets/models/trey_modular_industrial
+- Current LOW use:
+  - `loading-bay.glb` — 2,384 triangles
+  - `elevated-walkway.glb` — geometry-only skyline/service structure
+
+Source texture dependencies are redirected to a 1×1 white image at load time
+because Hideverse uses only the authored geometry; the final surfaces come from
+Hideverse's existing LOW material batches.
 
 ## Poly Haven textures
 
