@@ -800,7 +800,9 @@ export const PALETTE = {
         surface: 'concrete',
         opts: {
           vertexMasks: true,
-          tint: 0xd1d0ca,
+          externalMap: 'https://raw.githubusercontent.com/AetherRadar/operation-steel-tide/main/assets/textures/concrete_floor_diff_1k.jpg',
+          externalRepeat: [1, 1],
+          tint: 0xd8d7d2,
           scale: 1.25,
           normalStrength: 0.78,
           weather: [0.12, 0.12, 0.18, 0.16],
@@ -836,7 +838,9 @@ export const PALETTE = {
         surface: 'concrete',
         opts: {
           vertexMasks: true,
-          tint: 0x666c71,
+          externalMap: 'https://raw.githubusercontent.com/AetherRadar/operation-steel-tide/main/assets/textures/asphalt_03_diff_1k.jpg',
+          externalRepeat: [1, 1],
+          tint: 0x7b7e82,
           scale: 1.65,
           detile: 0.65,
           normalStrength: 0.78,
