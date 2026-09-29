@@ -950,16 +950,21 @@ function buildSheds(A, rng) {
 function buildRefinerySkyline(A) {
   if (A.quality === 'performance') return;
 
-  const stack = A.cache('nuke:ref-stack', () => {
-    const g = new THREE.CylinderGeometry(0.48, 0.58, 1, 10, 1, false);
-    g.computeVertexNormals();
-    return g;
-  });
-  const tank = A.cache('nuke:ref-tank', () => {
-    const g = new THREE.CylinderGeometry(1.55, 1.55, 1, 12, 1, false);
-    g.computeVertexNormals();
-    return g;
-  });
+  const online = A.onlineAssets ?? {};
+  const stack =
+    online.chimney ??
+    A.cache('nuke:ref-stack', () => {
+      const g = new THREE.CylinderGeometry(0.48, 0.58, 1, 10, 1, false);
+      g.computeVertexNormals();
+      return g;
+    });
+  const tank =
+    online.tank ??
+    A.cache('nuke:ref-tank', () => {
+      const g = new THREE.CylinderGeometry(1.55, 1.55, 1, 12, 1, false);
+      g.computeVertexNormals();
+      return g;
+    });
   const pipe = A.cache('nuke:ref-pipe', () => {
     const g = new THREE.CylinderGeometry(0.11, 0.11, 1, 8, 1, false);
     g.computeVertexNormals();
@@ -982,6 +987,17 @@ function buildRefinerySkyline(A) {
     A.add('gb_red', tank, LL(IDENT, x, h - 0.42, z, 0, 1.03, 0.36, 1.03), null);
   }
 
+  // Real CC0 industrial shells beyond the playable wall. They are scenery only,
+  // so no collision is generated and the competitive layout remains identical.
+  if (online.building) {
+    for (const [x, z, ry, sc] of [
+      [-33.5, -12.0, 0.20, 8.8],
+      [33.0, 13.0, Math.PI + 0.12, 8.2],
+    ]) {
+      A.add('gb_white', online.building, LL(IDENT, x, 0, z, ry, sc, sc, sc), null);
+    }
+  }
+
   // Yellow pipe rack / catwalk silhouette across the far skyline.
   for (const side of [-1, 1]) {
     const z = side * 27.0;
@@ -997,6 +1013,7 @@ function buildRefinerySkyline(A) {
 function addIndustrialArtifacts(A) {
   if (A.quality === 'performance') return;
 
+  const online = A.onlineAssets ?? {};
   const box = BOX(A);
   const thin = BOX_THIN(A);
   const wheel = A.cache('nuke:artifact-wheel', () => {
@@ -1015,11 +1032,13 @@ function addIndustrialArtifacts(A) {
     g.computeVertexNormals();
     return g;
   });
-  const cone = A.cache('nuke:artifact-cone', () => {
-    const g = new THREE.ConeGeometry(0.24, 0.62, 8, 1, false);
-    g.computeVertexNormals();
-    return g;
-  });
+  const cone =
+    online.cone ??
+    A.cache('nuke:artifact-cone', () => {
+      const g = new THREE.ConeGeometry(0.24, 0.62, 8, 1, false);
+      g.computeVertexNormals();
+      return g;
+    });
 
   // ------------------------------------------------------ forklift / loader
   // One strong hero prop like the reference screenshots. Every piece uses an
@@ -1064,7 +1083,8 @@ function addIndustrialArtifacts(A) {
     [10.3, -7.0, -0.08],
     [18.0, 11.7, 0.06],
   ]) {
-    A.add('gb_accent', cone, LL(IDENT, x, 0.31, z, ry, 1, 1, 1), {
+    const cs = online.cone ? 0.68 : 1;
+    A.add('gb_accent', cone, LL(IDENT, x, 0.31, z, ry, cs, cs, cs), {
       masks: [0.78, 0.28, 0.16],
     });
     A.add('gb_white', thin, LL(IDENT, x, 0.37, z, ry, 0.31, 0.07, 0.31), null);
@@ -1110,6 +1130,36 @@ function addIndustrialArtifacts(A) {
     });
     for (let i = 0; i < 4; i++)
       A.add('gb_dark', thin, LL(IDENT, x - sx * 0.20, 1.62 + i * 0.20, z0 - 0.95, 0, 0.03, 0.08, 0.90), null);
+  }
+
+  // ------------------------------------------------ real CC0 factory geometry
+  // These replace the weakest procedural silhouettes with actual Kenney factory
+  // meshes. They still render through our existing LOW material keys.
+  if (online.machine) {
+    for (const [x, z, ry, sc, key] of [
+      [-15.8, -10.8, 0.18, 2.0, 'gb_grey'],
+      [15.4, 10.6, Math.PI - 0.20, 1.85, 'gb_accent'],
+    ]) {
+      A.add(key, online.machine, LL(IDENT, x, 0.02, z, ry, sc, sc, sc), null);
+    }
+  }
+
+  if (online.catwalk) {
+    for (const [x, z, ry] of [
+      [-14.8, 11.2, 0],
+      [14.8, -11.2, Math.PI],
+    ]) {
+      A.add('gb_accent', online.catwalk, LL(IDENT, x, 2.55, z, ry, 4.2, 4.2, 4.2), null);
+    }
+  }
+
+  if (online.pipeValve) {
+    for (const [x, z, ry] of [
+      [-16.95, 1.6, Math.PI / 2],
+      [16.95, -1.7, -Math.PI / 2],
+    ]) {
+      A.add('gb_grey', online.pipeValve, LL(IDENT, x, 1.35, z, ry, 1.35, 1.35, 1.35), null);
+    }
   }
 
   // ------------------------------------------------ overhead pipe gantry
