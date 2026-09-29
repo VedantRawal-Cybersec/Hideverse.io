@@ -5,6 +5,7 @@ import { Rng } from '../core/rng.js';
 import { SpawnDirector, buildSpawnPoints } from './spawns.js';
 import { PowerGrid, cityLevel } from './power.js';
 import { MAPS, DEFAULT_MAP_ID, getMap, isMapId, mapSummaries, resolveBootMap, saveMapPreference } from './maps.js';
+import { loadLowIndustrialAssets } from './cc0assets.js';
 
 /**
  * WORLD — level geometry, the modular building kit, props, set dressing and
@@ -134,7 +135,7 @@ export class WorldSystem {
       deterministic: !!ctx.config?.deterministic,
       preferred: this.requestedMap,
     });
-    this._build(id);
+    await this._build(id);
   }
 
   /* ==================================================================== */
@@ -161,7 +162,7 @@ export class WorldSystem {
     if (!isMapId(id) || id === this.mapId) return this.mapId;
     const t0 = performance.now();
     this._teardown();
-    this._build(id);
+    await this._build(id);
     saveMapPreference(id);
 
     // Normal players must never wait for a full synchronous shader/material
@@ -186,7 +187,7 @@ export class WorldSystem {
     return this.mapId;
   }
 
-  _build(id) {
+  async _build(id) {
     const ctx = this.ctx;
     const map = getMap(id) ?? getMap(DEFAULT_MAP_ID);
     this.map = map;
@@ -212,6 +213,21 @@ export class WorldSystem {
     const t0 = performance.now();
     const A = new Assembler({ materials, rng, render, quality: ctx.config.quality });
     this.A = A;
+
+    // LOW Nuketown may use a tiny curated CC0 geometry set. Loading is optional:
+    // every placement has a procedural fallback, so a network/CORS failure must
+    // never prevent a match from starting.
+    if (map.id === 'nuketown' && ctx.config.quality === 'low') {
+      try {
+        A.onlineAssets = await loadLowIndustrialAssets({ timeoutMs: 2600 });
+      } catch (err) {
+        console.warn('[world] continuing without optional CC0 assets', err);
+        A.onlineAssets = null;
+      }
+    } else {
+      A.onlineAssets = null;
+    }
+
     A.setTransform(map.transform.yaw, map.transform.tx, map.transform.tz);
 
     const built = map.build(A, rng) ?? {};
