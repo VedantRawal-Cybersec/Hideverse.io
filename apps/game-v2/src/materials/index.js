@@ -46,12 +46,18 @@ export class MaterialSystem {
     /** seconds since the last bake, for the scratch-target release below */
     this._idle = 0;
     this._scratchFreed = false;
+    /** Optional CC0 LOW diffuse maps. Entries keep subscribers so a texture can
+     *  replace the procedural fallback only after it has actually loaded. */
+    this._externalTextures = new Map();
+    this._externalLoader = null;
   }
 
   async init(ctx) {
     this.ctx = ctx;
     const q = ctx?.config?.q;
     this._anisotropy = q?.anisotropy ?? 8;
+    this._externalLoader = new THREE.TextureLoader();
+    this._externalLoader.crossOrigin = 'anonymous';
     // Texture budget scales with the quality preset; 1K is the reference. The
     // preset carries the multiplier now (it used to be re-derived from the tier
     // name here), so the advanced graphics menu has something to override — and
@@ -132,6 +138,63 @@ export class MaterialSystem {
     const s = Math.max(128, Math.round((base * this._quality) / 128) * 128);
     // keep it a power of two so mip chains stay clean
     return 1 << Math.round(Math.log2(s));
+  }
+
+  /**
+   * Load one optional external LOW diffuse map without ever replacing the
+   * procedural fallback until the network image is ready.
+   */
+  _attachExternalMap(material, url, repeat = [1, 1]) {
+    if (!url || this.ctx?.config?.quality !== 'low') return;
+    const rx = Number(repeat?.[0] ?? 1);
+    const ry = Number(repeat?.[1] ?? rx);
+    const key = `${url}|${rx}|${ry}`;
+
+    let entry = this._externalTextures.get(key);
+    if (!entry) {
+      entry = {
+        texture: null,
+        ready: false,
+        failed: false,
+        materials: new Set(),
+      };
+      this._externalTextures.set(key, entry);
+
+      const tex = this._externalLoader.load(
+        url,
+        (loaded) => {
+          loaded.wrapS = THREE.RepeatWrapping;
+          loaded.wrapT = THREE.RepeatWrapping;
+          loaded.repeat.set(rx, ry);
+          loaded.colorSpace = THREE.SRGBColorSpace;
+          loaded.anisotropy = this._anisotropy;
+          loaded.needsUpdate = true;
+          entry.ready = true;
+          for (const mat of entry.materials) {
+            mat.map = loaded;
+            mat.needsUpdate = true;
+          }
+          console.info(`[materials] LOW external diffuse ready: ${url.split('/').pop()}`);
+        },
+        undefined,
+        (err) => {
+          entry.failed = true;
+          console.warn('[materials] optional LOW external diffuse unavailable', url, err);
+        }
+      );
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(rx, ry);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = this._anisotropy;
+      entry.texture = tex;
+    }
+
+    entry.materials.add(material);
+    if (entry.ready && entry.texture) {
+      material.map = entry.texture;
+      material.needsUpdate = true;
+    }
   }
 
   /**
@@ -229,9 +292,13 @@ export class MaterialSystem {
     if (cached) return cached;
 
     const set = this.getTextureSet(key, opts);
+    const externalMap = opts.externalMap ?? null;
+    const externalRepeat = opts.externalRepeat ?? [1, 1];
     const p = { ...DEFAULT_PARAMS, ...def.mat, ...opts };
     delete p.three;
     delete p.bake;
+    delete p.externalMap;
+    delete p.externalRepeat;
     p.groundY = opts.groundY ?? this._groundY;
     this._scaleDetailParams(p);
 
@@ -283,6 +350,11 @@ export class MaterialSystem {
       if (this._lean) extendFastProjectedMaterial(mat, p, { rich: this._leanRich || this._leanHigh });
       else extendMaterial(mat, p, this._shared);
     }
+
+    // LOW-only: swap the procedural albedo for a real CC0 diffuse after it has
+    // loaded. The shader already compiled with USE_MAP because the fallback map
+    // is present, so this does not create a new shader permutation.
+    if (externalMap && this._lean) this._attachExternalMap(mat, externalMap, externalRepeat);
 
     this._materials.set(matKey, mat);
     return mat;
@@ -353,6 +425,8 @@ export class MaterialSystem {
   dispose() {
     for (const m of this._materials.values()) m.dispose();
     this._materials.clear();
+    for (const entry of this._externalTextures.values()) entry.texture?.dispose?.();
+    this._externalTextures.clear();
     this._sets.clear();
     this._forge?.dispose();
     this._forge = null;
