@@ -21,11 +21,19 @@ const ROOT = 'https://raw.githubusercontent.com/shorepine/kenney/main/3d';
 export const LOW_CC0_SOURCES = Object.freeze({
   cone: `${ROOT}/factory/cone.glb`,
   machine: `${ROOT}/factory/machine.glb`,
+  machineWindow: `${ROOT}/factory/machine-window.glb`,
   catwalk: `${ROOT}/factory/catwalk-straight.glb`,
+  catwalkStairs: `${ROOT}/factory/catwalk-stairs.glb`,
+  factoryDoor: `${ROOT}/factory/door.glb`,
   pipeValve: `${ROOT}/factory/pipe-large-valve.glb`,
+  pipeLong: `${ROOT}/factory/pipe-large-long.glb`,
+  pipeBend: `${ROOT}/factory/pipe-large-bend.glb`,
+  conveyor: `${ROOT}/factory/conveyor-long-stripe-sides.glb`,
   tank: `${ROOT}/city-industrial/detail-tank.glb`,
   chimney: `${ROOT}/city-industrial/chimney-medium.glb`,
+  chimneyLarge: `${ROOT}/city-industrial/chimney-large.glb`,
   building: `${ROOT}/city-industrial/building-h.glb`,
+  buildingAlt: `${ROOT}/city-industrial/building-k.glb`,
 });
 
 // GLBs in the Kenney mirror can point at a shared colormap. We discard source
