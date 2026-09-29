@@ -88,7 +88,9 @@ const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
 let version;
 let debugPort = null;
 const activePortFile = path.join(userData, 'DevToolsActivePort');
-for (let i=0;i<160;i++) {
+// Asset-heavy LOW builds can make SwiftShader/Chrome cold-start slowly on a busy CI host.
+// Give the DevTools endpoint 30s instead of failing a healthy build after 16s.
+for (let i=0;i<300;i++) {
   try {
     if (fs.existsSync(activePortFile)) {
       const first = fs.readFileSync(activePortFile, 'utf8').trim().split(/\r?\n/)[0];
