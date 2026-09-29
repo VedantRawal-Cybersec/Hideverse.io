@@ -1,0 +1,24 @@
+{
+  "acquiredAssets": 35,
+  "candidateAssets": 1,
+  "runtimeFiles": 49,
+  "sources": {
+    "glTF Research Scenes / Victorian Style House": 1,
+    "Kenney Nature Kit": 10,
+    "KayKit Furniture Bits 1.0": 6,
+    "KayKit Dungeon Remastered 1.0": 4,
+    "KayKit City Builder Bits 1.0": 2,
+    "KayKit Character Pack: Adventurers 1.0": 5,
+    "CC0 Public Domain Textures / AmbientCG": 7
+  },
+  "ravenwood": {
+    "status": "acquired",
+    "source": "glTF Research Scenes / Victorian Style House",
+    "sourceTriangles": 1818777,
+    "runtimeTriangles": 290201,
+    "runtimeBytes": 5261868,
+    "targetTriangles": 400000,
+    "targetBytes": 20000000
+  },
+  "generatedAt": "2026-09-29T16:12:02.289Z"
+}

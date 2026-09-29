@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#080b10" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="format-detection" content="telephone=no" />
+    <title>Hideverse.io — Playable Build</title>
+    <script type="module" crossorigin src="./assets/index-BFiHvQQU.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DJOFylXe.css">
+  </head>
+  <body>
+    <main id="app">
+      <canvas id="game-canvas" aria-label="Hideverse playable game canvas"></canvas>
+      <div id="danger-vignette" class="danger-vignette" aria-hidden="true"></div>
+      <div id="event-flash" class="event-flash" aria-hidden="true"></div>
+
+      <header class="map-hud">
+        <div>
+          <p id="map-eyebrow" class="eyebrow">HIDEVERSE.IO · MAP 01</p>
+          <h1 id="map-title">RAVENWOOD MANSION</h1>
+          <p class="status-line"><i></i><span id="map-status">Booting Hideverse…</span></p>
+          <label class="map-picker-label" for="map-select">
+            MAP
+            <select id="map-select" aria-label="Choose Hideverse map"></select>
+          </label>
+        </div>
+        <div class="telemetry">
+          <span>AREA <b id="zone-value">LOADING</b></span>
+          <span>MODE <b id="mode-name">—</b></span>
+          <span>FPS <b id="fps-value">—</b></span>
+          <span>BUILD <b>PRODUCTION</b></span>
+        </div>
+      </header>
+
+      <div class="crosshair" aria-hidden="true"></div>
+      <div id="hit-marker" class="hit-marker" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <div id="eliminate-notice" class="eliminate-notice" aria-live="polite">ELIMINATED</div>
+
+      <aside class="combat-hud" aria-label="Combat status">
+        <div class="combat-weapon-row">
+          <span id="combat-weapon">VANGUARD AR</span>
+          <b id="combat-state">READY</b>
+        </div>
+        <div class="combat-ammo-row">
+          <strong id="combat-ammo">30</strong>
+          <span>/</span>
+          <b id="combat-reserve">120</b>
+        </div>
+        <div class="combat-vitals">
+          <span>HP <b id="combat-health">100</b></span>
+          <span>ARMOR <b id="combat-armor">100</b></span>
+        </div>
+      </aside>
+
+      <div id="interaction-prompt" class="interaction-prompt" aria-live="polite"></div>
+      <div id="hidden-state" class="hidden-state" aria-live="polite"></div>
+
+      <aside id="mode-panel" class="mode-panel" aria-label="Current game mode">
+        <span class="panel-kicker">ACTIVE MODE</span>
+        <b id="mode-title">—</b>
+        <p id="mode-objective">Loading objective…</p>
+        <div class="mode-meta">
+          <span>PROGRESS <b id="mode-progress">0/0</b></span>
+          <span>TIME <b id="mode-timer">—</b></span>
+          <span>RISK <b id="mode-danger">0%</b></span>
+          <span>STATE <b id="mode-outcome">CLEAR</b></span>
+          <span>MOTION <b id="motion-value">IDLE</b></span>
+          <span>STAMINA <b id="stamina-value">100%</b></span>
+          <span>VIEW <b id="view-value">FPS</b></span>
+        </div>
+        <div class="runtime-settings">
+          <label>
+            QUALITY
+            <select id="quality-select" aria-label="Graphics quality">
+              <option value="auto">AUTO</option>
+              <option value="low">LOW</option>
+              <option value="balanced">BALANCED</option>
+              <option value="high">HIGH</option>
+            </select>
+          </label>
+          <label>
+            LOOK
+            <input
+              id="sensitivity-slider"
+              type="range"
+              min="0.55"
+              max="1.7"
+              step="0.05"
+              aria-label="Look sensitivity"
+            />
+          </label>
+        </div>
+      </aside>
+
+      <aside class="network-panel" aria-label="Multiplayer room controls">
+        <div class="network-status-row">
+          <span id="network-value">LOCAL ROOM</span>
+          <b id="room-value">LOCAL</b>
+          <small><span id="peers-value">0</span> PEERS</small>
+        </div>
+        <label class="room-code-label" for="room-code-input">
+          ROOM CODE
+          <input
+            id="room-code-input"
+            type="text"
+            inputmode="text"
+            maxlength="16"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="ENTER CODE"
+          />
+        </label>
+        <div class="network-buttons">
+          <button id="join-room" type="button">JOIN</button>
+          <button id="quick-match" type="button">QUICK MATCH</button>
+          <button id="copy-invite" type="button">COPY INVITE</button>
+        </div>
+      </aside>
+
+      <aside id="debug-panel" class="debug-panel" aria-label="Hideverse debug telemetry">
+        <b>HIDEVERSE DEBUG</b>
+        <span id="debug-position">POSITION —</span>
+        <span id="debug-zone">AREA —</span>
+        <span id="debug-role">NEAREST ROLE —</span>
+        <span id="debug-meta">MAP QA —</span>
+      </aside>
+
+      <aside class="desktop-help">
+        <b>CLICK TO CAPTURE MOUSE</b>
+        <span>
+          WASD move · Shift sprint · Space jump · C slide/crouch · Mouse1 fire · Mouse2 ADS · R
+          reload · 1/2/3 weapons · E interact · V FPS/TPS · K reset · Esc release
+        </span>
+      </aside>
+
+      <div class="mobile-controls" aria-label="Mobile game controls">
+        <div id="move-stick" class="move-stick">
+          <div id="move-stick-knob" class="move-stick-knob"></div>
+        </div>
+        <div class="mobile-buttons">
+          <button id="mobile-fire" class="combat-touch primary-touch" type="button">FIRE</button>
+          <button id="mobile-aim" class="combat-touch" type="button">ADS</button>
+          <button id="mobile-jump" type="button">JUMP</button>
+          <button id="mobile-sprint" type="button">RUN</button>
+          <button id="mobile-slide" type="button">SLIDE</button>
+          <button id="mobile-reload" type="button">RELOAD</button>
+          <button id="mobile-weapon" type="button">WEAPON</button>
+          <button id="mobile-interact" type="button">INTERACT</button>
+          <button id="mobile-view" type="button">VIEW</button>
+          <button id="mobile-crouch" type="button">CROUCH</button>
+        </div>
+      </div>
+
+      <section id="round-result" class="round-result" aria-live="assertive">
+        <span id="round-result-kicker">ROUND COMPLETE</span>
+        <h2 id="round-result-title">MISSION COMPLETE</h2>
+        <p id="round-result-copy">Preparing result…</p>
+        <button id="restart-round" type="button">PLAY AGAIN</button>
+      </section>
+
+      <div id="boot-overlay" class="boot-overlay">
+        <div class="spinner"></div>
+        <span>INITIALIZING HIDEVERSE</span>
+      </div>
+    </main>
+  </body>
+</html>
