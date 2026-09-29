@@ -9,6 +9,8 @@
  * `surface` is the ARCHITECTURE.md physics/FX tag. `tint` is a linear multiply
  * on the baked albedo, so values stay inside 0.02–0.9 reflectance.
  */
+const LOW_CC0_TEX_ROOT = `${import.meta.env.BASE_URL}textures/cc0-low`;
+
 export const PALETTE = {
   // ---------------------------------------------------------- architecture --
   plaster_cream: {
@@ -800,7 +802,7 @@ export const PALETTE = {
         surface: 'concrete',
         opts: {
           vertexMasks: true,
-          externalMap: 'https://raw.githubusercontent.com/AetherRadar/operation-steel-tide/main/assets/textures/concrete_floor_diff_1k.jpg',
+          externalMap: `${LOW_CC0_TEX_ROOT}/concrete.png`,
           externalRepeat: [1, 1],
           tint: 0xd8d7d2,
           scale: 1.25,
@@ -826,6 +828,8 @@ export const PALETTE = {
         surface: 'concrete',
         opts: {
           vertexMasks: true,
+          externalMap: `${LOW_CC0_TEX_ROOT}/road.png`,
+          externalRepeat: [1.2, 1.2],
           tint: 0x85898c,
           scale: 1.15,
           normalStrength: 1.0,
@@ -838,7 +842,7 @@ export const PALETTE = {
         surface: 'concrete',
         opts: {
           vertexMasks: true,
-          externalMap: 'https://raw.githubusercontent.com/AetherRadar/operation-steel-tide/main/assets/textures/asphalt_03_diff_1k.jpg',
+          externalMap: `${LOW_CC0_TEX_ROOT}/asphalt.png`,
           externalRepeat: [1, 1],
           tint: 0x7b7e82,
           scale: 1.65,
@@ -870,7 +874,7 @@ export const PALETTE = {
           scale: 0.9,
           normalStrength: 0.92,
           weather: [0.08, 0.08, 0.10, 0.10],
-          externalMap: 'https://raw.githubusercontent.com/AetherRadar/operation-steel-tide/main/assets/textures/rusty_painted_metal_diff_1k.jpg',
+          externalMap: `${LOW_CC0_TEX_ROOT}/metal.png`,
           externalRepeat: [1.6, 1.6],
         },
       },
@@ -884,7 +888,7 @@ export const PALETTE = {
           scale: 0.72,
           normalStrength: 1.0,
           weather: [0.06, 0.06, 0.08, 0.10],
-          externalMap: 'https://raw.githubusercontent.com/AetherRadar/operation-steel-tide/main/assets/textures/corrugated_iron_diff_1k.jpg',
+          externalMap: `${LOW_CC0_TEX_ROOT}/metal.png`,
           externalRepeat: [1.8, 1.8],
         },
       },
@@ -894,6 +898,8 @@ export const PALETTE = {
         surface: 'concrete',
         opts: {
           vertexMasks: true,
+          externalMap: `${LOW_CC0_TEX_ROOT}/brick.png`,
+          externalRepeat: [1.4, 1.4],
           tint: 0x5b6064,
           scale: 0.72,
           normalStrength: 1.15,
