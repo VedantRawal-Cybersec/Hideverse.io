@@ -866,10 +866,12 @@ export const PALETTE = {
         surface: 'metal',
         opts: {
           vertexMasks: true,
-          tint: 0xc33a32,
+          tint: 0xd95a4e,
           scale: 0.9,
           normalStrength: 0.92,
-          weather: [0.10, 0.10, 0.14, 0.14],
+          weather: [0.08, 0.08, 0.10, 0.10],
+          externalMap: 'https://raw.githubusercontent.com/AetherRadar/operation-steel-tide/main/assets/textures/rusty_painted_metal_diff_1k.jpg',
+          externalRepeat: [1.6, 1.6],
         },
       },
       /** Charcoal painted steel for frames, vents, doors, wheels and trims. */
@@ -878,10 +880,12 @@ export const PALETTE = {
         surface: 'metal',
         opts: {
           vertexMasks: true,
-          tint: 0x4a5055,
+          tint: 0x777d82,
           scale: 0.72,
           normalStrength: 1.0,
-          weather: [0.10, 0.10, 0.12, 0.14],
+          weather: [0.06, 0.06, 0.08, 0.10],
+          externalMap: 'https://raw.githubusercontent.com/AetherRadar/operation-steel-tide/main/assets/textures/corrugated_iron_diff_1k.jpg',
+          externalRepeat: [1.8, 1.8],
         },
       },
       /** Near-black brick plinths like the reference loading/tunnel walls. */
